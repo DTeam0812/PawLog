@@ -1,3 +1,5 @@
+package ui;
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Point;
@@ -7,7 +9,6 @@ import java.util.prefs.Preferences; // windows 레지스트리에 사용자설�
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
 import javax.swing.SwingConstants;
