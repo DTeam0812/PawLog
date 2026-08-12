@@ -1,29 +1,27 @@
-package server.db.dto;
+package com.pawlog.server.entity;
 
 import java.sql.Date;
 
-public class DailyUsageSummaryDTO {
-	private long summaryId;
+public class DailyUsageSummaryEntity {
+    private long summaryId;
     private long userId;
     private long programId;
     private Date summaryDate;
-
     private long foregroundDurationSec;
     private long backgroundDurationSec;
     private long totalDurationSec;
 
     // 기본 생성자
-    public DailyUsageSummaryDTO() {
+    public DailyUsageSummaryEntity() {
     }
 
     // 데이터 입력용 생성자
-    public DailyUsageSummaryDTO(long userId,
-                                long programId,
-                                Date summaryDate,
-                                long foregroundDurationSec,
-                                long backgroundDurationSec,
-                                long totalDurationSec) {
-
+    public DailyUsageSummaryEntity(long userId,
+                                   long programId,
+                                   Date summaryDate,
+                                   long foregroundDurationSec,
+                                   long backgroundDurationSec,
+                                   long totalDurationSec) {
         this.userId = userId;
         this.programId = programId;
         this.summaryDate = summaryDate;
@@ -33,14 +31,13 @@ public class DailyUsageSummaryDTO {
     }
 
     // 전체 생성자
-    public DailyUsageSummaryDTO(long summaryId,
-                                long userId,
-                                long programId,
-                                Date summaryDate,
-                                long foregroundDurationSec,
-                                long backgroundDurationSec,
-                                long totalDurationSec) {
-
+    public DailyUsageSummaryEntity(long summaryId,
+                                   long userId,
+                                   long programId,
+                                   Date summaryDate,
+                                   long foregroundDurationSec,
+                                   long backgroundDurationSec,
+                                   long totalDurationSec) {
         this.summaryId = summaryId;
         this.userId = userId;
         this.programId = programId;
@@ -49,80 +46,66 @@ public class DailyUsageSummaryDTO {
         this.backgroundDurationSec = backgroundDurationSec;
         this.totalDurationSec = totalDurationSec;
     }
-	
+
     public long getSummaryId() {
-		return summaryId;
-	}
+        return summaryId;
+    }
 
+    public void setSummaryId(long summaryId) {
+        this.summaryId = summaryId;
+    }
 
-	public void setSummaryId(long summaryId) {
-		this.summaryId = summaryId;
-	}
+    public long getUserId() {
+        return userId;
+    }
 
+    public void setUserId(long userId) {
+        this.userId = userId;
+    }
 
-	public long getUserId() {
-		return userId;
-	}
+    public long getProgramId() {
+        return programId;
+    }
 
+    public void setProgramId(long programId) {
+        this.programId = programId;
+    }
 
-	public void setUserId(long userId) {
-		this.userId = userId;
-	}
+    public Date getSummaryDate() {
+        return summaryDate;
+    }
 
+    public void setSummaryDate(Date summaryDate) {
+        this.summaryDate = summaryDate;
+    }
 
-	public long getProgramId() {
-		return programId;
-	}
+    public long getForegroundDurationSec() {
+        return foregroundDurationSec;
+    }
 
+    public void setForegroundDurationSec(long foregroundDurationSec) {
+        this.foregroundDurationSec = foregroundDurationSec;
+    }
 
-	public void setProgramId(long programId) {
-		this.programId = programId;
-	}
+    public long getBackgroundDurationSec() {
+        return backgroundDurationSec;
+    }
 
+    public void setBackgroundDurationSec(long backgroundDurationSec) {
+        this.backgroundDurationSec = backgroundDurationSec;
+    }
 
-	public Date getSummaryDate() {
-		return summaryDate;
-	}
+    public long getTotalDurationSec() {
+        return totalDurationSec;
+    }
 
+    public void setTotalDurationSec(long totalDurationSec) {
+        this.totalDurationSec = totalDurationSec;
+    }
 
-	public void setSummaryDate(Date summaryDate) {
-		this.summaryDate = summaryDate;
-	}
-
-
-	public long getForegroundDurationSec() {
-		return foregroundDurationSec;
-	}
-
-
-	public void setForegroundDurationSec(long foregroundDurationSec) {
-		this.foregroundDurationSec = foregroundDurationSec;
-	}
-
-
-	public long getBackgroundDurationSec() {
-		return backgroundDurationSec;
-	}
-
-
-	public void setBackgroundDurationSec(long backgroundDurationSec) {
-		this.backgroundDurationSec = backgroundDurationSec;
-	}
-
-
-	public long getTotalDurationSec() {
-		return totalDurationSec;
-	}
-
-
-	public void setTotalDurationSec(long totalDurationSec) {
-		this.totalDurationSec = totalDurationSec;
-	}
-
-
-	@Override
+    @Override
     public String toString() {
-        return "DailyUsageSummaryDTO ["
+        return "DailyUsageSummaryEntity ["
                 + "summaryId=" + summaryId
                 + ", userId=" + userId
                 + ", programId=" + programId

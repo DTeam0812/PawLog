@@ -1,9 +1,16 @@
-package server.db.dto;
+package com.pawlog.server.entity;
 
-public class CategoryDTO {
-	private int categoryId;
+public class CategoryEntity {
+    private int categoryId;
     private String name;
 
+    public CategoryEntity() {
+    }
+
+    public CategoryEntity(int categoryId, String name) {
+        this.categoryId = categoryId;
+        this.name = name;
+    }
 
     public int getCategoryId() {
         return categoryId;
@@ -23,7 +30,7 @@ public class CategoryDTO {
 
     @Override
     public String toString() {
-        return "CategoryDTO ["
+        return "CategoryEntity ["
                 + "categoryId=" + categoryId
                 + ", name=" + name
                 + "]";
