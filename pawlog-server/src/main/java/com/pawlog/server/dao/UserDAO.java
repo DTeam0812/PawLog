@@ -64,4 +64,8 @@ public class UserDAO {
         }
         return flag;
     }
+
+    public static void main(String[] args) {
+        new UserDAO();
+    }
 }

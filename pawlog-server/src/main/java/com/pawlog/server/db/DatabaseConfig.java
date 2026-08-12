@@ -7,10 +7,6 @@ import java.sql.Statement;
 
 public class DatabaseConfig {
 
-    // =========================================================================
-    // ⚙️ [설정 구간] 원격 서버 도메인, 계정, 비밀번호
-    // =========================================================================
-    // 원격 MySQL 서버 연결 예시:
     private static final String DB_URL = "jdbc:mysql://cdn.ditanet.duckdns.org:8306/PawLog?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "dita2414";
