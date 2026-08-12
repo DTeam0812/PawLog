@@ -1,4 +1,6 @@
-package ui;
+package com.pawlog.client.ui.widget;
+
+import com.pawlog.client.ui.dashboard.DashboardFrame;
 
 import java.awt.Color;
 import java.awt.Font;

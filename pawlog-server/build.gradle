@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+dependencies {
+    implementation project(':pawlog-common')
+
+    // H2 Database
+    implementation 'com.h2database:h2:2.3.232'
+}
+
+application {
+    mainClass = 'com.pawlog.server.main.PawLogServer'
+}

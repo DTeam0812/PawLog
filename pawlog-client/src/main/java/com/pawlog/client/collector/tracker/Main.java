@@ -1,3 +1,5 @@
+package com.pawlog.client.collector.tracker;
+
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -13,30 +15,11 @@ import com.sun.jna.ptr.IntByReference;
 interface TrackerItem {
 
 }
-//활성화된 창의 시간만 기록 + 백그라운드 프로그램
-//활성화 된 창이 바뀌면? 창의 기록이있는지확인 -> 없으면 새로추가 있으면 기존에서 시간 ++
 
-//db에 무엇을 저장할것인가? 기록 확인은 로컬에서 ? 새 user 가만들어질때마다 new table create 
-// 새로운 프로그램 확인되면table에 넣기 table ex) process string / time date  / 
-
-//1. 컴퓨터 사용시간 2. 프로그램 사용시간 3. 활동시간 측정
-
-//
-
-//관리자권한으로 실행.
-
-//무엇을 기준으로 어떻게 보여줄것인가 컴퓨터 켜져있는시간 비례 비율 ? 컴퓨터 동작시간 <<< ? 절대시간  둘다?
 class gettracker{
     
 
 }
-//scheduledexecutorservice = whilte true 대체제 
-//현재 활동중인창 => getforegroundwindow 로 찾아서 => getwindowthreadprocessid 로 pid 탐색,
-//포인터로 전달해주기 떄문에 intbyrefernce 로 반환 받아야함
-//입력받은 pid로 프로세스 탐색 processid 의 주솟값 안에있는 값을 가져오기위해 .getValue()사용
-//ProcessHandle.of(pid)로 pid를 가진 프로세스 탐색 <optional> 항목으로 empty 방지
-//processhandle.info 로 정보가져오기 info().command()로 경로 가져옴
-//Path.of(경로).getfilemane().tostring()  파일이름(프로세스) 가져오기 문자열로
 
 public class Main {
      private static String previousProgram = null;
@@ -121,4 +104,4 @@ public class Main {
     }
          } ,1, 1, TimeUnit.SECONDS);//(코드 , 처음시작딜레이 , 주기 ,단위 second)
     }
-}   
+}

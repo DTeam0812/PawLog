@@ -1,4 +1,4 @@
-package ui;
+package com.pawlog.client.ui.dashboard;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -21,8 +21,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-
-public class Login extends JFrame{
+public class Login extends JFrame {
     private static final Color BACKGROUND = new Color(247, 244, 239);
     private static final Color CARD_BACKGROUND = Color.WHITE;
     private static final Color PRIMARY = new Color(255, 159, 67);
@@ -80,7 +79,6 @@ public class Login extends JFrame{
             BorderFactory.createEmptyBorder(70, 38, 30, 38)
         );
         
-    
         JLabel emailLabel = new JLabel("이메일");
         JTextField emailField = new JTextField();
 
@@ -91,8 +89,6 @@ public class Login extends JFrame{
         emailField.setAlignmentX(Component.LEFT_ALIGNMENT);
         passwordLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-   
 
         emailField.setPreferredSize(new Dimension(500, 44));
         emailField.setMaximumSize(
@@ -129,7 +125,6 @@ public class Login extends JFrame{
             new Dimension(Integer.MAX_VALUE, 49)
         );
 
-
         JLabel warn = new JLabel("");
         JLabel title = new JLabel("🐾 Pawlog");
         title.setFont(new Font("맑은 고딕", Font.BOLD, 32));
@@ -150,7 +145,6 @@ public class Login extends JFrame{
         emailLabel.setForeground(TEXT);
         passwordLabel.setForeground(TEXT);
       
-        
         loginform.add(titlePanel);
         loginform.add(Box.createVerticalStrut(5));
         
@@ -204,8 +198,5 @@ public class Login extends JFrame{
     }
     public static void main(String[] args) {
         new Login();
-    
-
-
     }
 }
