@@ -8,3 +8,5 @@ dist/
 data/
 chat-logs/
 *.log
+*.xml
+*.iml
