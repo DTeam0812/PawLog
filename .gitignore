@@ -1,12 +1,43 @@
-bin/
+# Gradle build and cache outputs
+.gradle/
 build/
-dist/
+out/
+
+# IDE configurations
+.idea/
+.vscode/
+*.iml
 .classpath
 .project
 .settings/
+*.ipr
+*.iws
+
+# Compiled class files & Java binaries
 *.class
+bin/
+dist/
+
+# H2 Database & Local Data files
 data/
-chat-logs/
+*.db
+*.mv.db
+*.trace.db
+*.lock.db
+
+# Logs & temp files
 *.log
-*.xml
-*.iml
+chat-logs/
+*.tmp
+*.bak
+
+# OS specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Package files (allow gradle-wrapper.jar if present)
+*.jar
+*.war
+*.ear
+!gradle/wrapper/gradle-wrapper.jar

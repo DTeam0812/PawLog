@@ -1,0 +1,16 @@
+subprojects {
+    apply plugin: 'java'
+
+    group = 'com.pawlog'
+    version = '1.0-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(24)
+        }
+    }
+}

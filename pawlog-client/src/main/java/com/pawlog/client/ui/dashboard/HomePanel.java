@@ -1,4 +1,4 @@
-package ui;
+package com.pawlog.client.ui.dashboard;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -154,16 +154,10 @@ public class HomePanel extends JPanel {
                 BorderFactory.createEmptyBorder(13, 20, 13, 20)
         ));
 
-
-      
-
-       
-
         JPanel titlePanel = new JPanel(new BorderLayout());
         titlePanel.setOpaque(false);
 
         goalPanel.add(titlePanel, BorderLayout.NORTH);
-        
 
         return goalPanel;
     }

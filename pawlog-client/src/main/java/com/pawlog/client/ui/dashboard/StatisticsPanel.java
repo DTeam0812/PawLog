@@ -1,4 +1,4 @@
-package ui;
+package com.pawlog.client.ui.dashboard;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;

@@ -1,0 +1,5 @@
+rootProject.name = 'PawLog'
+
+include 'pawlog-common'
+include 'pawlog-client'
+include 'pawlog-server'
