@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Widget",
+            "request": "launch",
+            "mainClass": "Widget"
+        },
+        {
+            "type": "java",
+            "name": "Windows API 실행",
+            "request": "launch",
+            "mainClass": "Main",
+            "vmArgs": "--enable-native-access=ALL-UNNAMED"
+        }
+    ]
+}

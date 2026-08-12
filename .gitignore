@@ -1,0 +1,10 @@
+bin/
+build/
+dist/
+.classpath
+.project
+.settings/
+*.class
+data/
+chat-logs/
+*.log
