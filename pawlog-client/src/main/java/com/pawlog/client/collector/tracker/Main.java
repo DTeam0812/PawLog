@@ -1,107 +1,163 @@
 package com.pawlog.client.collector.tracker;
 
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;//정해진 시간마다 실행해주는 관리자
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.nio.file.Path; //실행경로 
-import com.sun.jna.Native;// windows 문자열을 java 문자열로 변환
-import com.sun.jna.platform.win32.User32;//user32.dll(시스템관라) 를 java에서 사용
-import com.sun.jna.platform.win32.WinDef.HWND; //window 창을 나타내느 자료형 hwnd 
+
+import javax.swing.SwingUtilities;
+
+import com.pawlog.client.ui.widget.Widget;
+import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.ptr.IntByReference;
 
-interface TrackerItem {
-
-}
-
-class gettracker{
-    
-
-}
-
 public class Main {
-     private static String previousProgram = null;
-     private static long usageSeconds = 0;
+    private static final Set<String> EXCLUDED = new HashSet<>();
+    private static final Map<String, Long> usageMap = new HashMap<>();
 
-     private static final Set<String> Excluded = new HashSet<>();
-     static {
-          Excluded.add("explorer.exe");
-          Excluded.add("ShellExperienceHost.exe");
-          Excluded.add("SearchHost.exe");
-     }
-    public static void main(String[] args) {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(); //while true 역할
+    private static ScheduledExecutorService scheduler;
+    private static LocalDate trackingDate = LocalDate.now();
+    private static String previousProgram;
 
-        scheduler.scheduleAtFixedRate(
-        ()->{try {HWND windows = User32.INSTANCE.GetForegroundWindow(); //사용자가 보고있는 창  hwnd = 창식별자 HWND 형식반환?
-        if (windows == null) { System.out.println("활성 창을 찾지 못했습니다.");  return;}
-                
-         char[] title = new char[512]; //이름을 담을 배열
-         int length = User32.INSTANCE.GetWindowText(windows, title , 512); //GetWindowText(어떤창을? , 어디에? , 최대몇글자?) 반환은int 
-        // System.out.println(length);
-         String title1 = Native.toString(title); // window  함수는 배열로 반환 -> native 로 자바 문자로 변환
-       //  System.out.println(title1);//hwnd -> getwindowprocessid -> pid -> processhandle
-         IntByReference processId = new IntByReference(); // windows 에서 변수의 주소를넘김 그래서 int 안씀 , intbyreference = int * 포인터역할 대체
-         User32.INSTANCE.GetWindowThreadProcessId( windows, processId); // (hwnd (윈도우창) ,어디에? ) 반환은TID값 PROCESSID에는 PID의 포인터(주소) 저장
-        // System.out.println(processId.getValue());//pid값을 얻기위해 getvalue사용
+    private static volatile String currentProgram = "확인 중...";
+    private static volatile String currentWindowTitle = "활성 창을 확인하고 있습니다.";
+    private static volatile long usageSeconds;
+    private static volatile long totalSeconds;
 
-         long pid = processId.getValue() & 0xFFFFFFFFL;// 부호없는 32bit를 양수 정수로
-
-         ProcessHandle.of(pid);//지정된 pid를 가진 프로세스를 찾음
-         Optional<ProcessHandle> process = ProcessHandle.of(pid); //optional <-- 있을수도있고 없을수도있다 , <ProcessHandle>형식으로 반환
-         if(!process.isPresent() ){
-            System.out.println("종료된 프로세스입니다.");
-            return;
-         }
-         ProcessHandle processHandle = process.get();//get 으로 optional 안에 파일을 꺼내온다,
-       //  System.out.println(processHandle);
-
-         ProcessHandle.Info info = processHandle.info(); // processhandle의 정보를 가져옴 ,
-        
-         Optional<String> command = processHandle.info().command(); //t실행결로를 가져옴 .command 반환실패시 optional.empty 로 반환하기떄문
-        if (command.isEmpty()) { System.out.println("실행 경로를 가져올 수 없습니다."); return;}
-        
-         //info.user 사용자 , info.startinstant 시작시간, info.totalCpuDuration(); 누적 cpu사용시간 , info.arguments(); 실행인자.
-         String commande = command.get();//타입맞추기
-         
-         Optional<String>user = processHandle.info().user();
-       //  String users = user.get();
-         String pathname = Path.of(commande).getFileName().toString();// 실행한 파일이름(프로세스 찾기)
-        // System.out.println(users);
-        //  System.out.println(info.startInstant());//시작시간
-         // System.out.println(info.totalCpuDuration());
-         String currentProgram = pathname; 
-
-            if (previousProgram == null) {
-            previousProgram = currentProgram;
-            usageSeconds = 1;
-
-            System.out.println(
-                    "측정 시작: " + currentProgram
-            );
-            return;
-        }
-
-         if(!currentProgram.equals( previousProgram)){ //포커스된 화면 변경
-            if (Excluded.contains(currentProgram)) {
-               return;
-            }
-            System.out.println("이전 프로그램 "+previousProgram);
-            System.out.println(usageSeconds + "초 실행");
-            System.out.println("바뀐 프로그램 "+pathname);
-            System.out.println("========================");
-            previousProgram = currentProgram;
-            usageSeconds = 0;
-         }
-        else{
-             usageSeconds +=1;//지금은 1초주기 1초 추가방식 
-             //PROCESS NAME -> TIME + 1씩 추가? OR 시간 뺴기방식
-        }
-    }catch (Exception exception){
-         exception.printStackTrace();
+    static {
+        EXCLUDED.add("explorer.exe");
+        EXCLUDED.add("ShellExperienceHost.exe");
+        EXCLUDED.add("SearchHost.exe");
+        EXCLUDED.add("java.exe");
     }
-         } ,1, 1, TimeUnit.SECONDS);//(코드 , 처음시작딜레이 , 주기 ,단위 second)
+
+    public static synchronized void startTracking() {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            return;
+        }
+
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(Main::trackForegroundWindow, 0, 1, TimeUnit.SECONDS);
+    }
+
+    public static synchronized void stopTracking() {
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+        }
+    }
+
+    private static void trackForegroundWindow() {
+        try {
+            HWND window = User32.INSTANCE.GetForegroundWindow();
+
+            if (window == null) {
+                return;
+            }
+
+            IntByReference processId = new IntByReference();
+            User32.INSTANCE.GetWindowThreadProcessId(window, processId);
+            long pid = processId.getValue() & 0xFFFFFFFFL;
+
+            Optional<ProcessHandle> process = ProcessHandle.of(pid);
+
+            if (process.isEmpty()) {
+                return;
+            }
+
+            Optional<String> command = process.get().info().command();
+
+            if (command.isEmpty()) {
+                return;
+            }
+
+            String programName = Path.of(command.get()).getFileName().toString();
+            String displayName = programName.replaceFirst("(?i)\\.exe$", "");
+
+            if (EXCLUDED.contains(programName)) {
+                return;
+            }
+
+            LocalDate today = LocalDate.now();
+
+            if (!today.equals(trackingDate)) {
+                trackingDate = today;
+                totalSeconds = 0;
+            }
+
+            if (!programName.equals(previousProgram)) {
+                previousProgram = programName;
+                usageSeconds = 1;
+            } else {
+                usageSeconds++;
+            }
+
+            totalSeconds++;
+            usageMap.merge(programName, 1L, Long::sum);
+
+            currentProgram = displayName;
+            currentWindowTitle = programName;
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+    }
+
+    public static String getCurrentProgram() {
+        return currentProgram;
+    }
+
+    public static String getCurrentWindowTitle() {
+        return currentWindowTitle;
+    }
+
+    public static long getUsageSeconds() {
+        return usageSeconds;
+    }
+
+    public static long getTotalSeconds() {
+        return totalSeconds;
+    }
+
+    public static Map<String, Long> getUsageMap() {
+        return new HashMap<>(usageMap);
+    }
+
+    public static List<Map.Entry<String, Long>> getTopPrograms() {
+        return usageMap.entrySet().stream()
+            .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+            .toList();
+    }
+
+    public static String getMostProgram() {
+        List<Map.Entry<String, Long>> rankList = getTopPrograms();
+
+        if (rankList.isEmpty()) {
+            return "기록 없음";
+        }
+
+        return rankList.get(0).getKey();
+    }
+
+    public static long amount() {
+        List<Map.Entry<String, Long>> rankList = getTopPrograms();
+        long count = rankList.size();
+
+        return count;
+    }
+
+    public static void main(String[] args) {
+        startTracking();
+
+        SwingUtilities.invokeLater(() -> {
+            Widget widget = new Widget();
+            widget.show();
+        });
     }
 }

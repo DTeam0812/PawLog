@@ -1,4 +1,5 @@
 package com.pawlog.client.ui.dashboard;
+import com.pawlog.client.collector.tracker.*;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -12,7 +13,9 @@ import java.awt.Insets;
 import java.awt.Rectangle;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -23,10 +26,11 @@ import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
+import javax.swing.Timer;
 
 public class HomePanel extends JPanel {
     private static final Color BACKGROUND = new Color(247, 244, 239);
-
+    private JLabel mostProgramLabel;
     private static final Color CARD_BACKGROUND = Color.WHITE;
 
     private static final Color PRIMARY = new Color(255, 159, 67);
@@ -34,9 +38,14 @@ public class HomePanel extends JPanel {
     private static final Color TEXT = new Color(45, 52, 54);
 
     private static final Color SUB_TEXT = new Color(120, 130, 132);
-
+    
     private static final Color PROGRESS_BACKGROUND = new Color(225, 225, 225);
-
+    private JLabel activeProgramNameLabel;
+    private JLabel activeWindowTitleLabel;
+    private JLabel activeSessionTimeLabel;
+    private JLabel totalSecondLabel;
+    private JLabel TotalAllowPr;
+    private JPanel recentProgramsListPanel;
     public HomePanel() {
         setLayout(new BorderLayout());
         setBackground(BACKGROUND);
@@ -67,6 +76,16 @@ public class HomePanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         add(scrollPane, BorderLayout.CENTER);
+
+        Timer uiTimer = new Timer(1000, event -> {
+            updateActiveProgram();
+            updateTotalProgram();
+            updateMostProgram();
+            updateTotlaAllowPr();
+            updateRecentPrograms();
+        });
+        uiTimer.setInitialDelay(0);
+        uiTimer.start();
     }
 
     private JPanel createGreetingPanel() {
@@ -134,33 +153,28 @@ public class HomePanel extends JPanel {
         JPanel programPanel = new JPanel(new BorderLayout(15, 0));
         programPanel.setOpaque(false);
 
-        JLabel iconLabel = new JLabel("VS", SwingConstants.CENTER);
+        
 
-        iconLabel.setFont(new Font("맑은 고딕", Font.BOLD, 18));
-        iconLabel.setForeground(Color.WHITE);
-        iconLabel.setOpaque(true);
-        iconLabel.setBackground(new Color(65, 105, 225));
-        iconLabel.setPreferredSize(new Dimension(52, 52));
 
         JPanel programTextPanel = new JPanel();
         programTextPanel.setOpaque(false);
         programTextPanel.setLayout(new BoxLayout(programTextPanel, BoxLayout.Y_AXIS));
 
-        JLabel programName = new JLabel("VS Code");
+        activeProgramNameLabel = new JLabel("확인 중...");
 
-        programName.setFont(new Font("맑은 고딕", Font.BOLD, 19));
-        programName.setForeground(TEXT);
+        activeProgramNameLabel.setFont(new Font("맑은 고딕", Font.BOLD, 19));
+        activeProgramNameLabel.setForeground(TEXT);
 
-        JLabel windowTitle = new JLabel("PawLog - Visual Studio Code");
+        activeWindowTitleLabel = new JLabel("활성 창을 확인하고 있습니다.");
 
-        windowTitle.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
-        windowTitle.setForeground(SUB_TEXT);
+        activeWindowTitleLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
+        activeWindowTitleLabel.setForeground(SUB_TEXT);
 
-        programTextPanel.add(programName);
+        programTextPanel.add(activeProgramNameLabel);
         programTextPanel.add(Box.createVerticalStrut(3));
-        programTextPanel.add(windowTitle);
+        programTextPanel.add(activeWindowTitleLabel);
 
-        programPanel.add(iconLabel, BorderLayout.WEST);
+      
         programPanel.add(programTextPanel, BorderLayout.CENTER);
 
         JPanel sessionPanel = new JPanel();
@@ -173,11 +187,11 @@ public class HomePanel extends JPanel {
         sessionTitle.setForeground(SUB_TEXT);
         sessionTitle.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
-        JLabel sessionTime = new JLabel("32분 15초");
+        activeSessionTimeLabel = new JLabel("0초");
 
-        sessionTime.setFont(new Font("맑은 고딕", Font.BOLD, 22));
-        sessionTime.setForeground(PRIMARY);
-        sessionTime.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        activeSessionTimeLabel.setFont(new Font("맑은 고딕", Font.BOLD, 22));
+        activeSessionTimeLabel.setForeground(PRIMARY);
+        activeSessionTimeLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
         JLabel analysisLink = new JLabel("프로그램 분석 보기 →");
 
@@ -187,7 +201,7 @@ public class HomePanel extends JPanel {
 
         sessionPanel.add(sessionTitle);
         sessionPanel.add(Box.createVerticalStrut(4));
-        sessionPanel.add(sessionTime);
+        sessionPanel.add(activeSessionTimeLabel);
         sessionPanel.add(Box.createVerticalStrut(12));
         sessionPanel.add(analysisLink);
 
@@ -202,27 +216,89 @@ public class HomePanel extends JPanel {
 
         return card;
     }
+    private void updateRecentPrograms() {
+    recentProgramsListPanel.removeAll();
 
+    List<Map.Entry<String, Long>> topPrograms = Main.getTopPrograms();
+    int count = Math.min(5, topPrograms.size());
+    long totalSeconds = Main.getTotalSeconds();
+
+    for(int i = 0; i < count; i++) {
+        Map.Entry<String, Long> entry = topPrograms.get(i);
+
+        String programName = entry.getKey();
+        long seconds = entry.getValue();
+        String usageTime = formatSessionTime(seconds);
+
+        int percent = 0;
+
+        if(totalSeconds > 0) {
+            percent = (int)(seconds * 100 / totalSeconds);
+        }
+
+        recentProgramsListPanel.add(createProgramUsageRow(programName, "", usageTime, percent));
+    }
+
+    if(topPrograms.isEmpty()) {
+        recentProgramsListPanel.add(new JLabel("아직 사용 기록이 없습니다."));
+    }
+
+    recentProgramsListPanel.revalidate();
+    recentProgramsListPanel.repaint();
+}
+    private void updateActiveProgram() {
+        activeProgramNameLabel.setText(Main.getCurrentProgram());
+        activeWindowTitleLabel.setText(Main.getCurrentWindowTitle());
+        activeSessionTimeLabel.setText(formatSessionTime(Main.getUsageSeconds()));
+    }
+    private void updateTotalProgram() {
+        totalSecondLabel.setText(formatSessionTime(Main.getTotalSeconds()));
+    }
+    private String formatSessionTime(long totalSeconds) {
+        long hours = totalSeconds / 3600;
+        long minutes = totalSeconds % 3600 / 60;
+        long seconds = totalSeconds % 60;
+        if (hours > 0) {
+            return hours + "시간 " + minutes + "분 " + seconds + "초";
+        }
+        if (minutes > 0) {
+            return minutes + "분 " + seconds + "초";
+        }
+        return seconds + "초";
+    }
+    private void updateMostProgram() {
+    mostProgramLabel.setText(Main.getMostProgram());
+    }
+    private void updateTotlaAllowPr(){
+    TotalAllowPr.setText(String.valueOf(Main.amount()));
+    }
     private JPanel createSummaryRowPanel() {
         JPanel rowPanel = new JPanel(new GridLayout(1, 3, 15, 0));
+        long amount = Main.amount();
 
+        String amount2 = String.valueOf(amount);
+        totalSecondLabel = new JLabel("0초");
+        TotalAllowPr = new JLabel("0개");
         rowPanel.setOpaque(false);
         rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         rowPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
         rowPanel.setPreferredSize(new Dimension(900, 85));
+        
+        rowPanel.add(createSummaryCard("오늘 활성 사용 시간", totalSecondLabel, true));
 
-        rowPanel.add(createSummaryCard("오늘 활성 사용 시간", "4시간 20분", true));
-
-        rowPanel.add(createSummaryCard("가장 오래 활성화한 프로그램", "Chrome", false));
-
-        rowPanel.add(createSummaryCard("오늘 활성화한 프로그램 수", "7개", false));
+        
+        mostProgramLabel = new JLabel("기록 없음");
+        rowPanel.add(createSummaryCard("가장 오래 활성화한 프로그램", mostProgramLabel, false));
+        rowPanel.add(createSummaryCard("오늘 활성화한 프로그램 수", TotalAllowPr, false));
 
         return rowPanel;
     }
 
+    
+
     private JPanel createSummaryCard(
             String title,
-            String value,
+            JLabel valueLabel,
             boolean primaryValue) {
 
         JPanel card = createCardPanel();
@@ -235,8 +311,6 @@ public class HomePanel extends JPanel {
         titleLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
         titleLabel.setForeground(SUB_TEXT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel valueLabel = new JLabel(value);
 
         valueLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
 
@@ -281,32 +355,24 @@ public class HomePanel extends JPanel {
     }
 
     private JPanel createRecentProgramsPanel() {
-        JPanel card = createCardPanel();
+    JPanel card = createCardPanel();
 
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(235, 235, 235)), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
+    card.setLayout(new BorderLayout());
+    card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(235, 235, 235)), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
 
-        JLabel title = new JLabel("최근 활성 프로그램");
+    JLabel title = new JLabel("최근 활성 프로그램");
+    title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
+    title.setForeground(TEXT);
 
-        title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
-        title.setForeground(TEXT);
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+    recentProgramsListPanel = new JPanel();
+    recentProgramsListPanel.setOpaque(false);
+    recentProgramsListPanel.setLayout(new BoxLayout(recentProgramsListPanel, BoxLayout.Y_AXIS));
 
-        card.add(title);
-        card.add(Box.createVerticalStrut(12));
+    card.add(title, BorderLayout.NORTH);
+    card.add(recentProgramsListPanel, BorderLayout.CENTER);
 
-        card.add(createProgramUsageRow("Chrome", "2분 전", "1시간 45분", 40));
-
-        card.add(createProgramUsageRow("VS Code", "현재", "1시간 10분", 27));
-
-        card.add(createProgramUsageRow("Slack", "15분 전", "35분", 13));
-
-        card.add(createProgramUsageRow("Notion", "30분 전", "25분", 10));
-
-        card.add(createProgramUsageRow("Figma", "1시간 전", "20분", 8));
-
-        return card;
-    }
+    return card;
+}
 
     private JPanel createProgramUsageRow(
             String programName,

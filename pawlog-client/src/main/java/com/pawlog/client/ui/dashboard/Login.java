@@ -1,23 +1,32 @@
 package com.pawlog.client.ui.dashboard;
 
 import java.awt.BorderLayout;
-
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.TextArea;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.time.Year;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
+import org.w3c.dom.Text;
 
 
 
@@ -27,14 +36,14 @@ public class Login extends JPanel{
 
     private static final Color PRIMARY = new Color(255, 159, 67);
     private static final Color TEXT = new Color(45, 52, 54);
-
+    private static final DashboardFrame authframe = new DashboardFrame();
     
-    public Login(Runnable showRegister) {
+    public Login(Runnable showRegister , Runnable loginsuccess) {
         setLayout(new BorderLayout());
-        add(loginPanel(showRegister), BorderLayout.CENTER);
+        add(loginPanel(showRegister , loginsuccess), BorderLayout.CENTER);
     }
 
-    private JPanel loginPanel(Runnable showRegister){
+    private JPanel loginPanel(Runnable showRegister , Runnable loginsuccess){
         JPanel loginform = new JPanel();
         loginform.setLayout(new BoxLayout(loginform, BoxLayout.Y_AXIS));
         loginform.setBackground(BACKGROUND);
@@ -71,6 +80,10 @@ public class Login extends JPanel{
             new Dimension(Integer.MAX_VALUE, 44)
         );
         JButton loginButton = new JButton("로그인");
+
+        loginButton.addActionListener((event) ->
+        loginsuccess.run());
+
 
         loginButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
         loginButton.setForeground(Color.WHITE);
