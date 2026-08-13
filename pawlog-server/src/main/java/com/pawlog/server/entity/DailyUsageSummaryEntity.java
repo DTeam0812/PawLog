@@ -1,6 +1,16 @@
 package com.pawlog.server.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.sql.Date;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 
 public class DailyUsageSummaryEntity {
     private long summaryId;
@@ -11,97 +21,6 @@ public class DailyUsageSummaryEntity {
     private long backgroundDurationSec;
     private long totalDurationSec;
 
-    // 기본 생성자
-    public DailyUsageSummaryEntity() {
-    }
-
-    // 데이터 입력용 생성자
-    public DailyUsageSummaryEntity(long userId,
-                                   long programId,
-                                   Date summaryDate,
-                                   long foregroundDurationSec,
-                                   long backgroundDurationSec,
-                                   long totalDurationSec) {
-        this.userId = userId;
-        this.programId = programId;
-        this.summaryDate = summaryDate;
-        this.foregroundDurationSec = foregroundDurationSec;
-        this.backgroundDurationSec = backgroundDurationSec;
-        this.totalDurationSec = totalDurationSec;
-    }
-
-    // 전체 생성자
-    public DailyUsageSummaryEntity(long summaryId,
-                                   long userId,
-                                   long programId,
-                                   Date summaryDate,
-                                   long foregroundDurationSec,
-                                   long backgroundDurationSec,
-                                   long totalDurationSec) {
-        this.summaryId = summaryId;
-        this.userId = userId;
-        this.programId = programId;
-        this.summaryDate = summaryDate;
-        this.foregroundDurationSec = foregroundDurationSec;
-        this.backgroundDurationSec = backgroundDurationSec;
-        this.totalDurationSec = totalDurationSec;
-    }
-
-    public long getSummaryId() {
-        return summaryId;
-    }
-
-    public void setSummaryId(long summaryId) {
-        this.summaryId = summaryId;
-    }
-
-    public long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(long userId) {
-        this.userId = userId;
-    }
-
-    public long getProgramId() {
-        return programId;
-    }
-
-    public void setProgramId(long programId) {
-        this.programId = programId;
-    }
-
-    public Date getSummaryDate() {
-        return summaryDate;
-    }
-
-    public void setSummaryDate(Date summaryDate) {
-        this.summaryDate = summaryDate;
-    }
-
-    public long getForegroundDurationSec() {
-        return foregroundDurationSec;
-    }
-
-    public void setForegroundDurationSec(long foregroundDurationSec) {
-        this.foregroundDurationSec = foregroundDurationSec;
-    }
-
-    public long getBackgroundDurationSec() {
-        return backgroundDurationSec;
-    }
-
-    public void setBackgroundDurationSec(long backgroundDurationSec) {
-        this.backgroundDurationSec = backgroundDurationSec;
-    }
-
-    public long getTotalDurationSec() {
-        return totalDurationSec;
-    }
-
-    public void setTotalDurationSec(long totalDurationSec) {
-        this.totalDurationSec = totalDurationSec;
-    }
 
     @Override
     public String toString() {
