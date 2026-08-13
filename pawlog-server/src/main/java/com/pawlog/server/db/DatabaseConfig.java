@@ -216,10 +216,10 @@ public class DatabaseConfig {
             for (String sql : ddlStatements) {
                 stmt.execute(sql);
             }
-            System.out.println("[DB] 스키마의 13개 테이블 생성/검증 성공!");
+            System.out.println("[DB] 스키마의 13개 테이블 생성 성공!");
 
         } catch (SQLException e) {
-            System.err.println("❌ [DB 오류] 테이블 생성 실패: " + e.getMessage());
+            System.err.println("[DB 오류] 테이블 생성 실패: " + e.getMessage());
             e.printStackTrace();
         }
     }

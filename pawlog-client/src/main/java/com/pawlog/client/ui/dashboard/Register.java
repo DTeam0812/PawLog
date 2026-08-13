@@ -1,4 +1,5 @@
 package com.pawlog.client.ui.dashboard;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -33,9 +34,6 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import java.time.Year;
 import javax.swing.JComboBox;
-import org.w3c.dom.Text;
-
-import com.pawlog.server.service.UserService;
 
 public class Register extends JPanel{
     private static final Color BACKGROUND = new Color(247, 244, 239);
@@ -50,10 +48,7 @@ public class Register extends JPanel{
 
     private JRadioButton maleButton;
     private JRadioButton femaleButton;
-    private final UserDAO userDAO = new UserDAO();
-   
 
-private final UserService userService = new UserService();
     private JPanel BirthPanel (){
         
         JPanel birthPanel = new JPanel( new GridLayout(1, 3, 10, 0));
@@ -170,6 +165,7 @@ private final UserService userService = new UserService();
         birthLabel.setFont(labelFont);
         genderLabel.setFont(labelFont);
 
+        /*
         birthLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         genderLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JButton registerButton = new JButton("회원가입");
@@ -283,13 +279,13 @@ private final UserService userService = new UserService();
         backButton.setBorderPainted(false);
         backButton.setFocusPainted(false);
         backButton.addActionListener(event -> { showLogin.run(); });
-
+        */
 
         JPanel backPanel = new JPanel(new GridBagLayout());
         backPanel.setOpaque(false);
         backPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         backPanel.setMaximumSize( new Dimension(Integer.MAX_VALUE, 40) );
-        backPanel.add(backButton);
+        //backPanel.add(backButton);
             title.setFont(
     new Font("맑은 고딕", Font.BOLD, 30)
 );
@@ -335,7 +331,7 @@ private final UserService userService = new UserService();
         registerform.add(genderSelectPanel);
         registerform.add(Box.createVerticalStrut(20));
 
-        registerform.add(registerButton);
+        //registerform.add(registerButton);
         registerform.add(Box.createVerticalStrut(8));
         registerform.add(backPanel);
 
