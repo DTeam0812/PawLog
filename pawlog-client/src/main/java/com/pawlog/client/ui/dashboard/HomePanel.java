@@ -1,5 +1,6 @@
 package com.pawlog.client.ui.dashboard;
-import com.pawlog.client.collector.tracker.*;
+
+import com.pawlog.client.tracker.ProgramTracker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -219,9 +220,9 @@ public class HomePanel extends JPanel {
     private void updateRecentPrograms() {
     recentProgramsListPanel.removeAll();
 
-    List<Map.Entry<String, Long>> topPrograms = Main.getTopPrograms();
+    List<Map.Entry<String, Long>> topPrograms = ProgramTracker.getTopPrograms();
     int count = Math.min(5, topPrograms.size());
-    long totalSeconds = Main.getTotalSeconds();
+    long totalSeconds = ProgramTracker.getTotalSeconds();
 
     for(int i = 0; i < count; i++) {
         Map.Entry<String, Long> entry = topPrograms.get(i);
@@ -247,12 +248,12 @@ public class HomePanel extends JPanel {
     recentProgramsListPanel.repaint();
 }
     private void updateActiveProgram() {
-        activeProgramNameLabel.setText(Main.getCurrentProgram());
-        activeWindowTitleLabel.setText(Main.getCurrentWindowTitle());
-        activeSessionTimeLabel.setText(formatSessionTime(Main.getUsageSeconds()));
+        activeProgramNameLabel.setText(ProgramTracker.getCurrentProgram());
+        activeWindowTitleLabel.setText(ProgramTracker.getCurrentWindowTitle());
+        activeSessionTimeLabel.setText(formatSessionTime(ProgramTracker.getUsageSeconds()));
     }
     private void updateTotalProgram() {
-        totalSecondLabel.setText(formatSessionTime(Main.getTotalSeconds()));
+        totalSecondLabel.setText(formatSessionTime(ProgramTracker.getTotalSeconds()));
     }
     private String formatSessionTime(long totalSeconds) {
         long hours = totalSeconds / 3600;
@@ -267,14 +268,14 @@ public class HomePanel extends JPanel {
         return seconds + "초";
     }
     private void updateMostProgram() {
-    mostProgramLabel.setText(Main.getMostProgram());
+    mostProgramLabel.setText(ProgramTracker.getMostProgram());
     }
     private void updateTotlaAllowPr(){
-    TotalAllowPr.setText(String.valueOf(Main.amount()));
+    TotalAllowPr.setText(String.valueOf(ProgramTracker.amount()));
     }
     private JPanel createSummaryRowPanel() {
         JPanel rowPanel = new JPanel(new GridLayout(1, 3, 15, 0));
-        long amount = Main.amount();
+        long amount = ProgramTracker.amount();
 
         String amount2 = String.valueOf(amount);
         totalSecondLabel = new JLabel("0초");

@@ -1,4 +1,4 @@
-package com.pawlog.client.collector.tracker;
+package com.pawlog.client.tracker;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -12,14 +12,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.SwingUtilities;
-
-import com.pawlog.client.ui.widget.Widget;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.ptr.IntByReference;
 
-public class Main {
+public class ProgramTracker {
     private static final Set<String> EXCLUDED = new HashSet<>();
     private static final Map<String, Long> usageMap = new HashMap<>();
 
@@ -45,7 +42,7 @@ public class Main {
         }
 
         scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(Main::trackForegroundWindow, 0, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(ProgramTracker::trackForegroundWindow, 0, 1, TimeUnit.SECONDS);
     }
 
     public static synchronized void stopTracking() {
@@ -152,12 +149,4 @@ public class Main {
         return count;
     }
 
-    public static void main(String[] args) {
-        startTracking();
-
-        SwingUtilities.invokeLater(() -> {
-            Widget widget = new Widget();
-            widget.show();
-        });
-    }
 }

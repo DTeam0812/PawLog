@@ -1,4 +1,4 @@
-package com.pawlog.client.ui.dashboard;
+package com.pawlog.client.ui.auth;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -24,6 +24,8 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+
+import com.pawlog.client.network.PawLogClient;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -48,6 +50,7 @@ public class Register extends JPanel{
 
     private JRadioButton maleButton;
     private JRadioButton femaleButton;
+    private final PawLogClient pawLogClient = new PawLogClient();
 
     private JPanel BirthPanel (){
         
@@ -165,7 +168,6 @@ public class Register extends JPanel{
         birthLabel.setFont(labelFont);
         genderLabel.setFont(labelFont);
 
-        /*
         birthLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         genderLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JButton registerButton = new JButton("회원가입");
@@ -219,7 +221,7 @@ public class Register extends JPanel{
                 LocalDate birthDate = LocalDate.of(year, month, day);
                 String gender = maleButton.isSelected() ? "M" : "F";
 
-                UserDAO.RegisterResult result = userDAO.register(
+                PawLogClient.Response response = pawLogClient.register(
                     email,
                     password,
                     nickname,
@@ -227,22 +229,10 @@ public class Register extends JPanel{
                     birthDate
                 );
 
-                System.out.println("회원가입 DB 결과: " + result);
-
-                if (result == UserDAO.RegisterResult.EMAIL_DUPLICATE) {
+                if (!response.success()) {
                     JOptionPane.showMessageDialog(
                         this,
-                        "이미 사용 중인 이메일입니다.",
-                        "회원가입 실패",
-                        JOptionPane.WARNING_MESSAGE
-                    );
-                    return;
-                }
-
-                if (result == UserDAO.RegisterResult.NICKNAME_DUPLICATE) {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        "이미 사용 중인 닉네임입니다.",
+                        response.message(),
                         "회원가입 실패",
                         JOptionPane.WARNING_MESSAGE
                     );
@@ -267,7 +257,7 @@ public class Register extends JPanel{
                 exception.printStackTrace();
                 JOptionPane.showMessageDialog(
                     this,
-                    "DB 오류: " + exception.getMessage(),
+                    "서버 오류: " + exception.getMessage(),
                     "회원가입 실패",
                     JOptionPane.ERROR_MESSAGE
                 );
@@ -279,13 +269,12 @@ public class Register extends JPanel{
         backButton.setBorderPainted(false);
         backButton.setFocusPainted(false);
         backButton.addActionListener(event -> { showLogin.run(); });
-        */
 
         JPanel backPanel = new JPanel(new GridBagLayout());
         backPanel.setOpaque(false);
         backPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         backPanel.setMaximumSize( new Dimension(Integer.MAX_VALUE, 40) );
-        //backPanel.add(backButton);
+        backPanel.add(backButton);
             title.setFont(
     new Font("맑은 고딕", Font.BOLD, 30)
 );
@@ -331,7 +320,7 @@ public class Register extends JPanel{
         registerform.add(genderSelectPanel);
         registerform.add(Box.createVerticalStrut(20));
 
-        //registerform.add(registerButton);
+        registerform.add(registerButton);
         registerform.add(Box.createVerticalStrut(8));
         registerform.add(backPanel);
 

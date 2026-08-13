@@ -1,7 +1,17 @@
 package com.pawlog.client.main;
 
+import javax.swing.SwingUtilities;
+
+import com.pawlog.client.tracker.ProgramTracker;
+import com.pawlog.client.ui.widget.Widget;
+
 public class App {
     public static void main(String[] args) {
-        System.out.println("Java 프로젝트가 정상적으로 실행됩니다!");
+        ProgramTracker.startTracking();
+
+        SwingUtilities.invokeLater(() -> {
+            Widget widget = new Widget();
+            widget.show();
+        });
     }
 }

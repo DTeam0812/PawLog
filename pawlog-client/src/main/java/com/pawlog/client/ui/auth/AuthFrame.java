@@ -1,4 +1,4 @@
-package com.pawlog.client.ui.dashboard;
+package com.pawlog.client.ui.auth;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -19,10 +19,14 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import com.pawlog.client.ui.dashboard.DashboardFrame;
+
 public class AuthFrame extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cardPanel = new JPanel(cardLayout);
     private Point headerDragOffset;
+    private final DashboardFrame dashboardFrame = new DashboardFrame();
+    private boolean loggedIn;
 
     public AuthFrame() {
         setSize(590, 750);
@@ -31,7 +35,11 @@ public class AuthFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        Login loginPanel = new Login(() -> showPage("REGISTER"));
+        Login loginPanel = new Login(() -> showPage("REGISTER"), () -> {
+            loggedIn = true;
+            setVisible(false);
+            dashboardFrame.open();
+        });
         Register registerPanel = new Register(() -> showPage("LOGIN"));
 
         cardPanel.add(loginPanel, "LOGIN");
@@ -112,13 +120,18 @@ public class AuthFrame extends JFrame {
         component.addMouseMotionListener(mouseAdapter);
     }
     public void open() {
-    SwingUtilities.invokeLater(() -> {
-        setState(JFrame.NORMAL);
-        setVisible(true);
-        toFront();
-        requestFocus();
-    });
-}
+        SwingUtilities.invokeLater(() -> {
+            if (loggedIn) {
+                dashboardFrame.open();
+                return;
+            }
+
+            setState(JFrame.NORMAL);
+            setVisible(true);
+            toFront();
+            requestFocus();
+        });
+    }
     public static void main(String[] args) {
         SwingUtilities.invokeLater(AuthFrame::new);
     }

@@ -3,6 +3,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.pawlog.client.main.App",
+            "projectName": "pawlog-client"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.pawlog.client.collector.tracker.Main",
+            "projectName": "pawlog-client"
+        },
+        {
+            "type": "java",
             "name": "Widget",
             "request": "launch",
             "mainClass": "com.pawlog.client.ui.widget.Widget",

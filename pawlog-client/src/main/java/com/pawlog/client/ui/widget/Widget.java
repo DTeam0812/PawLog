@@ -1,7 +1,7 @@
 package com.pawlog.client.ui.widget;
 
-import com.pawlog.client.ui.dashboard.*;
-import com.pawlog.client.ui.dashboard.DashboardFrame;
+import com.pawlog.client.tracker.ProgramTracker;
+import com.pawlog.client.ui.auth.AuthFrame;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -53,6 +53,7 @@ public class Widget {
     private boolean dragged;
 
     public Widget() {
+    ProgramTracker.startTracking();
     window = new JWindow();
     AUTH = new AuthFrame();
     
@@ -147,6 +148,7 @@ public class Widget {
         });
 
         exitItem.addActionListener(event -> {
+            ProgramTracker.stopTracking();
             window.dispose();
             System.exit(0);
         });

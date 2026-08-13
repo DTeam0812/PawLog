@@ -1,4 +1,4 @@
-package com.pawlog.client.ui.dashboard;
+package com.pawlog.client.ui.auth;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -26,6 +26,8 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+import com.pawlog.client.network.PawLogClient;
+
 import org.w3c.dom.Text;
 
 
@@ -36,7 +38,7 @@ public class Login extends JPanel{
 
     private static final Color PRIMARY = new Color(255, 159, 67);
     private static final Color TEXT = new Color(45, 52, 54);
-    private static final DashboardFrame authframe = new DashboardFrame();
+    private final PawLogClient pawLogClient = new PawLogClient();
     
     public Login(Runnable showRegister , Runnable loginsuccess) {
         setLayout(new BorderLayout());
@@ -79,10 +81,31 @@ public class Login extends JPanel{
         passwordField.setMaximumSize(
             new Dimension(Integer.MAX_VALUE, 44)
         );
+        JLabel warn = new JLabel("");
         JButton loginButton = new JButton("로그인");
 
-        loginButton.addActionListener((event) ->
-        loginsuccess.run());
+        loginButton.addActionListener(event -> {
+            String email = emailField.getText().trim();
+            String password = new String(passwordField.getPassword());
+
+            if (email.isEmpty() || password.isEmpty()) {
+                warn.setText("이메일과 비밀번호를 입력해 주세요.");
+                return;
+            }
+
+            try {
+                PawLogClient.Response response = pawLogClient.login(email, password);
+
+                if (response.success()) {
+                    warn.setText("");
+                    loginsuccess.run();
+                } else {
+                    warn.setText(response.message());
+                }
+            } catch (Exception exception) {
+                warn.setText("서버에 연결할 수 없습니다.");
+            }
+        });
 
 
         loginButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
@@ -114,7 +137,6 @@ public class Login extends JPanel{
         );
 
 
-        JLabel warn = new JLabel("");
         JLabel title = new JLabel("🐾 Pawlog");
         title.setFont(new Font("맑은 고딕", Font.BOLD, 32));
         title.setForeground(PRIMARY);
