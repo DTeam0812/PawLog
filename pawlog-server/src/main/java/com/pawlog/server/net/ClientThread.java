@@ -1,8 +1,10 @@
 package com.pawlog.server.net;
 
+import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.user.UserLoginDto;
 import com.pawlog.common.dto.user.UserRegisterDto;
 import com.pawlog.common.protocol.ServerProtocol;
+import com.pawlog.server.service.RankingService;
 import com.pawlog.server.service.UserService;
 
 import java.io.BufferedReader;
@@ -16,6 +18,7 @@ public class ClientThread extends Thread {
     private BufferedReader in;
     private PrintWriter out;
     private UserService userService;
+    private RankingService rankingService;
 
     public ClientThread(Socket socket) {
         try {
@@ -23,6 +26,7 @@ public class ClientThread extends Thread {
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.out = new PrintWriter(socket.getOutputStream(), true);
             this.userService = new UserService();
+            this.rankingService = new RankingService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -62,11 +66,12 @@ public class ClientThread extends Thread {
         if (ServerProtocol.REGISTER.equals(command)) {
             handleRegister(data);
         }
-        //
         else if (ServerProtocol.LOGIN.equals(command)) {
             handleLogin(data);
         }
-
+        else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
+            handlePopularRanking(data);
+        }
         else if (ServerProtocol.USAGE_LOG_SAVE.equals(command)){
             handleUsageLogSave();
         }
@@ -76,7 +81,6 @@ public class ClientThread extends Thread {
         else if (ServerProtocol.CATEGORY_GET.equals(command)){
             handleCategoryGet();
         }
-
     }
 
     // 회원가입 파싱 및 처리
@@ -141,6 +145,48 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "로그인 처리 중 오류 발생");
+        }
+    }
+
+    // 인기 프로그램 순위 파싱 및 처리
+    private void handlePopularRanking(String data) {
+        try {
+            String ageGroup = "ALL";
+            String gender = "ALL";
+            String periodType = "DAILY";
+
+            if (data != null && !data.isEmpty()) {
+                String[] params = data.split(ServerProtocol.MODE2);
+                if (params.length > 0 && !params[0].isEmpty()) ageGroup = params[0];
+                if (params.length > 1 && !params[1].isEmpty()) gender = params[1];
+                if (params.length > 2 && !params[2].isEmpty()) periodType = params[2];
+            }
+
+            // Request DTO 생성
+            PopularRankingDto.Request reqDto = new PopularRankingDto.Request(ageGroup, gender, periodType);
+
+            // Service 호출
+            PopularRankingDto.Response resDto = rankingService.getPopularRankings(reqDto);
+
+            if (resDto.isSuccess()) {
+                StringBuilder responseData = new StringBuilder();
+                responseData.append(ServerProtocol.SUCCESS).append(ServerProtocol.MODE1).append(resDto.getMessage());
+
+                for (PopularRankingDto.RankingItem item : resDto.getRankings()) {
+                    responseData.append(ServerProtocol.MODE2)
+                                .append(item.getRank()).append(",")
+                                .append(item.getProgramName()).append(",")
+                                .append(item.getCategoryName()).append(",")
+                                .append(item.getAvgUsageFormatted()).append(",")
+                                .append(item.getUsagePercentage()).append("%");
+                }
+                sendMessage(responseData.toString());
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "인기 순위 조회 중 오류 발생");
         }
     }
 

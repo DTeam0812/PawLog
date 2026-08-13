@@ -4,6 +4,7 @@ public class ServerProtocol {
     // 요청 커맨드 (Command)
     public static final String REGISTER = "REGISTER";
     public static final String LOGIN = "LOGIN";
+    public static final String POPULAR_RANKING_GET = "POPULAR_RANKING_GET"; // 인기 프로그램 순위 조회
     public static final String USAGE_LOG_SAVE = "USAGE_LOG_SAVE";
     public static final String USAGE_LOG_GET = "USAGE_LOG_GET";
     public static final String CATEGORY_GET = "CATEGORY_GET";

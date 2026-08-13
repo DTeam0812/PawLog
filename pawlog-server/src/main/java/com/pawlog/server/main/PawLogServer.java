@@ -16,6 +16,7 @@ public class PawLogServer {
 
             while (true) {
                 Socket socket = serverSocket.accept();
+                System.out.println("접속 성공");
                 ClientThread clientThread = new ClientThread(socket);
                 clientThread.start();
             }
