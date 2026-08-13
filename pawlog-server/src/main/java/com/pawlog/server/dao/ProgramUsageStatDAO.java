@@ -10,10 +10,10 @@ import java.util.List;
 import com.pawlog.server.db.DBConnectionMgr;
 import com.pawlog.server.entity.ProgramUsageStatEntity;
 
-public class ProgramUsageStatsDAO {
+public class ProgramUsageStatDAO {
     private DBConnectionMgr pool;
 
-    public ProgramUsageStatsDAO() {
+    public ProgramUsageStatDAO() {
         pool = DBConnectionMgr.getInstance();
     }
 
