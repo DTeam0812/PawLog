@@ -40,7 +40,7 @@ public class CommentDAO {
         }
     }
 
-    // 2. 특정 게시글의 댓글 목록 조회 (작성일 오름차순)
+    // 2. 특정 게시글의 댓글 목록 조회 (작성일 내림차순)
     public List<CommentEntity> getCommentsByPostId(long postId) {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -48,7 +48,7 @@ public class CommentDAO {
         List<CommentEntity> list = new ArrayList<>();
 
         String sql = "SELECT comment_id, post_id, user_id, content, created_at "
-                + "FROM comments WHERE post_id = ? ORDER BY created_at ASC";
+                + "FROM comments WHERE post_id = ? ORDER BY created_at DESC";
 
         try {
             con = pool.getConnection();

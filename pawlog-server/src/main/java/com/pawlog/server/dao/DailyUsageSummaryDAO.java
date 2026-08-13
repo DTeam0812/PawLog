@@ -50,7 +50,7 @@ public class DailyUsageSummaryDAO {
         }
     }
 
-    // 2. 특정 사용자의 특정 날짜 프로그램별 사용 요약 목록 조회 (일간 통계 뷰)
+    // 2. 특정 사용자의 특정 날짜 프로그램별 사용 요약 목록 조회 (일간 통계 뷰) 사용시간 내림차순
     public List<DailyUsageSummaryEntity> getDailySummaryByUserAndDate(long userId, Date summaryDate) {
         Connection con = null;
         PreparedStatement pstmt = null;

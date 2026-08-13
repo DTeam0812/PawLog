@@ -16,28 +16,7 @@ public class CategoryDAO {
         pool = DBConnectionMgr.getInstance();
     }
 
-    // 1. 카테고리 등록
-    public boolean insertCategory(CategoryEntity entity) {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-        String sql = "INSERT INTO categories (name) VALUES (?)";
-
-        try {
-            con = pool.getConnection();
-            pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, entity.getName());
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            pool.freeConnection(con, pstmt);
-        }
-    }
-
-    // 2. 카테고리 전체 목록 조회 (UI 드롭다운/컴보박스용)
+    // 카테고리 전체 목록 조회 (UI 드롭다운/컴보박스용)
     public List<CategoryEntity> getAllCategories() {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -65,7 +44,7 @@ public class CategoryDAO {
         return list;
     }
 
-    // 3. 카테고리 ID로 단건 조회
+    // 카테고리 ID로 단건 조회
     public CategoryEntity getCategoryById(int categoryId) {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -93,7 +72,30 @@ public class CategoryDAO {
         return null;
     }
 
-    // 4. 카테고리명 수정
+
+    /*
+    // 카테고리 등록
+    public boolean insertCategory(CategoryEntity entity) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        String sql = "INSERT INTO categories (name) VALUES (?)";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, entity.getName());
+
+            int result = pstmt.executeUpdate();
+            return result > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            pool.freeConnection(con, pstmt);
+        }
+    }
+
+    // 카테고리명 수정
     public boolean updateCategory(CategoryEntity entity) {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -115,7 +117,7 @@ public class CategoryDAO {
         }
     }
 
-    // 5. 카테고리 삭제
+    // 카테고리 삭제
     public boolean deleteCategory(int categoryId) {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -135,4 +137,7 @@ public class CategoryDAO {
             pool.freeConnection(con, pstmt);
         }
     }
+
+     */
+
 }

@@ -17,7 +17,7 @@ public class PostDAO {
         pool = DBConnectionMgr.getInstance();
     }
 
-    // 1. 게시글 작성 (program_id가 null이면 자유게시판)
+    // 1. 게시글 작성 (program_id가 null이면 추천 프로그램 게시판)
     public boolean insertPost(PostEntity entity) {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -87,7 +87,7 @@ public class PostDAO {
         return null;
     }
 
-    // 3. 자유게시판 목록 조회 (program_id가 NULL인 게시글, 최신순, 페이징)
+    // 3. 추천 프로그램 게시판 목록 조회 (program_id가 NULL인 게시글, 최신순, 페이징)
     public List<PostEntity> getFreeBoardPosts(int offset, int limit) {
         Connection con = null;
         PreparedStatement pstmt = null;

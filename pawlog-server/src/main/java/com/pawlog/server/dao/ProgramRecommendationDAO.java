@@ -75,6 +75,7 @@ public class ProgramRecommendationDAO {
         return list;
     }
 
+
     // 3. 추천 기록 삭제
     public boolean deleteRecommendation(long recId) {
         Connection con = null;
