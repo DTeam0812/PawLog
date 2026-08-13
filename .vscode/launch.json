@@ -5,6 +5,13 @@
             "type": "java",
             "name": "Widget",
             "request": "launch",
+            "mainClass": "com.pawlog.client.ui.widget.Widget",
+            "projectName": "pawlog-client"
+        },
+        {
+            "type": "java",
+            "name": "Widget",
+            "request": "launch",
             "mainClass": "Widget"
         },
         {

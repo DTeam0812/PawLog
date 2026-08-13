@@ -1,5 +1,6 @@
 package com.pawlog.client.ui.widget;
 
+import com.pawlog.client.ui.dashboard.*;
 import com.pawlog.client.ui.dashboard.DashboardFrame;
 
 import java.awt.Color;
@@ -11,15 +12,17 @@ import java.util.prefs.Preferences; // windows 레지스트리에 사용자설�
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 public class Widget {
-    private final DashboardFrame dashboard;
 
-
+    
+    private final AuthFrame AUTH;
+  
     private static final String WINDOW_X_KEY = "widgetX";
     private static final String WINDOW_Y_KEY = "widgetY";
     private final Preferences preferences = Preferences.userNodeForPackage(Widget.class);
@@ -50,19 +53,21 @@ public class Widget {
     private boolean dragged;
 
     public Widget() {
-        window = new JWindow();
-        dashboard = new DashboardFrame();
-        JLabel dogLabel = createDogLabel();
-        
-        addMouseEvents(dogLabel);
-        addPopupMenu(dogLabel);
+    window = new JWindow();
+    AUTH = new AuthFrame();
+    
+    JLabel dogLabel = createDogLabel();
 
-        window.add(dogLabel);
-        window.setSize(120, 120);
-        window.setBackground(new Color(0, 0, 0, 0));
-        window.setAlwaysOnTop(true);
-        loadWindowLocation();
-    }
+    addMouseEvents(dogLabel);
+    addPopupMenu(dogLabel);
+
+    window.add(dogLabel);
+    window.setSize(120, 120);
+    window.setBackground(new Color(0, 0, 0, 0));
+    window.setAlwaysOnTop(true);
+    
+    loadWindowLocation();
+}
 
     private JLabel createDogLabel() {
         JLabel dogLabel = new JLabel("🐶", SwingConstants.CENTER);
@@ -155,7 +160,7 @@ public class Widget {
     }
 
     private void openDetails() {
-        dashboard.open();
+        AUTH.open();
     }
 
     public void show() {
