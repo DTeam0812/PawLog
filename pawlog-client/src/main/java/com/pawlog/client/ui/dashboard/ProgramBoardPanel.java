@@ -4,9 +4,11 @@ import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridLayout;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -34,53 +36,115 @@ public class ProgramBoardPanel extends JPanel {
     private JPanel createSelectPage() {
         JPanel page = new JPanel(new BorderLayout());
         page.setBackground(BACKGROUND);
+        page.setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
+        page.add(titlePanel("게시판", "추천이 많은 프로그램을 확인하거나 프로그램별 게시판에 참여하세요."), BorderLayout.NORTH);
 
         JPanel content = transparentPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setBorder(BorderFactory.createEmptyBorder(64, 150, 60, 150));
-        JPanel title = titlePanel("프로그램 게시판", "프로그램을 선택해 사용자들의 게시글과 댓글을 확인하세요.");
-        title.setAlignmentX(CENTER_ALIGNMENT);
-        content.add(title);
-        content.add(Box.createVerticalStrut(25));
+        content.setBorder(BorderFactory.createEmptyBorder(18, 0, 0, 0));
+        JLabel hotTitle = label("핫 프로그램 TOP 3", Font.BOLD, 15, TEXT);
+        hotTitle.setAlignmentX(LEFT_ALIGNMENT);
+        content.add(hotTitle);
+        content.add(Box.createVerticalStrut(9));
+        content.add(createHotProgramCards());
+        content.add(Box.createVerticalStrut(15));
         content.add(createSelectionCard());
         page.add(content, BorderLayout.CENTER);
         return page;
     }
 
-    private JPanel createSelectionCard() {
+    private JPanel createHotProgramCards() {
+        JPanel cards = transparentPanel(new GridLayout(1, 3, 13, 0));
+        cards.setAlignmentX(LEFT_ALIGNMENT);
+        cards.setMaximumSize(new Dimension(Integer.MAX_VALUE, 145));
+        cards.setPreferredSize(new Dimension(700, 145));
+        cards.add(createHotProgramCard(1, "VS Code", "개발 도구", "추천 1,284"));
+        cards.add(createHotProgramCard(2, "Chrome", "브라우저", "추천 1,052"));
+        cards.add(createHotProgramCard(3, "Discord", "커뮤니케이션", "추천 847"));
+        return cards;
+    }
+
+    private JPanel createHotProgramCard(int rank, String name, String category, String count) {
         UiComponents.RoundedPanel card = card();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createEmptyBorder(26, 30, 26, 30));
-        card.setAlignmentX(CENTER_ALIGNMENT);
-        card.setMaximumSize(new Dimension(500, 285));
-        card.setPreferredSize(new Dimension(500, 285));
+        card.setLayout(new BorderLayout(0, 8));
+        card.setBorder(BorderFactory.createEmptyBorder(13, 15, 12, 15));
 
-        JComboBox<String> category = combo("개발 도구", "브라우저", "커뮤니케이션", "디자인", "생산성");
-        category.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        programBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        addField(card, "카테고리 선택", category);
-        card.add(Box.createVerticalStrut(18));
-        addField(card, "프로그램 선택", programBox);
-        card.add(Box.createVerticalStrut(25));
+        JPanel titleRow = transparentPanel(new BorderLayout(8, 0));
+        JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 13, Color.WHITE);
+        rankLabel.setHorizontalAlignment(JLabel.CENTER);
+        rankLabel.setOpaque(true);
+        rankLabel.setBackground(PRIMARY);
+        rankLabel.setPreferredSize(new Dimension(28, 28));
 
-        JPanel action = transparentPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton enterButton = primaryButton("게시판 입장");
-        enterButton.addActionListener(event -> {
-            boardTitle.setText(programBox.getSelectedItem() + " 게시판");
-            cardLayout.show(this, BOARD);
+        JPanel names = transparentPanel();
+        names.setLayout(new BoxLayout(names, BoxLayout.Y_AXIS));
+        names.add(label(name, Font.BOLD, 14, TEXT));
+        names.add(label(category, Font.PLAIN, 10, SUB_TEXT));
+        titleRow.add(rankLabel, BorderLayout.WEST);
+        titleRow.add(names, BorderLayout.CENTER);
+
+        JPanel footer = transparentPanel(new BorderLayout());
+        footer.add(label(count, Font.BOLD, 11, PRIMARY), BorderLayout.WEST);
+        JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JButton recommendButton = outlineButton("추천하기");
+        recommendButton.setPreferredSize(new Dimension(72, 28));
+        recommendButton.addActionListener(event -> {
+            recommendButton.setText("추천 완료");
+            recommendButton.setEnabled(false);
         });
-        action.add(enterButton);
-        card.add(action);
+        JButton boardButton = primaryButton("게시판 보기");
+        boardButton.setPreferredSize(new Dimension(82, 28));
+        boardButton.addActionListener(event -> openBoard(name));
+        buttons.add(recommendButton);
+        buttons.add(boardButton);
+        footer.add(buttons, BorderLayout.EAST);
+
+        card.add(titleRow, BorderLayout.NORTH);
+        card.add(label("사용자들이 많이 추천한 프로그램", Font.PLAIN, 10, SUB_TEXT), BorderLayout.CENTER);
+        card.add(footer, BorderLayout.SOUTH);
         return card;
     }
 
-    private void addField(JPanel card, String name, JComboBox<String> comboBox) {
-        JLabel label = label(name, Font.BOLD, 12, TEXT);
-        label.setAlignmentX(LEFT_ALIGNMENT);
+    private JPanel createSelectionCard() {
+        UiComponents.RoundedPanel card = card();
+        card.setLayout(new BorderLayout(15, 12));
+        card.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        card.setAlignmentX(LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 145));
+        card.setPreferredSize(new Dimension(700, 145));
+        card.add(label("프로그램별 게시판 찾기", Font.BOLD, 14, TEXT), BorderLayout.NORTH);
+
+        JComboBox<String> category = combo("개발 도구", "브라우저", "커뮤니케이션", "디자인", "생산성");
+        JPanel fields = transparentPanel(new GridLayout(1, 2, 12, 0));
+        fields.add(createField("카테고리", category));
+        fields.add(createField("프로그램", programBox));
+        card.add(fields, BorderLayout.CENTER);
+
+        JPanel action = transparentPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton enterButton = primaryButton("게시판 입장");
+        enterButton.addActionListener(event -> openBoard(String.valueOf(programBox.getSelectedItem())));
+        action.add(enterButton);
+        card.add(action, BorderLayout.EAST);
+        return card;
+    }
+
+    private JPanel createField(String name, JComboBox<String> comboBox) {
+        JPanel field = transparentPanel();
+        field.setLayout(new BoxLayout(field, BoxLayout.Y_AXIS));
+        JLabel fieldLabel = label(name, Font.BOLD, 11, TEXT);
+        fieldLabel.setAlignmentX(LEFT_ALIGNMENT);
         comboBox.setAlignmentX(LEFT_ALIGNMENT);
-        card.add(label);
-        card.add(Box.createVerticalStrut(6));
-        card.add(comboBox);
+        comboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        field.add(fieldLabel);
+        field.add(Box.createVerticalStrut(5));
+        field.add(comboBox);
+        return field;
+    }
+
+    private void openBoard(String programName) {
+        programBox.setSelectedItem(programName);
+        boardTitle.setText(programName + " 게시판");
+        cardLayout.show(this, BOARD);
     }
 
     private JPanel createBoardPage() {

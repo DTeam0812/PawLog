@@ -33,16 +33,24 @@ public class PopularRankingPanel extends JPanel {
     };
 
     public PopularRankingPanel() {
+        this(false);
+    }
+
+    public PopularRankingPanel(boolean embedded) {
         setLayout(new BorderLayout(0, 18));
         setBackground(BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
-        add(createHeader(), BorderLayout.NORTH);
+        setBorder(embedded ? BorderFactory.createEmptyBorder() : BorderFactory.createEmptyBorder(24, 28, 24, 28));
+        add(createHeader(embedded), BorderLayout.NORTH);
         add(createRankingCard(), BorderLayout.CENTER);
     }
 
-    private JPanel createHeader() {
+    private JPanel createHeader(boolean embedded) {
         JPanel header = transparentPanel(new BorderLayout());
-        header.add(titlePanel("인기 프로그램 순위", "전체 사용자 데이터를 기준으로 가장 많이 사용한 프로그램을 확인하세요."), BorderLayout.WEST);
+        if (embedded) {
+            header.add(label("전체 사용자 기준 TOP 10", Font.BOLD, 15, TEXT), BorderLayout.WEST);
+        } else {
+            header.add(titlePanel("인기 프로그램 순위", "전체 사용자 데이터를 기준으로 가장 많이 사용한 프로그램을 확인하세요."), BorderLayout.WEST);
+        }
 
         JPanel filters = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 8, 3));
         JComboBox<String> ageBox = combo("전체 연령", "10대", "20대", "30대", "40대", "50대", "60대 이상");

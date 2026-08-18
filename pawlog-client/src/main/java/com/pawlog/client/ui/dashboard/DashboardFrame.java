@@ -25,10 +25,8 @@ public class DashboardFrame extends JFrame {
     private static final String HOME = "HOME";
     private static final String STATISTICS = "STATISTICS";
     private static final String PROGRAMS = "PROGRAMS";
-    private static final String COMMUNITY = "COMMUNITY";
+    private static final String BOARD = "BOARD";
     private static final String SETTINGS = "SETTINGS";
-    private static final String RANKING = "RANKING";
-    private static final String RECOMMEND = "RECOMMEND";
     private static final String PREDICTION = "PREDICTION";
     private static final String MY_PAGE = "MY_PAGE";
 
@@ -126,10 +124,8 @@ public class DashboardFrame extends JFrame {
 
         JButton homeButton = createMenuButton("홈", HOME);
         JButton statisticsButton = createMenuButton("통계", STATISTICS);
-        JButton rankingButton = createMenuButton("인기 순위", RANKING);
         JButton programsButton = createMenuButton("프로그램 분석", PROGRAMS);
-        JButton recommendButton = createMenuButton("추천 프로그램", RECOMMEND);
-        JButton communityButton = createMenuButton("프로그램 게시판", COMMUNITY);
+        JButton boardButton = createMenuButton("게시판", BOARD);
         JButton predictionButton = createMenuButton("예측 이벤트", PREDICTION);
         JButton myPageButton = createMenuButton("마이페이지", MY_PAGE);
         JButton settingsButton = createMenuButton("설정", SETTINGS);
@@ -138,13 +134,9 @@ public class DashboardFrame extends JFrame {
         sidebarPanel.add(Box.createVerticalStrut(10));
         sidebarPanel.add(statisticsButton);
         sidebarPanel.add(Box.createVerticalStrut(10));
-        sidebarPanel.add(rankingButton);
-        sidebarPanel.add(Box.createVerticalStrut(10));
         sidebarPanel.add(programsButton);
         sidebarPanel.add(Box.createVerticalStrut(10));
-        sidebarPanel.add(recommendButton);
-        sidebarPanel.add(Box.createVerticalStrut(10));
-        sidebarPanel.add(communityButton);
+        sidebarPanel.add(boardButton);
         sidebarPanel.add(Box.createVerticalStrut(10));
         sidebarPanel.add(predictionButton);
         sidebarPanel.add(Box.createVerticalGlue());
@@ -176,10 +168,8 @@ public class DashboardFrame extends JFrame {
     private JPanel createContentPanel() {
         contentPanel.add(new HomePanel(), HOME);
         contentPanel.add(new StatisticsPanel(), STATISTICS);
-        contentPanel.add(new PopularRankingPanel(), RANKING);
         contentPanel.add(new ProgramAnalyticsPanel(), PROGRAMS);
-        contentPanel.add(new RecommendationPanel(), RECOMMEND);
-        contentPanel.add(new ProgramBoardPanel(), COMMUNITY);
+        contentPanel.add(new ProgramBoardPanel(), BOARD);
         contentPanel.add(new PredictionPanel(), PREDICTION);
         contentPanel.add(new MyPagePanel(), MY_PAGE);
         contentPanel.add(createPage("설정"), SETTINGS);

@@ -26,6 +26,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 
 import org.w3c.dom.Text;
@@ -39,7 +40,7 @@ public class Login extends JPanel{
     private static final Color PRIMARY = new Color(255, 159, 67);
     private static final Color TEXT = new Color(45, 52, 54);
     private final PawLogClient pawLogClient = new PawLogClient();
-    
+    AuthStore authStore = AuthStore.getInstance();
     public Login(Runnable showRegister , Runnable loginsuccess) {
         setLayout(new BorderLayout());
         add(loginPanel(showRegister , loginsuccess), BorderLayout.CENTER);
@@ -98,6 +99,8 @@ public class Login extends JPanel{
 
                 if (response.success()) {
                     warn.setText("");
+                    //Authstore loggin = true
+                    authStore.login(email);
                     loginsuccess.run();
                 } else {
                     warn.setText(response.message());

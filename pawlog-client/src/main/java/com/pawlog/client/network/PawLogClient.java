@@ -8,7 +8,7 @@ import java.net.Socket;
 import java.time.LocalDate;
 
 public class PawLogClient {
-    private static final String DEFAULT_HOST = "10.238.205.190";//서버주소
+    private static final String DEFAULT_HOST = "192.168.0.14";//서버주소
     private static final int DEFAULT_PORT = 8005;
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
     private static final String MODE1 = ":";
@@ -41,6 +41,7 @@ public class PawLogClient {
             + MODE2 + nickname
             + MODE2 + gender
             + MODE2 + birthDate;
+
 
         return send(REGISTER, data);
     }
