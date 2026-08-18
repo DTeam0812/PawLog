@@ -96,7 +96,8 @@ public class DatabaseConfig {
                 background_duration_sec BIGINT DEFAULT 0,
                 total_duration_sec BIGINT DEFAULT 0,
                 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-                FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE
+                FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE,
+                INDEX idx_user_date (user_id, summary_date)
             );
             """,
 
