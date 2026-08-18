@@ -1,8 +1,8 @@
 package com.pawlog.server.net;
 
+import com.pawlog.common.dto.auth.AuthLoginDto;
+import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
-import com.pawlog.common.dto.user.UserLoginDto;
-import com.pawlog.common.dto.user.UserRegisterDto;
 import com.pawlog.common.protocol.RequestPacket;
 import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.protocol.ServerProtocol;
@@ -147,8 +147,8 @@ public class ClientThread extends Thread {
     // 회원가입 (JSON 처리)
     private void handleRegisterJson(String dataJson) {
         try {
-            UserRegisterDto.Request reqDto = JsonUtil.fromJson(dataJson, UserRegisterDto.Request.class);
-            UserRegisterDto.Response resDto = authService.register(reqDto);
+            AuthRegisterDto.Request reqDto = JsonUtil.fromJson(dataJson, AuthRegisterDto.Request.class);
+            AuthRegisterDto.Response resDto = authService.register(reqDto);
 
             ResponsePacket responsePacket = new ResponsePacket(
                 ServerProtocol.REGISTER,
@@ -189,10 +189,10 @@ public class ClientThread extends Thread {
             String birth = params[4];
 
             // Request DTO 생성
-            UserRegisterDto.Request reqDto = new UserRegisterDto.Request(nickname, email, password, birth, gender);
+            AuthRegisterDto.Request reqDto = new AuthRegisterDto.Request(nickname, email, password, birth, gender);
             
             // Service 호출 및 Response DTO 수신
-            UserRegisterDto.Response resDto = authService.register(reqDto);
+            AuthRegisterDto.Response resDto = authService.register(reqDto);
 
             // 결과 소켓 응답 전송
             if (resDto.isSuccess()) {
@@ -206,7 +206,52 @@ public class ClientThread extends Thread {
         }
     }
 
-    // 로그인 파싱 및 처리
+    // 로그인 (JSON 처리)
+    private void handleLoginJson(String dataJson) {
+        try {
+            AuthLoginDto.Request reqDto = JsonUtil.fromJson(dataJson, AuthLoginDto.Request.class);
+            AuthLoginDto.Response resDto = authService.login(reqDto);
+
+            if (resDto.isSuccess() && resDto.getUser() != null) {
+                // 소켓 세션에 로그인 유저 정보 저장
+                UserEntity userEntity = authService.getUserByEmailAndPassword(reqDto.getEmail(), reqDto.getPassword());
+                this.setCurrentUser(userEntity);
+
+                // UserInfo 데이터를 JSON 문자열로 파싱
+                String dataJsonPayload = JsonUtil.toJson(resDto.getUser());
+
+                ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.LOGIN,
+                    true,
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    dataJsonPayload
+                );
+                sendMessage(JsonUtil.toJson(responsePacket));
+            } else {
+                ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.LOGIN,
+                    false,
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    null
+                );
+                sendMessage(JsonUtil.toJson(responsePacket));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.LOGIN,
+                false,
+                400,
+                "로그인 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 로그인 파싱 및 처리 (구분자 기반 폴백)
     private void handleLogin(String data) {
         try {
             String[] params = data.split(ServerProtocol.MODE2);
@@ -219,13 +264,15 @@ public class ClientThread extends Thread {
             String password = params[1];
 
             // Request DTO 생성
-            UserLoginDto.Request reqDto = new UserLoginDto.Request(email, password);
+            AuthLoginDto.Request reqDto = new AuthLoginDto.Request(email, password);
 
             // Service 호출 및 Response DTO 수신
-            UserLoginDto.Response resDto = authService.login(reqDto);
+            AuthLoginDto.Response resDto = authService.login(reqDto);
 
             // 결과 소켓 응답 전송
             if (resDto.isSuccess()) {
+                UserEntity userEntity = authService.getUserByEmailAndPassword(email, password);
+                this.setCurrentUser(userEntity);
                 sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + resDto.getMessage());
             } else {
                 sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
