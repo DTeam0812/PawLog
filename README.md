@@ -47,6 +47,11 @@ erDiagram
         INT category_id FK "카테고리 고유 번호"
     }
 
+    programs_likes {
+        BIGINT program_id PK, FK "좋아요 눌린 프로그램 번호"
+        BIGINT user_id PK, FK "좋아요 누른 사용자 번호"
+    }
+
     usage_logs {
         BIGINT log_id PK "사용 기록 고유 번호"
         BIGINT user_id FK "사용자 고유 번호"
@@ -62,9 +67,9 @@ erDiagram
         BIGINT user_id FK "사용자 고유 번호"
         BIGINT program_id FK "프로그램 고유 번호"
         DATE summary_date "집계 대상 날짜"
-        BIGINT foreground_duration_sec "포어그라운드 사용시간"
-        BIGINT background_duration_sec "백그라운드 사용 시간"
-        BIGINT total_duration_sec "총 사용 시간(초)"
+        BIGINT foreground_duration_sec "하루 포어그라운드 사용시간"
+        BIGINT background_duration_sec "하루 백그라운드 사용시간"
+        BIGINT total_duration_sec "하루 동안의 총 사용 시간(초)"
     }
 
     program_rankings {
@@ -113,14 +118,6 @@ erDiagram
         BIGINT post_id PK, FK "대상 게시글 번호"
     }
 
-    program_recommendations {
-        BIGINT rec_id PK "추천 기록 고유 번호"
-        BIGINT user_id FK "추천 요청/작성자 번호"
-        BIGINT program_id FK "프로그램 번호"
-        TEXT reason "추천 요청 사유"
-        DATETIME created_at "작성 일시"
-    }
-
     prediction_events {
         BIGINT event_id PK "예측 이벤트 고유 번호"
         VARCHAR title "이벤트 제목"
@@ -138,28 +135,21 @@ erDiagram
         BIGINT program_id FK "투표 대상 프로그램 번호"
     }
 
-%% 관계 정의 (Relationships)
     categories ||--o{ programs : "contains"
-
+    users ||--o{ programs_likes : "likes"
+    programs ||--o{ programs_likes : "liked_by"
     users ||--o{ usage_logs : "records"
     programs ||--o{ usage_logs : "logged_in"
-
     users ||--o{ daily_usage_summary : "has"
     programs ||--o{ daily_usage_summary : "summarized_in"
-
     programs ||--o{ program_rankings : "ranked_in"
     programs ||--o{ program_usage_stats : "analyzed_in"
-
     users ||--o{ posts : "writes"
     programs ||--o{ posts : "tagged_in"
-
     posts ||--o{ comments : "has"
     users ||--o{ comments : "writes"
-
     users ||--o{ post_likes : "likes"
     posts ||--o{ post_likes : "liked_by"
-
-
     prediction_events ||--o{ prediction_votes : "includes"
     users ||--o{ prediction_votes : "votes"
     programs ||--o{ prediction_votes : "voted_for"
