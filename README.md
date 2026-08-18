@@ -138,30 +138,28 @@ erDiagram
         BIGINT program_id FK "투표 대상 프로그램 번호"
     }
 
-    %% 관계 정의 (Relationships)
+%% 관계 정의 (Relationships)
     categories ||--o{ programs : "contains"
-    
+
     users ||--o{ usage_logs : "records"
     programs ||--o{ usage_logs : "logged_in"
-    
+
     users ||--o{ daily_usage_summary : "has"
     programs ||--o{ daily_usage_summary : "summarized_in"
-    
+
     programs ||--o{ program_rankings : "ranked_in"
     programs ||--o{ program_usage_stats : "analyzed_in"
-    
+
     users ||--o{ posts : "writes"
     programs ||--o{ posts : "tagged_in"
-    
+
     posts ||--o{ comments : "has"
     users ||--o{ comments : "writes"
-    
+
     users ||--o{ post_likes : "likes"
     posts ||--o{ post_likes : "liked_by"
-    
-    users ||--o{ program_recommendations : "requests"
-    programs ||--o{ program_recommendations : "recommended"
-    
+
+
     prediction_events ||--o{ prediction_votes : "includes"
     users ||--o{ prediction_votes : "votes"
     programs ||--o{ prediction_votes : "voted_for"

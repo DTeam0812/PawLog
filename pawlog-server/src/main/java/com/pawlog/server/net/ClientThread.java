@@ -3,9 +3,13 @@ package com.pawlog.server.net;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.user.UserLoginDto;
 import com.pawlog.common.dto.user.UserRegisterDto;
+import com.pawlog.common.protocol.RequestPacket;
+import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.protocol.ServerProtocol;
+import com.pawlog.common.util.JsonUtil;
+import com.pawlog.server.entity.UserEntity;
+import com.pawlog.server.service.AuthService;
 import com.pawlog.server.service.RankingService;
-import com.pawlog.server.service.UserService;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -17,21 +21,43 @@ public class ClientThread extends Thread {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
-    private UserService userService;
+    private AuthService authService;
     private RankingService rankingService;
+
+    // 로그인된 유저 세션 정보
+    private Long loggedInUserId;
+    private UserEntity currentUser;
 
     public ClientThread(Socket socket) {
         try {
             this.socket = socket;
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.out = new PrintWriter(socket.getOutputStream(), true);
-            this.userService = new UserService();
+            this.authService = new AuthService();
             this.rankingService = new RankingService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    public Long getLoggedInUserId() {
+        return loggedInUserId;
+    }
+
+    public UserEntity getCurrentUser() {
+        return currentUser;
+    }
+
+    public boolean isLoggedIn() {
+        return loggedInUserId != null;
+    }
+
+    public void setCurrentUser(UserEntity user) {
+        this.currentUser = user;
+        this.loggedInUserId = user != null ? user.getUserId() : null;
+    }
+
 
     @Override
     public void run() {
@@ -55,7 +81,42 @@ public class ClientThread extends Thread {
         if (line == null || line.trim().isEmpty()) {
             return;
         }
-        // 요청 분석 (Command : Data)
+
+        // 1. JSON 기반 패킷 처리 ({ 로 시작하는 경우)
+        if (line.trim().startsWith("{")) {
+            try {
+                RequestPacket packet = JsonUtil.fromJson(line, RequestPacket.class);
+                String command = packet.getCommand();
+                String dataJson = packet.getData();
+
+                if (ServerProtocol.REGISTER.equals(command)) {
+                    handleRegisterJson(dataJson);
+                }
+                else if (ServerProtocol.LOGIN.equals(command)) {
+                    handleLogin(dataJson);
+                }
+                else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
+                    handlePopularRanking(dataJson);
+                }
+                else if (ServerProtocol.USAGE_LOG_SAVE.equals(command)){
+                    handleUsageLogSave();
+                }
+                else if (ServerProtocol.USAGE_LOG_GET.equals(command)){
+                    handleUsageLogGet();
+                }
+                else if (ServerProtocol.CATEGORY_GET.equals(command)){
+                    handleCategoryGet();
+                }
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                ResponsePacket errorRes = new ResponsePacket("UNKNOWN", false, 400, "잘못된 JSON 요청 형식입니다.", null);
+                sendMessage(JsonUtil.toJson(errorRes));
+                return;
+            }
+        }
+
+        // 2. 기존 구분자(:) 방식 폴백 (하위 호환성)
         String[] commandData = parseRoutine(line, ServerProtocol.MODE1);
         String command = commandData[0];
         String data = commandData[1];
@@ -83,6 +144,34 @@ public class ClientThread extends Thread {
         }
     }
 
+    // 회원가입 (JSON 처리)
+    private void handleRegisterJson(String dataJson) {
+        try {
+            UserRegisterDto.Request reqDto = JsonUtil.fromJson(dataJson, UserRegisterDto.Request.class);
+            UserRegisterDto.Response resDto = authService.register(reqDto);
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.REGISTER,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                null
+            );
+
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.REGISTER,
+                false,
+                400,
+                "회원가입 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
     // 회원가입 파싱 및 처리
     private void handleRegister(String data) {
         try {
@@ -97,13 +186,13 @@ public class ClientThread extends Thread {
             String password = params[1];
             String nickname = params[2];
             String gender = params[3];
-            Date birthDate = Date.valueOf(params[4]);
+            String birth = params[4];
 
             // Request DTO 생성
-            UserRegisterDto.Request reqDto = new UserRegisterDto.Request(email, password, nickname, gender, birthDate);
+            UserRegisterDto.Request reqDto = new UserRegisterDto.Request(nickname, email, password, birth, gender);
             
             // Service 호출 및 Response DTO 수신
-            UserRegisterDto.Response resDto = userService.register(reqDto);
+            UserRegisterDto.Response resDto = authService.register(reqDto);
 
             // 결과 소켓 응답 전송
             if (resDto.isSuccess()) {
@@ -120,7 +209,6 @@ public class ClientThread extends Thread {
     // 로그인 파싱 및 처리
     private void handleLogin(String data) {
         try {
-            // data 포맷: email;password
             String[] params = data.split(ServerProtocol.MODE2);
             if (params.length < 2) {
                 sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "파라미터가 부족합니다.");
@@ -134,7 +222,7 @@ public class ClientThread extends Thread {
             UserLoginDto.Request reqDto = new UserLoginDto.Request(email, password);
 
             // Service 호출 및 Response DTO 수신
-            UserLoginDto.Response resDto = userService.login(reqDto);
+            UserLoginDto.Response resDto = authService.login(reqDto);
 
             // 결과 소켓 응답 전송
             if (resDto.isSuccess()) {
