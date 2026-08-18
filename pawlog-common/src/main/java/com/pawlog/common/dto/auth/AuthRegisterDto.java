@@ -1,13 +1,11 @@
-package com.pawlog.common.dto.user;
+package com.pawlog.common.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Date;
-
-public class UserRegisterDto {
+public class AuthRegisterDto {
 
     // 1. 회원가입 요청 DTO
     @AllArgsConstructor
@@ -21,6 +19,7 @@ public class UserRegisterDto {
         private String birth;
         private String gender;
     }
+
     // 2. 회원가입 응답 DTO
     @AllArgsConstructor
     @NoArgsConstructor
