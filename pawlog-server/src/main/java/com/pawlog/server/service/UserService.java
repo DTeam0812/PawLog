@@ -13,14 +13,14 @@ public class UserService {
         if (dto == null) {
             return new UserRegisterDto.Response(false, "유효하지 않은 요청입니다.");
         }
-
+       
         UserEntity user = new UserEntity();
         user.setEmail(dto.getEmail());
         user.setPasswordHash(dto.getPassword());
         user.setNickname(dto.getNickname());
         user.setGender(dto.getGender());
         user.setBirthDate(dto.getBirthDate());
-
+        
         try {
             userDAO.insertUser(user);
             return new UserRegisterDto.Response(true, "회원가입 성공");

@@ -1,5 +1,6 @@
 package com.pawlog.client.ui.dashboard;
 
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.network.PawLogClient.Response;
 import com.pawlog.client.tracker.ProgramTracker;
@@ -41,10 +42,9 @@ public class HomePanel extends JPanel {
     private JLabel mostProgramLabel;
     private static final Color CARD_BACKGROUND = Color.WHITE;
     private final PawLogClient pawLogClient = new PawLogClient();
+    private final AuthStore authStore = AuthStore.getInstance();
     private static final Color PRIMARY = new Color(255, 159, 67);
-
     private static final Color TEXT = new Color(45, 52, 54);
-
     private static final Color SUB_TEXT = new Color(120, 130, 132);
     
     private static final Color PROGRESS_BACKGROUND = new Color(225, 225, 225);
@@ -53,6 +53,7 @@ public class HomePanel extends JPanel {
     private JLabel activeSessionTimeLabel;
     private JLabel totalSecondLabel;
     private JLabel TotalAllowPr;
+    private JLabel greetingLabel;
     private JPanel recentProgramsListPanel;
     public HomePanel() {
         setLayout(new BorderLayout());
@@ -105,9 +106,8 @@ public class HomePanel extends JPanel {
 
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         leftPanel.setOpaque(false);
-
-        JLabel greetingLabel = new JLabel("안녕하세요, 사용자님");
-
+        
+        greetingLabel = new JLabel("안녕하세요, 사용자님");
         greetingLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
         greetingLabel.setForeground(TEXT);
 
@@ -195,6 +195,17 @@ public class HomePanel extends JPanel {
         panel.add(leftPanel, BorderLayout.WEST);
         panel.add(trackingPanel, BorderLayout.EAST);
         return panel;
+    }
+
+    public void refreshUserInfo() {
+        String email = authStore.getEmail();
+
+        if (email == null || email.isBlank()) {
+            greetingLabel.setText("안녕하세요, 사용자님");
+            return;
+        }
+
+        greetingLabel.setText("안녕하세요, " + email + "님");
     }
 
     private JPanel createActiveProgramPanel() {

@@ -37,6 +37,7 @@ public class DashboardFrame extends JFrame {
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(cardLayout);
+    private final HomePanel homePanel = new HomePanel();
 
     private Point headerDragOffset;
 
@@ -174,7 +175,7 @@ public class DashboardFrame extends JFrame {
     }
 
     private JPanel createContentPanel() {
-        contentPanel.add(new HomePanel(), HOME);
+        contentPanel.add(homePanel, HOME);
         contentPanel.add(new StatisticsPanel(), STATISTICS);
         contentPanel.add(new ProgramAnalyticsPanel(), PROGRAMS);
         contentPanel.add(new ProgramBoardPanel(), BOARD);
@@ -202,6 +203,7 @@ public class DashboardFrame extends JFrame {
     }
 
     public void open() {
+        homePanel.refreshUserInfo();
         setState(JFrame.NORMAL);
         setVisible(true);
         toFront();

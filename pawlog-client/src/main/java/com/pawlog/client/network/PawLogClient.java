@@ -49,7 +49,7 @@ public class PawLogClient {
             false,
             "저장할 사용 기록이 없습니다."
         );
-}       builder.append(AuthStore.getInstance().getEmail());
+}      
         for (
             Map.Entry<UsageKey, Long> entry
                 : data.entrySet()
@@ -59,6 +59,8 @@ public class PawLogClient {
             if (builder.length() > 0) {
                 builder.append(MODE3);
             }
+             builder.append(AuthStore.getInstance().getEmail());
+             builder.append(MODE2);
             builder.append(key.usageDate());
             builder.append(MODE2);
             builder.append(key.hour());

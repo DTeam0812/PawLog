@@ -20,6 +20,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.client.ui.dashboard.DashboardFrame;
@@ -30,7 +31,11 @@ public class AuthFrame extends JFrame {
     private Point headerDragOffset;
     private final DashboardFrame dashboardFrame = new DashboardFrame();
     private boolean loggedIn;
-
+    
+    
+    private static AuthStore authStore = AuthStore.getInstance();
+    String email = authStore.getEmail();
+    
     public AuthFrame() {
         this(true);
     }
