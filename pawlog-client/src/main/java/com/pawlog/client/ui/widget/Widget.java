@@ -1,5 +1,7 @@
 package com.pawlog.client.ui.widget;
 
+import static com.pawlog.client.ui.dashboard.UiComponents.*;
+
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.ui.auth.AuthFrame;
 
@@ -96,7 +98,7 @@ public class Widget {
 
     window.add(dogLabel);
     window.setSize(120, 120);
-    window.setBackground(new Color(0, 0, 0, 0));
+    window.setBackground(TRANSPARENT);
     window.setAlwaysOnTop(true);
     
     loadWindowLocation();
@@ -104,7 +106,7 @@ public class Widget {
 
     private JLabel createDogLabel() {
         JLabel dogLabel = new JLabel("🐶", SwingConstants.CENTER);
-        dogLabel.setForeground(new Color(255,255,255));
+        dogLabel.setForeground(CARD);
         dogLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 72));
         dogLabel.setOpaque(false);
         dogLabel.setToolTipText("클릭: 상세 정보 / 드래그: 이동 / 우클릭: 메뉴");

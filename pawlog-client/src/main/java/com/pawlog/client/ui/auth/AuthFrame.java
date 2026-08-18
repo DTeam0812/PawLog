@@ -1,5 +1,7 @@
 package com.pawlog.client.ui.auth;
 
+import static com.pawlog.client.ui.dashboard.UiComponents.*;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -20,6 +22,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.client.ui.dashboard.DashboardFrame;
@@ -30,7 +33,11 @@ public class AuthFrame extends JFrame {
     private Point headerDragOffset;
     private final DashboardFrame dashboardFrame = new DashboardFrame();
     private boolean loggedIn;
-
+    
+    
+    private static AuthStore authStore = AuthStore.getInstance();
+    String email = authStore.getEmail();
+    
     public AuthFrame() {
         this(true);
     }
@@ -68,11 +75,11 @@ public class AuthFrame extends JFrame {
     private JPanel topPanel() {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setPreferredSize(new Dimension(0, 55));
-        headerPanel.setBackground(new Color(255, 159, 67));
+        headerPanel.setBackground(PRIMARY);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 5));
 
         JLabel titleLabel = new JLabel("🐾 Pawlog");
-        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setForeground(CARD);
         titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 22));
         
 
@@ -80,8 +87,8 @@ public class AuthFrame extends JFrame {
 
         JButton closeButton = new JButton("×");
         closeButton.setFont(new Font("맑은 고딕", Font.BOLD, 22));
-        closeButton.setForeground(Color.WHITE);
-        closeButton.setBackground(new Color(231, 76, 60));
+        closeButton.setForeground(CARD);
+        closeButton.setBackground(RED);
         closeButton.setFocusPainted(false);
         closeButton.setBorderPainted(false);
         closeButton.setPreferredSize(new Dimension(38, 38));

@@ -104,8 +104,8 @@ public class StatisticsPanel extends JPanel {
     }
 
     private void applySelectedStyle(JButton button, boolean selected) {
-        button.setForeground(selected ? Color.WHITE : TEXT);
-        button.setBackground(selected ? PRIMARY : Color.WHITE);
+        button.setForeground(selected ? CARD : TEXT);
+        button.setBackground(selected ? PRIMARY : CARD);
         button.setBorder(BorderFactory.createLineBorder(selected ? PRIMARY : BORDER));
     }
 
@@ -151,10 +151,10 @@ public class StatisticsPanel extends JPanel {
         card.add(label("프로그램별 사용 비율", Font.BOLD, 15, TEXT));
         card.add(Box.createVerticalStrut(12));
         card.add(createUsageRow("Chrome", "1시간 45분", 40, PRIMARY));
-        card.add(createUsageRow("VS Code", "1시간 10분", 27, new Color(72, 126, 255)));
-        card.add(createUsageRow("Slack", "35분", 13, new Color(0, 184, 148)));
-        card.add(createUsageRow("Notion", "25분", 10, new Color(162, 155, 254)));
-        card.add(createUsageRow("Figma", "20분", 8, new Color(253, 121, 168)));
+        card.add(createUsageRow("VS Code", "1시간 10분", 27, CHART_BLUE));
+        card.add(createUsageRow("Slack", "35분", 13, SUCCESS));
+        card.add(createUsageRow("Notion", "25분", 10, CHART_PURPLE));
+        card.add(createUsageRow("Figma", "20분", 8, CHART_PINK));
         return card;
     }
 
@@ -169,7 +169,7 @@ public class StatisticsPanel extends JPanel {
         labels.add(label(time + "   " + percent + "%", Font.PLAIN, 11, SUB_TEXT), BorderLayout.EAST);
 
         JPanel track = new JPanel(new BorderLayout());
-        track.setBackground(new Color(235, 235, 235));
+        track.setBackground(SOFT_BORDER);
         track.setMaximumSize(new Dimension(Integer.MAX_VALUE, 6));
         track.setPreferredSize(new Dimension(600, 6));
         JPanel progress = new JPanel();

@@ -87,10 +87,6 @@ public class ProgramTracker {
             LocalDate today = now.toLocalDate();
             int currentHour = now.getHour();
 
-
-
-
-
             if (!today.equals(trackingDate)) {
                 trackingDate = today;
                 totalSeconds = 0;

@@ -70,7 +70,7 @@ public class ProgramBoardPanel extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(13, 15, 12, 15));
 
         JPanel titleRow = transparentPanel(new BorderLayout(8, 0));
-        JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 13, Color.WHITE);
+        JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 13, CARD);
         rankLabel.setHorizontalAlignment(JLabel.CENTER);
         rankLabel.setOpaque(true);
         rankLabel.setBackground(PRIMARY);

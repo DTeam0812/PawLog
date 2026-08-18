@@ -1,5 +1,7 @@
 package com.pawlog.client.ui.auth;
 
+import static com.pawlog.client.ui.dashboard.UiComponents.*;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -35,10 +37,6 @@ import org.w3c.dom.Text;
 
 
 public class Login extends JPanel{
-    private static final Color BACKGROUND = new Color(247, 244, 239);
-
-    private static final Color PRIMARY = new Color(255, 159, 67);
-    private static final Color TEXT = new Color(45, 52, 54);
     private final PawLogClient pawLogClient = new PawLogClient();
     AuthStore authStore = AuthStore.getInstance();
     public Login(Runnable showRegister , Runnable loginsuccess) {
@@ -112,7 +110,7 @@ public class Login extends JPanel{
 
 
         loginButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        loginButton.setForeground(Color.WHITE);
+        loginButton.setForeground(CARD);
         loginButton.setBackground(PRIMARY);
         loginButton.setFocusPainted(false);
         loginButton.setBorderPainted(false);
@@ -129,7 +127,7 @@ public class Login extends JPanel{
 
         register.setAlignmentX(Component.LEFT_ALIGNMENT);
         register.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        register.setForeground(Color.WHITE);
+        register.setForeground(CARD);
         register.setBackground(PRIMARY);
         register.setFocusPainted(false);
         register.setBorderPainted(false);

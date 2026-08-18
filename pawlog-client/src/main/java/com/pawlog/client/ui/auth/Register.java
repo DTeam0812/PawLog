@@ -1,5 +1,7 @@
 package com.pawlog.client.ui.auth;
 
+import static com.pawlog.client.ui.dashboard.UiComponents.*;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -38,12 +40,6 @@ import java.time.Year;
 import javax.swing.JComboBox;
 
 public class Register extends JPanel{
-    private static final Color BACKGROUND = new Color(247, 244, 239);
-    private static final Color CARD_BACKGROUND = Color.WHITE;
-    private static final Color PRIMARY = new Color(255, 159, 67);
-    private static final Color TEXT = new Color(45, 52, 54);
-    private static final Color SUB_TEXT = new Color(99, 110, 114);
-    private static final Color BORDER = new Color(225, 225, 225);
     private JComboBox<String> yearBox;
     private JComboBox<String> monthBox;
     private JComboBox<String> dayBox;
@@ -172,7 +168,7 @@ public class Register extends JPanel{
         genderLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         JButton registerButton = new JButton("회원가입");
         registerButton.setFont(new Font("맑은 고딕", Font.BOLD, 16) );
-        registerButton.setForeground(Color.WHITE);
+        registerButton.setForeground(CARD);
         registerButton.setBackground(PRIMARY);
         registerButton.setFocusPainted(false);
         registerButton.setBorderPainted(false);
