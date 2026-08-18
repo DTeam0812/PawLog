@@ -89,8 +89,8 @@ public class DailyUsageSummaryDAO {
         return list;
     }
 
-    // 3. 특정 사용자의 특정 기간(시작일~종료일) 프로그램별 합계 집계 조회 (주간/월간/커스텀 기간 통계)
-    public List<DailyUsageSummaryEntity> getSummaryByUserAndPeriod(long userId, Date startDate, Date endDate) {
+    // 3. 특정 사용자의 특정 기간(시작일~종료일) 프로그램별 합계 집계 조회 (커스텀 기간 통계)
+    /*public List<DailyUsageSummaryEntity> getSummaryByUserAndPeriod(long userId, Date startDate, Date endDate) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -128,32 +128,88 @@ public class DailyUsageSummaryDAO {
             pool.freeConnection(con, pstmt, rs);
         }
         return list;
-    }
+    }*/
 
-    // 4. 특정 사용자의 특정 날짜 총 사용 시간(초) 합계 조회 (오늘의 총 사용 시간)
-    public long getTotalDurationByUserAndDate(long userId, Date summaryDate) {
+    // 3-1. 개선버전
+    /**
+     * 특정 사용자의 특정 기간(시작일~종료일) 프로그램별 사용량 합계 조회
+     * @return List<Object[]> -> [0]: program_id(Long), [1]: program_name(String),
+     *                           [2]: foreground_sec(Long), [3]: background_sec(Long), [4]: total_sec(Long)
+     */
+    public List<Object[]> getSummaryByUserAndPeriod(long userId, java.sql.Date startDate, java.sql.Date endDate) {
+        List<Object[]> list = new ArrayList<>();
+
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        long totalSec = 0;
 
-        String sql = "SELECT SUM(total_duration_sec) FROM daily_usage_summary WHERE user_id = ? AND summary_date = ?";
+        // programs 테이블과 JOIN하여 프로그램 이름을 한 번에 조회
+        String sql = "SELECT d.program_id, " +
+                "       COALESCE(p.display_name, p.process_name) AS program_name, " +
+                "       SUM(d.foreground_duration_sec) AS foreground_duration_sec, " +
+                "       SUM(d.background_duration_sec) AS background_duration_sec, " +
+                "       SUM(d.total_duration_sec) AS total_duration_sec " +
+                "FROM daily_usage_summary d " +
+                "JOIN programs p ON d.program_id = p.program_id " +
+                "WHERE d.user_id = ? AND d.summary_date BETWEEN ? AND ? " +
+                "GROUP BY d.program_id, p.display_name, p.process_name " +
+                "ORDER BY total_duration_sec DESC";
 
         try {
             con = pool.getConnection();
             pstmt = con.prepareStatement(sql);
             pstmt.setLong(1, userId);
-            pstmt.setDate(2, summaryDate);
+            pstmt.setDate(2, startDate);
+            pstmt.setDate(3, endDate);
             rs = pstmt.executeQuery();
 
-            if (rs.next()) {
-                totalSec = rs.getLong(1);
+            while (rs.next()) {
+                Object[] row = new Object[]{
+                        rs.getLong("program_id"),
+                        rs.getString("program_name"),
+                        rs.getLong("foreground_duration_sec"),
+                        rs.getLong("background_duration_sec"),
+                        rs.getLong("total_duration_sec")
+                };
+                list.add(row);
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             pool.freeConnection(con, pstmt, rs);
         }
-        return totalSec;
+
+        return list;
+    }
+
+    // 4. 특정 사용자의 특정 날짜 총 사용 시간(초) 합계 조회 (오늘의 총 사용 시간)
+    public long getTotalUsageSecByUserAndPeriod(long userId, java.sql.Date startDate, java.sql.Date endDate) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        // COALESCE를 사용하여 해당 기간에 조회된 데이터가 없더라도 NULL이 아닌 0을 반환
+        String sql = "SELECT COALESCE(SUM(total_duration_sec), 0) AS grand_total_sec " +
+                "FROM daily_usage_summary " +
+                "WHERE user_id = ? AND summary_date BETWEEN ? AND ?";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setLong(1, userId);
+            pstmt.setDate(2, startDate);
+            pstmt.setDate(3, endDate);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getLong("grand_total_sec");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+
+        return 0L;
     }
 }
