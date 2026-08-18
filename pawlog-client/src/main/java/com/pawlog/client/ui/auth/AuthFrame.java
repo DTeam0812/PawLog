@@ -11,6 +11,7 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -19,6 +20,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import com.pawlog.client.tracker.ProgramTracker;
+import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.client.ui.dashboard.DashboardFrame;
 
 public class AuthFrame extends JFrame {
@@ -71,6 +74,9 @@ public class AuthFrame extends JFrame {
         JLabel titleLabel = new JLabel("🐾 Pawlog");
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 22));
+        
+
+   
 
         JButton closeButton = new JButton("×");
         closeButton.setFont(new Font("맑은 고딕", Font.BOLD, 22));
@@ -88,7 +94,7 @@ public class AuthFrame extends JFrame {
 
         headerPanel.add(titleLabel, BorderLayout.WEST);
         headerPanel.add(closeButtonPanel, BorderLayout.EAST);
-
+        
         addHeaderDrag(headerPanel);
         addHeaderDrag(titleLabel);
 

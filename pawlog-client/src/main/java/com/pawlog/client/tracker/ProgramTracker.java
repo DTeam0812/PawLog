@@ -2,6 +2,7 @@ package com.pawlog.client.tracker;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,8 +19,8 @@ import com.sun.jna.ptr.IntByReference;
 
 public class ProgramTracker {
     private static final Set<String> EXCLUDED = new HashSet<>();
-    private static final Map<String, Long> usageMap = new HashMap<>();
-
+    private static final Map<String, Long> usageMap = new HashMap<>();// 전체 통계
+    private static final Map<UsageKey, Long> hourlyUsageMap = new HashMap<>();//시간별 통계
     private static ScheduledExecutorService scheduler;
     private static LocalDate trackingDate = LocalDate.now();
     private static String previousProgram;
@@ -82,7 +83,13 @@ public class ProgramTracker {
                 return;
             }
 
-            LocalDate today = LocalDate.now();
+            LocalDateTime now = LocalDateTime.now();
+            LocalDate today = now.toLocalDate();
+            int currentHour = now.getHour();
+
+
+
+
 
             if (!today.equals(trackingDate)) {
                 trackingDate = today;
@@ -98,6 +105,13 @@ public class ProgramTracker {
 
             totalSeconds++;
             usageMap.merge(programName, 1L, Long::sum);
+            UsageKey usageKey = new UsageKey(
+                today,
+                currentHour,
+                programName
+            );
+
+            hourlyUsageMap.merge(  usageKey, 1L, Long::sum );
 
             currentProgram = displayName;
             currentWindowTitle = programName;
@@ -126,11 +140,21 @@ public class ProgramTracker {
         return new HashMap<>(usageMap);
     }
 
+    public static Map<UsageKey, Long> getHourlyUsageMap() {
+        return new HashMap<>(hourlyUsageMap);
+    }
+    
+    
+
+    int currentHour = LocalDateTime.now().getHour();
+
     public static List<Map.Entry<String, Long>> getTopPrograms() {
         return usageMap.entrySet().stream()
             .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
             .toList();
     }
+
+
 
     public static String getMostProgram() {
         List<Map.Entry<String, Long>> rankList = getTopPrograms();

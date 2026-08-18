@@ -11,6 +11,8 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Map;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -19,6 +21,9 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+
+import com.pawlog.client.tracker.ProgramTracker;
+import com.pawlog.client.tracker.UsageKey;
 
 public class DashboardFrame extends JFrame {
 
@@ -70,13 +75,16 @@ public class DashboardFrame extends JFrame {
         closeButton.setMargin(new Insets(0, 0, 2, 0));
         closeButton.addActionListener(event -> setVisible(false));
 
+       
         JPanel closeButtonPanel = new JPanel(new GridBagLayout());
+
+
         closeButtonPanel.setOpaque(false);
         closeButtonPanel.add(closeButton);
 
         headerPanel.add(titleLabel, BorderLayout.WEST);
         headerPanel.add(closeButtonPanel, BorderLayout.EAST);
-
+       
         addHeaderDrag(headerPanel);
         addHeaderDrag(titleLabel);
 

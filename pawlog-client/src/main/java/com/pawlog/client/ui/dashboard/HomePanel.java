@@ -1,6 +1,10 @@
 package com.pawlog.client.ui.dashboard;
 
+import com.pawlog.client.network.PawLogClient;
+import com.pawlog.client.network.PawLogClient.Response;
 import com.pawlog.client.tracker.ProgramTracker;
+import com.pawlog.client.tracker.UsageKey;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -13,6 +17,7 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -21,19 +26,21 @@ import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
 public class HomePanel extends JPanel {
     private static final Color BACKGROUND = new Color(247, 244, 239);
     private JLabel mostProgramLabel;
     private static final Color CARD_BACKGROUND = Color.WHITE;
-
+    private final PawLogClient pawLogClient = new PawLogClient();
     private static final Color PRIMARY = new Color(255, 159, 67);
 
     private static final Color TEXT = new Color(45, 52, 54);
@@ -124,16 +131,69 @@ public class HomePanel extends JPanel {
         trackingDot.setForeground(new Color(0, 184, 148));
 
         JLabel trackingLabel = new JLabel("추적 중");
+        JLabel lastSavedLabel = new JLabel("저장 전");
+        lastSavedLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 11));
+        lastSavedLabel.setForeground(SUB_TEXT);
 
+        JButton saveButton = new JButton("기록 저장");
+        saveButton.setFont(new Font("맑은 고딕", Font.BOLD, 12));
+        saveButton.setForeground(PRIMARY);
+        saveButton.setBackground(Color.WHITE);
+        saveButton.setFocusPainted(false);
+        saveButton.setBorder(BorderFactory.createLineBorder(PRIMARY));
+        saveButton.setPreferredSize(new Dimension(88, 30));
+        saveButton.setMargin(new Insets(0, 8, 0, 8));
+        saveButton.addActionListener(event -> {
+            Map<UsageKey, Long> data =
+                ProgramTracker.getHourlyUsageMap();
+
+            if (data.isEmpty()) {
+                lastSavedLabel.setText("저장할 기록 없음");
+                return;
+            }
+
+            saveButton.setEnabled(false);
+            saveButton.setText("저장 중...");
+            lastSavedLabel.setText("서버 연결 중");
+
+            new SwingWorker<Response, Void>() {
+                @Override
+                protected Response doInBackground() throws Exception {
+                    return pawLogClient.saveUsage(data);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        Response response = get();
+
+                        if (response.success()) {
+                            String savedTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+                            lastSavedLabel.setText("마지막 저장 " + savedTime);
+                        } else {
+                            lastSavedLabel.setText("저장 실패");
+                        }
+                    } catch (Exception exception) {
+                        lastSavedLabel.setText("서버 응답 없음");
+                        exception.printStackTrace();
+                    } finally {
+                        saveButton.setEnabled(true);
+                        saveButton.setText("기록 저장");
+                    }
+                }
+            }.execute();
+        });
         trackingLabel.setForeground(new Color(0, 184, 148));
         trackingLabel.setFont(new Font("맑은 고딕", Font.BOLD, 13));
 
         trackingPanel.add(trackingDot);
         trackingPanel.add(trackingLabel);
+        trackingPanel.add(Box.createHorizontalStrut(5));
+        trackingPanel.add(lastSavedLabel);
+        trackingPanel.add(saveButton);
 
         panel.add(leftPanel, BorderLayout.WEST);
         panel.add(trackingPanel, BorderLayout.EAST);
-
         return panel;
     }
 
