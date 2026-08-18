@@ -1,5 +1,7 @@
 package com.pawlog.client.ui.dashboard;
 
+import static com.pawlog.client.ui.dashboard.UiComponents.*;
+
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.network.PawLogClient.Response;
@@ -38,16 +40,10 @@ import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
 public class HomePanel extends JPanel {
-    private static final Color BACKGROUND = new Color(247, 244, 239);
-    private JLabel mostProgramLabel;
-    private static final Color CARD_BACKGROUND = Color.WHITE;
     private final PawLogClient pawLogClient = new PawLogClient();
     private final AuthStore authStore = AuthStore.getInstance();
-    private static final Color PRIMARY = new Color(255, 159, 67);
-    private static final Color TEXT = new Color(45, 52, 54);
-    private static final Color SUB_TEXT = new Color(120, 130, 132);
-    
-    private static final Color PROGRESS_BACKGROUND = new Color(225, 225, 225);
+
+    private JLabel mostProgramLabel;
     private JLabel activeProgramNameLabel;
     private JLabel activeWindowTitleLabel;
     private JLabel activeSessionTimeLabel;
@@ -118,7 +114,7 @@ public class HomePanel extends JPanel {
         JLabel dateLabel = new JLabel(today.format(formatter));
 
         dateLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
-        dateLabel.setForeground(SUB_TEXT);
+        dateLabel.setForeground(SOFT_TEXT);
         dateLabel.setBorder(BorderFactory.createEmptyBorder(6, 20, 0, 0));
 
         leftPanel.add(greetingLabel);
@@ -128,17 +124,17 @@ public class HomePanel extends JPanel {
         trackingPanel.setOpaque(false);
 
         JLabel trackingDot = new JLabel("●");
-        trackingDot.setForeground(new Color(0, 184, 148));
+        trackingDot.setForeground(SUCCESS);
 
         JLabel trackingLabel = new JLabel("추적 중");
         JLabel lastSavedLabel = new JLabel("저장 전");
         lastSavedLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 11));
-        lastSavedLabel.setForeground(SUB_TEXT);
+        lastSavedLabel.setForeground(SOFT_TEXT);
 
         JButton saveButton = new JButton("기록 저장");
         saveButton.setFont(new Font("맑은 고딕", Font.BOLD, 12));
         saveButton.setForeground(PRIMARY);
-        saveButton.setBackground(Color.WHITE);
+        saveButton.setBackground(CARD);
         saveButton.setFocusPainted(false);
         saveButton.setBorder(BorderFactory.createLineBorder(PRIMARY));
         saveButton.setPreferredSize(new Dimension(88, 30));
@@ -183,7 +179,7 @@ public class HomePanel extends JPanel {
                 }
             }.execute();
         });
-        trackingLabel.setForeground(new Color(0, 184, 148));
+        trackingLabel.setForeground(SUCCESS);
         trackingLabel.setFont(new Font("맑은 고딕", Font.BOLD, 13));
 
         trackingPanel.add(trackingDot);
@@ -215,7 +211,7 @@ public class HomePanel extends JPanel {
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
         card.setPreferredSize(new Dimension(900, 160));
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(235, 235, 235)), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
+        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
 
         JLabel cardTitle = new JLabel("현재 활성 프로그램");
 
@@ -240,7 +236,7 @@ public class HomePanel extends JPanel {
         activeWindowTitleLabel = new JLabel("활성 창을 확인하고 있습니다.");
 
         activeWindowTitleLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
-        activeWindowTitleLabel.setForeground(SUB_TEXT);
+        activeWindowTitleLabel.setForeground(SOFT_TEXT);
 
         programTextPanel.add(activeProgramNameLabel);
         programTextPanel.add(Box.createVerticalStrut(3));
@@ -256,7 +252,7 @@ public class HomePanel extends JPanel {
         JLabel sessionTitle = new JLabel("현재 세션");
 
         sessionTitle.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        sessionTitle.setForeground(SUB_TEXT);
+        sessionTitle.setForeground(SOFT_TEXT);
         sessionTitle.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
         activeSessionTimeLabel = new JLabel("0초");
@@ -376,12 +372,12 @@ public class HomePanel extends JPanel {
         JPanel card = createCardPanel();
 
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(235, 235, 235)), BorderFactory.createEmptyBorder(15, 17, 15, 17)));
+        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(15, 17, 15, 17)));
 
         JLabel titleLabel = new JLabel(title);
 
         titleLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        titleLabel.setForeground(SUB_TEXT);
+        titleLabel.setForeground(SOFT_TEXT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         valueLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
@@ -430,7 +426,7 @@ public class HomePanel extends JPanel {
     JPanel card = createCardPanel();
 
     card.setLayout(new BorderLayout());
-    card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(235, 235, 235)), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
+    card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
 
     JLabel title = new JLabel("최근 활성 프로그램");
     title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
@@ -472,7 +468,7 @@ public class HomePanel extends JPanel {
         JLabel lastUsedLabel = new JLabel("  " + lastUsed);
 
         lastUsedLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 11));
-        lastUsedLabel.setForeground(new Color(180, 185, 187));
+        lastUsedLabel.setForeground(MUTED_TEXT);
 
         namePanel.add(nameLabel);
         namePanel.add(lastUsedLabel);
@@ -483,7 +479,7 @@ public class HomePanel extends JPanel {
         JLabel timeLabel = new JLabel(usageTime);
 
         timeLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        timeLabel.setForeground(SUB_TEXT);
+        timeLabel.setForeground(SOFT_TEXT);
 
         JLabel percentLabel = new JLabel(percent + "%");
 
@@ -499,7 +495,7 @@ public class HomePanel extends JPanel {
         JProgressBar progressBar = new JProgressBar(0, 100);
         progressBar.setValue(percent);
         progressBar.setForeground(PRIMARY);
-        progressBar.setBackground(PROGRESS_BACKGROUND);
+        progressBar.setBackground(BORDER);
         progressBar.setBorderPainted(false);
         progressBar.setStringPainted(false);
         progressBar.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -518,7 +514,7 @@ public class HomePanel extends JPanel {
         JPanel card = createCardPanel();
 
         card.setLayout(new BorderLayout());
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(235, 235, 235)), BorderFactory.createEmptyBorder(18, 18, 18, 18)));
+        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(18, 18, 18, 18)));
 
         JLabel title = new JLabel("추천 프로그램 TOP 3");
 
@@ -575,7 +571,7 @@ public class HomePanel extends JPanel {
         JLabel countLabel = new JLabel(recommendations);
 
         countLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        countLabel.setForeground(SUB_TEXT);
+        countLabel.setForeground(SOFT_TEXT);
 
         leftPanel.add(rankLabel);
         leftPanel.add(programLabel);
@@ -588,7 +584,7 @@ public class HomePanel extends JPanel {
 
     private JPanel createCardPanel() {
         JPanel card = new JPanel();
-        card.setBackground(CARD_BACKGROUND);
+        card.setBackground(CARD);
         return card;
     }
 

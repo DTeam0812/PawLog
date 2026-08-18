@@ -99,7 +99,7 @@ public class PopularRankingPanel extends JPanel {
         JPanel row = transparentPanel(new GridLayout(1, 5));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         row.setPreferredSize(new Dimension(700, 48));
-        row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(239, 239, 239)));
+        row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, TABLE_DIVIDER));
 
         JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 14, rank <= 3 ? PRIMARY : SUB_TEXT);
         JLabel nameLabel = label(data[0], Font.BOLD, 13, TEXT);

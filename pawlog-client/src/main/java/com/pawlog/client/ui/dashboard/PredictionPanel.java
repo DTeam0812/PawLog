@@ -75,7 +75,7 @@ public class PredictionPanel extends JPanel {
             JRadioButton option = new JRadioButton(names[i]);
             option.setFont(font(Font.BOLD, 13));
             option.setForeground(TEXT);
-            option.setBackground(Color.WHITE);
+            option.setBackground(CARD);
             option.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(12, 14, 12, 14)));
             option.setBorderPainted(true);
             if(i == 0) option.setSelected(true);

@@ -85,7 +85,7 @@ public class RecommendationPanel extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(14, 16, 13, 16));
 
         JPanel nameRow = transparentPanel(new BorderLayout());
-        JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 14, Color.WHITE);
+        JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 14, CARD);
         rankLabel.setHorizontalAlignment(JLabel.CENTER);
         rankLabel.setOpaque(true);
         rankLabel.setBackground(PRIMARY);
@@ -152,7 +152,7 @@ public class RecommendationPanel extends JPanel {
     private JPanel createRankingRow(String[] data) {
         JPanel row = transparentPanel(new GridLayout(1, 5));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        row.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(240, 240, 240)));
+        row.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, TABLE_DIVIDER));
         row.add(label(data[0], Font.BOLD, 12, TEXT));
         row.add(label(data[1], Font.BOLD, 12, TEXT));
         row.add(label(data[2], Font.PLAIN, 11, SUB_TEXT));
