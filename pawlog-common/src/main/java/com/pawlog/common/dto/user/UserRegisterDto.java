@@ -15,11 +15,11 @@ public class UserRegisterDto {
     @Getter
     @Setter
     public static class Request {
+        private String nickname;
         private String email;
         private String password;
-        private String nickname;
+        private String birth;
         private String gender;
-        private Date birthDate;
     }
     // 2. 회원가입 응답 DTO
     @AllArgsConstructor
@@ -28,7 +28,13 @@ public class UserRegisterDto {
     @Setter
     public static class Response {
         private boolean success;
+        private int code;
         private String message;
 
+        public Response(boolean success, String message) {
+            this.success = success;
+            this.code = success ? 200 : 400;
+            this.message = message;
+        }
     }
 }
