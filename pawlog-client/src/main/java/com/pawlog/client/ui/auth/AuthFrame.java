@@ -29,6 +29,10 @@ public class AuthFrame extends JFrame {
     private boolean loggedIn;
 
     public AuthFrame() {
+        this(true);
+    }
+
+    public AuthFrame(boolean showImmediately) {
         setSize(590, 750);
         setUndecorated(true);
         setLocationRelativeTo(null);
@@ -49,7 +53,9 @@ public class AuthFrame extends JFrame {
         add(cardPanel, BorderLayout.CENTER);
 
         showPage("LOGIN");
-        setVisible(true);
+        if (showImmediately) {
+            setVisible(true);
+        }
     }
 
     private void showPage(String pageName) {

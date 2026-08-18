@@ -5,7 +5,13 @@ import com.pawlog.client.ui.auth.AuthFrame;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.Insets;
 import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.prefs.Preferences; // windows 레지스트리에 사용자설정을 저장
@@ -33,18 +39,44 @@ public class Widget {
     }
 
     private void loadWindowLocation() {
-    int defaultValue = Integer.MIN_VALUE;
+        int defaultValue = Integer.MIN_VALUE;
+        int x = preferences.getInt(WINDOW_X_KEY, defaultValue);
+        int y = preferences.getInt(WINDOW_Y_KEY, defaultValue);
 
-    int x = preferences.getInt(WINDOW_X_KEY, defaultValue);
-    int y = preferences.getInt(WINDOW_Y_KEY, defaultValue);
+        if (x == defaultValue || y == defaultValue || !isVisibleOnScreen(x, y)) {
+            setDefaultWindowLocation();
+            saveWindowLocation();
+            return;
+        }
 
-    if (x == defaultValue || y == defaultValue) {
-        window.setLocationRelativeTo(null);
-        return;
+        window.setLocation(x, y);
     }
 
-    window.setLocation(x, y);
-}
+    private boolean isVisibleOnScreen(int x, int y) {
+        Rectangle widgetBounds = new Rectangle(x, y, window.getWidth(), window.getHeight());
+
+        for (GraphicsDevice device : GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()) {
+            Rectangle screenBounds = device.getDefaultConfiguration().getBounds();
+            Rectangle visibleArea = widgetBounds.intersection(screenBounds);
+
+            if (visibleArea.width >= 32 && visibleArea.height >= 32) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void setDefaultWindowLocation() {
+        GraphicsConfiguration config = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+        Rectangle screen = config.getBounds();
+        Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(config);
+        int margin = 24;
+
+        int x = screen.x + screen.width - insets.right - window.getWidth() - margin;
+        int y = screen.y + screen.height - insets.bottom - window.getHeight() - margin;
+        window.setLocation(x, y);
+    }
     private static final int DRAG_THRESHOLD = 5;
 
     private final JWindow window;
@@ -55,7 +87,7 @@ public class Widget {
     public Widget() {
     ProgramTracker.startTracking();
     window = new JWindow();
-    AUTH = new AuthFrame();
+    AUTH = new AuthFrame(false);
     
     JLabel dogLabel = createDogLabel();
 
@@ -167,6 +199,7 @@ public class Widget {
 
     public void show() {
         window.setVisible(true);
+        window.toFront();
     }
         
     public static void main(String[] args) {

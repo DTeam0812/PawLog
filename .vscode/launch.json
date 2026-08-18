@@ -34,6 +34,14 @@
             "request": "launch",
             "mainClass": "Main",
             "vmArgs": "--enable-native-access=ALL-UNNAMED"
-        }
+        },
+        {
+    "type": "java",
+    "name": "App",
+    "request": "launch",
+    "mainClass": "com.pawlog.client.main.App",
+    "projectName": "pawlog-client",
+    "vmArgs": "--enable-native-access=ALL-UNNAMED"
+}
     ]
 }

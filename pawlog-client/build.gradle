@@ -11,4 +11,5 @@ dependencies {
 
 application {
     mainClass = 'com.pawlog.client.main.App'
+    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
 }

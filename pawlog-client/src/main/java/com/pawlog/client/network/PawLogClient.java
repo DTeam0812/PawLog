@@ -8,7 +8,7 @@ import java.net.Socket;
 import java.time.LocalDate;
 
 public class PawLogClient {
-    private static final String DEFAULT_HOST = "localhost";
+    private static final String DEFAULT_HOST = "10.238.205.190";//서버주소
     private static final int DEFAULT_PORT = 8005;
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
     private static final String MODE1 = ":";
@@ -33,6 +33,7 @@ public class PawLogClient {
         String data = email + MODE2 + password;
         return send(LOGIN, data);
     }
+
 
     public Response register(String email, String password, String nickname, String gender, LocalDate birthDate) throws Exception {
         String data = email
