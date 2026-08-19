@@ -19,7 +19,7 @@ import javax.swing.JTextField;
 public final class UiComponents {
     // 앱 전체 기본 아이보리 배경색
     public static final Color BACKGROUND = new Color(247, 244, 239);
-
+    
     // 카드, 입력창, 밝은 버튼 
     public static final Color CARD = Color.WHITE;
 

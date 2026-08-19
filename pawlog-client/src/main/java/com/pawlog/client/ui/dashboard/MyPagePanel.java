@@ -19,12 +19,15 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 public class MyPagePanel extends JPanel {
+   
     public MyPagePanel() {
         setLayout(new BorderLayout(0, 18));
         setBackground(BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
         add(titlePanel("마이페이지", "내 정보와 비밀번호를 확인하고 변경할 수 있습니다."), BorderLayout.NORTH);
+    
         add(createContent(), BorderLayout.CENTER);
+        
     }
     
     private JPanel createContent() {
