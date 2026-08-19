@@ -7,9 +7,12 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
+import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.UsageKey;
@@ -55,12 +58,35 @@ public class PawLogClient {
     public Response DateJoin(String id ,String startdate , String enddate) throws Exception{
         String data =  id + MODE2 + startdate + MODE2 + enddate;
         //여기서 JSON 변환 ?
+
         return send(DJOIN ,data);
     }
 
 
 
     public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
+     
+        //map - > list변환 
+        List<UsageLogSaveDto.LogItem> logs = new ArrayList<>();
+        for(Map.Entry<UsageKey, Long> entry : data.entrySet()){
+            UsageKey key= entry.getKey();
+            long seconds = entry.getValue();
+
+            UsageLogSaveDto.LogItem logsavedto = new UsageLogSaveDto.LogItem(key.hour(),key.programName(),seconds);
+            logs.add(logsavedto);//배열풀어서 저장 ㅇㅋ;
+        }
+        
+
+        UsageLogSaveDto.Request request = new UsageLogSaveDto.Request(AuthStore.getInstance().getEmail(),LocalDate.now().toString(), logs);//email date logs
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket packet = new RequestPacket("USAGE_LOG_SAVE", dataNode);
+        String requestJson = JsonUtil.toJson(packet);
+        System.out.println(requestJson);
+        sendJson(requestJson);
+
+        
+        
+        
         
         //날짜 시간 프로그램이름 실행 초 
         StringBuilder builder = new StringBuilder();
@@ -154,10 +180,6 @@ public class PawLogClient {
             boolean success = root.path("success").asBoolean();
             String message = root.path("message").asText("");
             int code = root.path("code").asInt();
-
-                
-
-            
 
                 return new Response(success, message );
             }
