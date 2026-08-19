@@ -9,7 +9,8 @@ import java.awt.*;
 public class AuthStore {
     private static final AuthStore instance = new AuthStore();
     private String email ;
-    
+    private String Nickname;
+    private String ID;
     private  boolean loggedIn ;//로그인 확인용 
 
     public boolean isLoggedIn() { return loggedIn;}//로그인 체크 확인 함수

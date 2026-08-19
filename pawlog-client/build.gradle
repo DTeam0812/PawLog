@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     implementation project(':pawlog-common')
-
+    implementation 'com.github.lgooddatepicker:LGoodDatePicker:11.2.1'
     // JNA (Windows API 사용)
     implementation 'net.java.dev.jna:jna:5.14.0'
     implementation 'net.java.dev.jna:jna-platform:5.14.0'

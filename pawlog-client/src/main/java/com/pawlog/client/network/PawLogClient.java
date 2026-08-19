@@ -1,16 +1,19 @@
 package com.pawlog.client.network;
-
+import com.pawlog.common.protocol.RequestPacket;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Map;
-
+import com.pawlog.common.dto.auth.AuthLoginDto;
+import com.pawlog.common.dto.auth.AuthRegisterDto;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.UsageKey;
-
+import com.pawlog.common.util.JsonUtil;
 public class PawLogClient {
     private static final String DEFAULT_HOST = "192.168.0.13";//서버주소
     private static final int DEFAULT_PORT = 8005;
@@ -23,6 +26,7 @@ public class PawLogClient {
     private static final String REGISTER = "REGISTER";
     private static final String SUCCESS = "SUCCESS";
     private static final String INIT = "INIT";
+    private static final String DJOIN = "DJOIN";
     private final String host;
     private final int port;
 
@@ -37,8 +41,24 @@ public class PawLogClient {
 
     public Response login(String email, String password) throws Exception {
         String data = email + MODE2 + password;
+        AuthLoginDto.Request loginData = 
+        new AuthLoginDto.Request(email, password);
+        JsonNode dataNode = JsonUtil.toJsonNode(loginData);
+        RequestPacket requestPacket = new RequestPacket( LOGIN ,dataNode );
+        String requestJson = JsonUtil.toJson(requestPacket);
+        System.out.println(requestJson);
+
+
+
         return send(LOGIN, data);
     }
+    public Response DateJoin(String id ,String startdate , String enddate) throws Exception{
+        String data =  id + MODE2 + startdate + MODE2 + enddate;
+        //여기서 JSON 변환 ?
+        return send(DJOIN ,data);
+    }
+
+
 
     public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
         
@@ -82,7 +102,16 @@ public class PawLogClient {
             + MODE2 + nickname
             + MODE2 + gender
             + MODE2 + birthDate;
+        AuthRegisterDto.Request registerdata =
+        new AuthRegisterDto.Request(nickname,email,password,birthDate.toString(),gender);
+        JsonNode registernode = JsonUtil.toJsonNode(registerdata);
+        RequestPacket requestPacket = new RequestPacket( LOGIN ,registernode );
+        JsonNode registernod = JsonUtil.toJsonNode(requestPacket);
+        String requestRegist = JsonUtil.toJson(registernod);
 
+        sendJson(requestRegist);
+
+        System.out.println(registernod);
 
         return send(REGISTER, data);
     }
@@ -92,8 +121,8 @@ public class PawLogClient {
             socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MILLIS);
             socket.setSoTimeout(READ_TIMEOUT_MILLIS);
 
-            try (BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                 PrintWriter output = new PrintWriter(socket.getOutputStream(), true)) {
+            try (BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(),StandardCharsets.UTF_8));
+                 PrintWriter output = new PrintWriter(socket.getOutputStream(), true,StandardCharsets.UTF_8)) {
 
                 output.println(command + MODE1 + data);
                 String line = input.readLine();
@@ -110,7 +139,30 @@ public class PawLogClient {
             }
         }
     }
+    private Response sendJson(String responeJson) throws Exception{
+        try(Socket socket = new Socket()){
+            socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MILLIS);
+            socket.setSoTimeout(READ_TIMEOUT_MILLIS);
+            try (BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(),StandardCharsets.UTF_8));
+                 PrintWriter output = new PrintWriter(socket.getOutputStream(), true,StandardCharsets.UTF_8)) {
+            if (responeJson == null) {
+                    return new Response(false, "서버 응답이 없습니다." );
+            }
+            output.println(responeJson);
+            String line = input.readLine();
+            JsonNode root =JsonUtil.fromJson(responeJson, JsonNode.class);
+            boolean success = root.path("success").asBoolean();
+            String message = root.path("message").asText("");
+            int code = root.path("code").asInt();
 
+                
+
+            
+
+                return new Response(success, message );
+            }
+        }
+    }
     public record Response(boolean success, String message) {
     }
 }
