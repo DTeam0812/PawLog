@@ -2,10 +2,13 @@ package com.pawlog.common.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
+import com.fasterxml.jackson.databind.JsonNode;
 public class JsonUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
+    
+    public static JsonNode toJsonNode(Object object) {
+    return objectMapper.valueToTree(object);
+    }   // JSON분리
     static {
         // LocalDate, LocalDateTime 등 날짜 타입 변환 등록
         objectMapper.registerModule(new JavaTimeModule());

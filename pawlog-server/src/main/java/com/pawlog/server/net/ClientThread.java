@@ -1,5 +1,6 @@
 package com.pawlog.server.net;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
@@ -15,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 
 public class ClientThread extends Thread {
@@ -31,8 +33,8 @@ public class ClientThread extends Thread {
     public ClientThread(Socket socket) {
         try {
             this.socket = socket;
-            this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.out = new PrintWriter(socket.getOutputStream(), true);
+            this.in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            this.out = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
             this.authService = new AuthService();
             this.rankingService = new RankingService();
             System.out.println(socket + " 접속 성공.......");
@@ -87,7 +89,8 @@ public class ClientThread extends Thread {
             try {
                 RequestPacket packet = JsonUtil.fromJson(line, RequestPacket.class);
                 String command = packet.getCommand();
-                String dataJson = packet.getData();
+                JsonNode datanode = packet.getData();//json 임시해독
+                String dataJson = datanode.toString();
 
                 if (ServerProtocol.REGISTER.equals(command)) {
                     handleRegisterJson(dataJson);
