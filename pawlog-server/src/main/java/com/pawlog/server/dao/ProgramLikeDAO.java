@@ -41,7 +41,7 @@ public class ProgramLikeDAO {
     }
 
     // 2. 프로그램 좋아요 취소
-    public boolean deleteProgramLike(long programId, long userId) {
+    public boolean deleteProgramLike(long userId, long programId) {
         Connection con = null;
         PreparedStatement pstmt = null;
 
@@ -64,7 +64,7 @@ public class ProgramLikeDAO {
     }
 
     // 3. 특정 사용자가 특정 프로그램 좋아요를 눌렀는지 확인
-    public boolean isProgramLiked(long programId, long userId) {
+    public boolean isProgramLiked(long userId, long programId) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;

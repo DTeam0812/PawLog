@@ -11,14 +11,14 @@ import lombok.Setter;
 @Setter
 
 public class ProgramLikeEntity {
-    private long programId;
     private long userId;
+    private long programId;
 
     @Override
     public String toString() {
         return "ProgramLikeEntity ["
-                + "programId=" + programId
-                + ", userId=" + userId
+                + "userId=" + userId
+                + ", programId=" + programId
                 + "]";
     }
 }

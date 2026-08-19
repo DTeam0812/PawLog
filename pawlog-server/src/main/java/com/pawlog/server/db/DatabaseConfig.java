@@ -76,8 +76,8 @@ public class DatabaseConfig {
             user_id BIGINT NOT NULL,
             program_id BIGINT NOT NULL,
             PRIMARY KEY (user_id, program_id),
-            FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE
             );
             """,
 
