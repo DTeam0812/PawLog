@@ -16,7 +16,7 @@ public class AuthStore {
    
     public void login(String Email) {//로그인 상태 활성화 
         this.email = Email;
-        
+
         loggedIn = true;
     }
     public String getEmail() {
@@ -24,7 +24,8 @@ public class AuthStore {
     }
     public void logout(){//로갓
         email = null;
-        loggedIn = false;   
+        loggedIn = false;
+        
     }
     private AuthStore() {
 

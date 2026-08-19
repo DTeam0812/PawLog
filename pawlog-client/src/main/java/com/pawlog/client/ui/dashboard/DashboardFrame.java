@@ -24,11 +24,13 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.tracker.UsageKey;
 
 public class DashboardFrame extends JFrame {
-
+    AuthStore authStore = AuthStore.getInstance();
+    private final Runnable showLogin;
     private static final String HOME = "HOME";
     private static final String STATISTICS = "STATISTICS";
     private static final String PROGRAMS = "PROGRAMS";
@@ -36,14 +38,19 @@ public class DashboardFrame extends JFrame {
     private static final String SETTINGS = "SETTINGS";
     private static final String PREDICTION = "PREDICTION";
     private static final String MY_PAGE = "MY_PAGE";
-
+    private static final String LOGOUT = "LOGOUT";
     private final CardLayout cardLayout = new CardLayout();
+
+
+
+
     private final JPanel contentPanel = new JPanel(cardLayout);
     private final HomePanel homePanel = new HomePanel();
 
     private Point headerDragOffset;
 
-    public DashboardFrame() {
+    public DashboardFrame(Runnable showLogin) {
+        this.showLogin = showLogin;
         setUndecorated(true);
         setTitle("Pawlog");
         setSize(900, 600);
@@ -140,7 +147,12 @@ public class DashboardFrame extends JFrame {
         JButton predictionButton = createMenuButton("예측 이벤트", PREDICTION);
         JButton myPageButton = createMenuButton("마이페이지", MY_PAGE);
         JButton settingsButton = createMenuButton("설정", SETTINGS);
-
+        JButton logout = createMenuButton("로그아웃", LOGOUT);
+        logout.addActionListener(event -> {
+            setVisible(false);
+            authStore.logout();
+            showLogin.run();
+        });
         sidebarPanel.add(homeButton);
         sidebarPanel.add(Box.createVerticalStrut(10));
         sidebarPanel.add(statisticsButton);
@@ -154,6 +166,8 @@ public class DashboardFrame extends JFrame {
         sidebarPanel.add(myPageButton);
         sidebarPanel.add(Box.createVerticalStrut(10));
         sidebarPanel.add(settingsButton);
+        sidebarPanel.add(Box.createVerticalStrut(10));
+        sidebarPanel.add(logout);
 
         return sidebarPanel;
     }

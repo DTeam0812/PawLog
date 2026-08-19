@@ -31,7 +31,7 @@ public class AuthFrame extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cardPanel = new JPanel(cardLayout);
     private Point headerDragOffset;
-    private final DashboardFrame dashboardFrame = new DashboardFrame();
+    private final DashboardFrame dashboardFrame;
     private boolean loggedIn;
     
     
@@ -43,6 +43,7 @@ public class AuthFrame extends JFrame {
     }
 
     public AuthFrame(boolean showImmediately) {
+        dashboardFrame = new DashboardFrame(this::showLoginAfterLogout);
         setSize(590, 750);
         setUndecorated(true);
         setLocationRelativeTo(null);
@@ -70,6 +71,15 @@ public class AuthFrame extends JFrame {
 
     private void showPage(String pageName) {
         cardLayout.show(cardPanel, pageName);
+    }
+
+    private void showLoginAfterLogout() {
+        loggedIn = false;
+        showPage("LOGIN");
+        setState(JFrame.NORMAL);
+        setVisible(true);
+        toFront();
+        requestFocus();
     }
 
     private JPanel topPanel() {
