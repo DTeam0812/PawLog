@@ -11,7 +11,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @Getter
 @Setter
-
+//삭제예정
 public class ProgramRecommendationEntity {
     private long recId;
     private long userId;

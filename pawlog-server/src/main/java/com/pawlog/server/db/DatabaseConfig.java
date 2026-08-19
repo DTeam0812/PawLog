@@ -70,6 +70,26 @@ public class DatabaseConfig {
             );
             """,
 
+            // 3-1. program_likes (프로그램 좋아요)
+            """
+            CREATE TABLE IF NOT EXISTS program_likes (
+            user_id BIGINT NOT NULL,
+            program_id BIGINT NOT NULL,
+            PRIMARY KEY (user_id, program_id),
+            FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            );
+            """,
+
+            // 3-2. program_like_stats(프로그램 좋아요 집계)
+            """
+            CREATE TABLE IF NOT EXISTS program_like_stats (
+            program_id BIGINT PRIMARY KEY,
+            like_count BIGINT DEFAULT 0,
+            FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE
+            );
+            """,
+
             // 4. usage_logs (개별 사용 로그)
             """
             CREATE TABLE IF NOT EXISTS usage_logs (
@@ -171,7 +191,7 @@ public class DatabaseConfig {
             );
             """,
 
-            // 11. program_recommendations (프로그램 추천 요청)
+            // 11. program_recommendations (프로그램 추천 요청) 삭제예정
             """
             CREATE TABLE IF NOT EXISTS program_recommendations (
                 rec_id BIGINT AUTO_INCREMENT PRIMARY KEY,

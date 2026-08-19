@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.pawlog.server.db.DBConnectionMgr;
 import com.pawlog.server.entity.ProgramRecommendationEntity;
-
+//삭제예정
 public class ProgramRecommendationDAO {
     private DBConnectionMgr pool;
 

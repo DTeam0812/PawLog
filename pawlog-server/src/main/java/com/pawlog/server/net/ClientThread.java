@@ -12,12 +12,17 @@ import com.pawlog.server.entity.UserEntity;
 import com.pawlog.server.service.AuthService;
 import com.pawlog.server.service.RankingService;
 
+import com.pawlog.common.dto.usage.UsageLogSaveDto;
+import com.pawlog.server.service.UsageLogService;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientThread extends Thread {
     private Socket socket;
@@ -25,6 +30,7 @@ public class ClientThread extends Thread {
     private PrintWriter out;
     private AuthService authService;
     private RankingService rankingService;
+    private UsageLogService usageLogService;
 
     // 로그인된 유저 세션 정보
     private Long loggedInUserId;
@@ -37,6 +43,7 @@ public class ClientThread extends Thread {
             this.out = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
             this.authService = new AuthService();
             this.rankingService = new RankingService();
+            this.usageLogService = new UsageLogService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -96,13 +103,13 @@ public class ClientThread extends Thread {
                     handleRegisterJson(dataJson);
                 }
                 else if (ServerProtocol.LOGIN.equals(command)) {
-                    handleLogin(dataJson);
+                    handleLoginJson(dataJson);
                 }
                 else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
                     handlePopularRanking(dataJson);
                 }
-                else if (ServerProtocol.USAGE_LOG_SAVE.equals(command)){
-                    handleUsageLogSave();
+                else if (ServerProtocol.USAGE_LOG_SAVE.equals(command) || "INIT".equals(command)){
+                    handleUsageLogSaveJson(dataJson);
                 }
                 else if (ServerProtocol.USAGE_LOG_GET.equals(command)){
                     handleUsageLogGet();
@@ -136,8 +143,8 @@ public class ClientThread extends Thread {
         else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
             handlePopularRanking(data);
         }
-        else if (ServerProtocol.USAGE_LOG_SAVE.equals(command)){
-            handleUsageLogSave();
+        else if (ServerProtocol.USAGE_LOG_SAVE.equals(command) || /*임시로 작성해둠*/"INIT".equals(command)){
+            handleUsageLogSave(data);
         }
         else if (ServerProtocol.USAGE_LOG_GET.equals(command)){
             handleUsageLogGet();
@@ -328,8 +335,80 @@ public class ClientThread extends Thread {
         }
     }
 
-    public void handleUsageLogSave(){
+    // 사용 기록 저장 (JSON 처리)
+    private void handleUsageLogSaveJson(String dataJson) {
+        try {
+            UsageLogSaveDto.Request reqDto = JsonUtil.fromJson(dataJson, UsageLogSaveDto.Request.class);
+            UsageLogSaveDto.Response resDto = usageLogService.saveUsageLogs(getLoggedInUserId(), reqDto);
 
+            String resDataPayload = resDto.getSavedCount() != null ? "{\"savedCount\":" + resDto.getSavedCount() + "}" : null;
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.USAGE_LOG_SAVE,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                resDataPayload
+            );
+
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.USAGE_LOG_SAVE,
+                false,
+                400,
+                "사용 기록 저장 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 사용 기록 저장 (구분자 기반 폴백 처리)
+    public void handleUsageLogSave(String data){
+        try {
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "저장할 데이터가 없습니다.");
+                return;
+            }
+
+            // data 포맷: email;usageDate;hour;programName;seconds|email;usageDate;hour;programName;seconds...
+            String[] entries = data.split("\\|");
+            if (entries.length == 0) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "올바르지 않은 데이터 형식입니다.");
+                return;
+            }
+
+            String email = null;
+            String usageDate = null;
+            List<UsageLogSaveDto.LogItem> logItems = new ArrayList<>();
+
+            for (String entry : entries) {
+                String[] params = entry.split(ServerProtocol.MODE2);
+                if (params.length < 5) continue;
+
+                email = params[0];
+                usageDate = params[1];
+                int hour = Integer.parseInt(params[2]);
+                String programName = params[3];
+                long seconds = Long.parseLong(params[4]);
+
+                logItems.add(new UsageLogSaveDto.LogItem(hour, programName, seconds));
+            }
+
+            UsageLogSaveDto.Request reqDto = new UsageLogSaveDto.Request(email, usageDate, logItems);
+            UsageLogSaveDto.Response resDto = usageLogService.saveUsageLogs(getLoggedInUserId(), reqDto);
+
+            if (resDto.isSuccess()) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + resDto.getMessage());
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "사용 기록 저장 중 오류 발생");
+        }
     }
 
     public void handleUsageLogGet(){
