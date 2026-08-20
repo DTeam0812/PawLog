@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.sql.Date;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,9 +16,8 @@ public class UsageLogEntity {
     private long logId;
     private long userId;
     private long programId;
-    private boolean isForeground;
-    private Timestamp startTime;
-    private Timestamp endTime;
+    private Date usageDate;
+    private int usageHour;
     private int durationSec;
 
 
@@ -28,9 +27,8 @@ public class UsageLogEntity {
                 + "logId=" + logId
                 + ", userId=" + userId
                 + ", programId=" + programId
-                + ", isForeground=" + isForeground
-                + ", startTime=" + startTime
-                + ", endTime=" + endTime
+                + ", usageDate=" + usageDate
+                + ", usageHour=" + usageHour
                 + ", durationSec=" + durationSec
                 + "]";
     }

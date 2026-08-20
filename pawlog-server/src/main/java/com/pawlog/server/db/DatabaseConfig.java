@@ -90,18 +90,18 @@ public class DatabaseConfig {
             );
             """,
 
-            // 4. usage_logs (개별 사용 로그)
+            // 4. usage_logs (개별 사용 로그 — 시간대별 집계)
             """
             CREATE TABLE IF NOT EXISTS usage_logs (
                 log_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                user_id BIGINT,
-                program_id BIGINT,
-                is_foreground BOOLEAN DEFAULT TRUE,
-                start_time TIMESTAMP NOT NULL,
-                end_time TIMESTAMP NOT NULL,
-                duration_sec INT NOT NULL,
+                user_id BIGINT NOT NULL,
+                program_id BIGINT NOT NULL,
+                usage_date DATE NOT NULL,
+                usage_hour TINYINT NOT NULL,
+                duration_sec INT NOT NULL DEFAULT 0,
                 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-                FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE
+                FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE,
+                UNIQUE KEY uq_user_program_date_hour (user_id, program_id, usage_date, usage_hour)
             );
             """,
 
