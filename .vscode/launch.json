@@ -3,6 +3,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "DeviceIdManager",
+            "request": "launch",
+            "mainClass": "com.pawlog.Device.DeviceIdManager",
+            "projectName": "pawlog-client"
+        },
+        {
+            "type": "java",
+            "name": "DeviceIdManager",
+            "request": "launch",
+            "mainClass": "DeviceIdManager",
+            "projectName": "pawlog-client"
+        },
+        {
+            "type": "java",
             "name": "App",
             "request": "launch",
             "mainClass": "com.pawlog.client.main.App",
@@ -36,12 +50,12 @@
             "vmArgs": "--enable-native-access=ALL-UNNAMED"
         },
         {
-    "type": "java",
-    "name": "App",
-    "request": "launch",
-    "mainClass": "com.pawlog.client.main.App",
-    "projectName": "pawlog-client",
-    "vmArgs": "--enable-native-access=ALL-UNNAMED"
-}
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.pawlog.client.main.App",
+            "projectName": "pawlog-client",
+            "vmArgs": "--enable-native-access=ALL-UNNAMED"
+        }
     ]
 }

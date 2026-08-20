@@ -153,6 +153,7 @@ public class DashboardFrame extends JFrame {
             setVisible(false);
             PawLogClient.getInstance().disconnect();
             authStore.logout();
+            ProgramTracker.stopTracking();
             showLogin.run();
         });
         sidebarPanel.add(homeButton);

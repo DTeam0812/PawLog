@@ -2,6 +2,8 @@ package com.pawlog.client.ui.dashboard;
 
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
+import com.pawlog.Sync.Usagebatch;
+import com.pawlog.Sync.UsagebatchFactory;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.network.PawLogClient.Response;
@@ -147,6 +149,8 @@ public class HomePanel extends JPanel {
                 lastSavedLabel.setText("저장할 기록 없음");
                 return;
             }
+            Usagebatch batch = UsagebatchFactory.create(data);
+            System.out.println(batch);
 
             saveButton.setEnabled(false);
             saveButton.setText("저장 중...");

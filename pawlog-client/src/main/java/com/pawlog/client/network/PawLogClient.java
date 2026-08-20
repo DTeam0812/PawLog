@@ -23,17 +23,11 @@ public class PawLogClient {
     private static final int DEFAULT_PORT = 8005;
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
     private static final int READ_TIMEOUT_MILLIS = 5000;
-    private static final String MODE1 = ":";
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
-    private static final String MODE2 = ";";
     private static final String LOGIN = "LOGIN";
-    private static final String MODE3 = "|";
     private static final String REGISTER = "REGISTER";
-    private static final String SUCCESS = "SUCCESS";
-    private static final String INIT = "INIT";
-    private static final String DJOIN = "DJOIN";
     private static final String POPULAR_RANKING_GET ="POPULAR_RANKING_GET";
     private static final PawLogClient instance = new PawLogClient();
     private final String host;
@@ -70,6 +64,7 @@ public class PawLogClient {
         JsonNode dataNode = JsonUtil.toJsonNode(loginData);
         RequestPacket requestPacket = new RequestPacket(LOGIN, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
+        System.out.println(requestJson);
         return sendJson(requestJson);
     }
     private synchronized PopularRankingDto.Response sendPopularRankingJson(String requestJson) throws Exception {
@@ -146,7 +141,7 @@ public class PawLogClient {
             disconnect();
             return new Response(false, "서버 연결이 종료되었습니다.");
         }
-        
+
         JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
         boolean success = root.path("success").asBoolean();
         String message = root.path("message").asText("");

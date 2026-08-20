@@ -13,6 +13,7 @@ import javax.swing.*;
 
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
+import com.pawlog.client.tracker.ProgramTracker;
 
 import org.w3c.dom.Text;
 
@@ -82,6 +83,7 @@ public class Login extends JPanel{
                     warn.setText("");
                     //Authstore loggin = true
                     authStore.login(email);
+                    ProgramTracker.startTracking();
                     loginsuccess.run();
                 } else {
                     warn.setText(response.message());

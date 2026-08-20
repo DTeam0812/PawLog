@@ -20,24 +20,25 @@ import com.sun.jna.ptr.IntByReference;
 public class ProgramTracker {
     private static final Set<String> EXCLUDED = new HashSet<>();
     private static final Map<String, Long> usageMap = new HashMap<>();// 전체 통계
+    private static final Map<UsageKey, Long> pendingUsageMap = new HashMap<>();//sqllite 기록용 통계
     private static final Map<UsageKey, Long> hourlyUsageMap = new HashMap<>();//시간별 통계
-    private static ScheduledExecutorService scheduler;
+    private static ScheduledExecutorService scheduler;//기본 단위 갱신 스레드
     private static LocalDate trackingDate = LocalDate.now();
     private static String previousProgram;
 
     private static volatile String currentProgram = "확인 중...";
     private static volatile String currentWindowTitle = "활성 창을 확인하고 있습니다.";
-    private static volatile long usageSeconds;
-    private static volatile long totalSeconds;
+    private static volatile long usageSeconds;//현재세션 사용시간
+    private static volatile long totalSeconds;//총 활성 시간
 
-    static {
+    static {//예외 프로그램 
         EXCLUDED.add("explorer.exe");
         EXCLUDED.add("ShellExperienceHost.exe");
         EXCLUDED.add("SearchHost.exe");
         EXCLUDED.add("java.exe");
     }
 
-    public static synchronized void startTracking() {
+    public static synchronized void startTracking() {//트래킹 시작
         if (scheduler != null && !scheduler.isShutdown()) {
             return;
         }
@@ -45,14 +46,14 @@ public class ProgramTracker {
         scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(ProgramTracker::trackForegroundWindow, 0, 1, TimeUnit.SECONDS);
     }
-
-    public static synchronized void stopTracking() {
+    
+    public static synchronized void stopTracking() {//중지
         if (scheduler != null) {
             scheduler.shutdownNow();
         }
     }
 
-    private static void trackForegroundWindow() {
+    private static void trackForegroundWindow() {//프로그램 추적 알고리즘
         try {
             HWND window = User32.INSTANCE.GetForegroundWindow();
 
@@ -100,22 +101,27 @@ public class ProgramTracker {
             }
 
             totalSeconds++;
-            usageMap.merge(programName, 1L, Long::sum);
+            
             UsageKey usageKey = new UsageKey(
                 today,
                 currentHour,
                 programName
             );
 
-            hourlyUsageMap.merge(  usageKey, 1L, Long::sum );
+            addUsage(programName, usageKey);
 
             currentProgram = displayName;
             currentWindowTitle = programName;
         } catch (Exception exception) {
             exception.printStackTrace();
         }
-    }
 
+    }
+    private static synchronized void addUsage( String programName, UsageKey usageKey ){//이함수로 통계 병합 , 관리
+        usageMap.merge(programName, 1L, Long::sum);
+        hourlyUsageMap.merge(usageKey, 1L, Long::sum);
+        pendingUsageMap.merge(usageKey, 1L, Long::sum);
+    }
     public static String getCurrentProgram() {
         return currentProgram;
     }
@@ -138,6 +144,12 @@ public class ProgramTracker {
 
     public static Map<UsageKey, Long> getHourlyUsageMap() {
         return new HashMap<>(hourlyUsageMap);
+
+    }
+    public static Map<UsageKey, Long> getSnapshotUsagemap(){ //sqllite작성을 위한 임시함수 생성
+        Map<UsageKey, Long> snapshot = new HashMap<>(pendingUsageMap); //임시함수
+        pendingUsageMap.clear();//초기화
+        return snapshot;
     }
     
     

@@ -17,9 +17,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import com.pawlog.Device.DeviceIdManager;
+
 
 public class MyPagePanel extends JPanel {
-   
+    JLabel UUID = label(DeviceIdManager.getDeviceId(),Font.BOLD, 12, TEXT);
     public MyPagePanel() {
         setLayout(new BorderLayout(0, 18));
         setBackground(BACKGROUND);
@@ -65,6 +67,7 @@ public class MyPagePanel extends JPanel {
         action.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         action.add(primaryButton("정보 저장"));
         card.add(action);
+        card.add(UUID);
         return card;
     }
 
