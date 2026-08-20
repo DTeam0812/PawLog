@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class PopularRankingDto {
@@ -17,7 +18,8 @@ public class PopularRankingDto {
     public static class Request {
         private String ageGroup;   // "ALL", "10s", "20s", "30s" 등
         private String gender;     // "ALL", "M", "F"
-        private String periodType; // "DAILY", "WEEKLY", "MONTHLY"
+        private LocalDate startDate;
+        private LocalDate endDate;
     }
 
     // 2. 단일 순위 아이템

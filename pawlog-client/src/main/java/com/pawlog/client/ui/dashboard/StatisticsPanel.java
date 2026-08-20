@@ -10,9 +10,6 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import com.github.lgooddatepicker.components.DatePicker;
-import com.pawlog.client.AuthStore.AuthStore;
-import com.pawlog.client.network.PawLogClient;
-import com.pawlog.common.dto.auth.AuthLoginDto.Response;
 
 import java.awt.GridLayout;
 import java.time.LocalDate;
@@ -24,21 +21,17 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 public class StatisticsPanel extends JPanel {
     private static final String PERSONAL = "PERSONAL";
-    private final PawLogClient pawLogClient = PawLogClient.getInstance();
+    private final PopularRankingPanel popularPanel = new PopularRankingPanel(true);
+    private String selectedType = PERSONAL;
     private final JLabel warnlabel = label("",Font.PLAIN,12 ,SUB_TEXT);
     private static final String POPULAR = "POPULAR";
-    private DatePicker datePicker = new DatePicker();
-    private DatePicker startDatePicker = new DatePicker();
-    private DatePicker endDatePicker = new DatePicker();
+    private final DatePicker startDatePicker = new DatePicker();
+    private final DatePicker endDatePicker = new DatePicker();
     private final CardLayout statisticsLayout = new CardLayout();
     private final JPanel statisticsContent = new JPanel(statisticsLayout);
     private final List<JButton> typeButtons = new ArrayList<>();
-    private final List<JButton> periodButtons = new ArrayList<>();
-    private final JLabel periodLabel = label("오늘 기준", Font.PLAIN, 12, SUB_TEXT);
     private final JButton joinbutton = new JButton("조회");
     public StatisticsPanel() {
         setLayout(new BorderLayout(0, 16));
@@ -57,6 +50,9 @@ public class StatisticsPanel extends JPanel {
         controls.add(createTypeButtons());
         controls.add(Box.createVerticalStrut(8));
         controls.add(createPeriodButtons());
+        controls.add(Box.createVerticalStrut(5));
+        warnlabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        controls.add(warnlabel);
         header.add(controls, BorderLayout.EAST);
         return header;
     }
@@ -69,10 +65,12 @@ public class StatisticsPanel extends JPanel {
         typeButtons.add(popular);
 
         personal.addActionListener(event -> {
+            selectedType = PERSONAL;
             statisticsLayout.show(statisticsContent, PERSONAL);
             selectButton(typeButtons, personal);
         });
         popular.addActionListener(event -> {
+            selectedType = POPULAR;
             statisticsLayout.show(statisticsContent, POPULAR);
             selectButton(typeButtons, popular);
         });
@@ -89,51 +87,28 @@ public class StatisticsPanel extends JPanel {
         panel.add(endDatePicker);
         panel.add(joinbutton);
         joinbutton.addActionListener(event -> {
-        LocalDate sdate = startDatePicker.getDate();
-        LocalDate edate = endDatePicker.getDate();
-        if (sdate == null || edate == null) {
-            warnlabel.setText("시작일과 종료일을 선택해주세요.");
-            return;
-        }
-        if (sdate.isAfter(edate)) {
-            warnlabel.setText("시작일은 종료일보다 늦을 수 없습니다.");
-            return;
-        }
-        warnlabel.setText("조회 중...");
-        new Thread(() -> {
-            try {
-                PawLogClient.Response response = pawLogClient.DateJoin(
-                    AuthStore.getInstance().getEmail(),
-                    sdate.toString(),
-                    edate.toString()
-                );
+            LocalDate startDate = startDatePicker.getDate();
+            LocalDate endDate = endDatePicker.getDate();
 
-                SwingUtilities.invokeLater(() -> {
-                    warnlabel.setText(response.message());
-                });
-            } catch (Exception exception) {
-                SwingUtilities.invokeLater(() -> {
-                    warnlabel.setText("서버 연결에 실패했습니다.");
-                });
-
-                exception.printStackTrace();
+            if (startDate == null || endDate == null) {
+                warnlabel.setText("시작일과 종료일을 선택해주세요.");
+                return;
             }
-        }).start();
-        
-    });
-    return panel;
-}
-    
 
-    private void addPeriodButton(JPanel panel, String text, String description, boolean selected) {
-        JButton button = createSwitchButton(text, selected);
-        button.setPreferredSize(new Dimension(58, 30));
-        button.addActionListener(event -> {
-            periodLabel.setText(description);
-            selectButton(periodButtons, button);
+            if (startDate.isAfter(endDate)) {
+                warnlabel.setText("시작일은 종료일보다 늦을 수 없습니다.");
+                return;
+            }
+
+            if (POPULAR.equals(selectedType)) {
+                warnlabel.setText("");
+                popularPanel.loadRankings(startDate, endDate);
+                return;
+            }
+
+            warnlabel.setText("내 사용 통계 기간 조회는 아직 연결되지 않았습니다.");
         });
-        periodButtons.add(button);
-        panel.add(button);
+        return panel;
     }
 
     private JButton createSwitchButton(String text, boolean selected) {
@@ -158,7 +133,7 @@ public class StatisticsPanel extends JPanel {
     private JPanel createStatisticsContent() {
         statisticsContent.setOpaque(false);
         statisticsContent.add(createPersonalStatistics(), PERSONAL);
-        statisticsContent.add(new PopularRankingPanel(true), POPULAR);
+        statisticsContent.add(popularPanel, POPULAR);
         statisticsLayout.show(statisticsContent, PERSONAL);
         return statisticsContent;
     }
@@ -166,8 +141,6 @@ public class StatisticsPanel extends JPanel {
     private JPanel createPersonalStatistics() {
         JPanel page = transparentPanel(new BorderLayout(0, 13));
         JPanel summaryArea = transparentPanel(new BorderLayout(0, 10));
-        warnlabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        summaryArea.add(warnlabel, BorderLayout.NORTH);
         JPanel summaryCards = transparentPanel(new GridLayout(1, 3, 12, 0));
         summaryCards.add(createSummaryCard("총 사용 시간", "4시간 20분", "어제보다 18분 증가"));
         summaryCards.add(createSummaryCard("가장 오래 사용", "Chrome", "1시간 45분"));

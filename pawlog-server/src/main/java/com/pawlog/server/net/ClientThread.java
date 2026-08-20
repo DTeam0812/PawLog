@@ -11,7 +11,6 @@ import com.pawlog.common.util.JsonUtil;
 import com.pawlog.server.entity.UserEntity;
 import com.pawlog.server.service.AuthService;
 import com.pawlog.server.service.RankingService;
-
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
 
@@ -20,7 +19,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -96,8 +95,8 @@ public class ClientThread extends Thread {
             try {
                 RequestPacket packet = JsonUtil.fromJson(line, RequestPacket.class);
                 String command = packet.getCommand();
-                JsonNode datanode = packet.getData();//json 임시해독
-                String dataJson = datanode.toString();
+                JsonNode dataNode = packet.getData();
+                String dataJson = dataNode == null || dataNode.isNull() ? "{}" : dataNode.toString();
 
                 if (ServerProtocol.REGISTER.equals(command)) {
                     handleRegisterJson(dataJson);
@@ -106,7 +105,7 @@ public class ClientThread extends Thread {
                     handleLoginJson(dataJson);
                 }
                 else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
-                    handlePopularRanking(dataJson);
+                    handlePopularRankingJson(dataJson);
                 }
                 else if (ServerProtocol.USAGE_LOG_SAVE.equals(command) || "INIT".equals(command)){
                     handleUsageLogSaveJson(dataJson);
@@ -143,7 +142,7 @@ public class ClientThread extends Thread {
         else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
             handlePopularRanking(data);
         }
-        else if (ServerProtocol.USAGE_LOG_SAVE.equals(command) || /*임시로 작성해둠*/"INIT".equals(command)){
+        else if (ServerProtocol.USAGE_LOG_SAVE.equals(command) || "INIT".equals(command)){
             handleUsageLogSave(data);
         }
         else if (ServerProtocol.USAGE_LOG_GET.equals(command)){
@@ -227,15 +226,14 @@ public class ClientThread extends Thread {
                 UserEntity userEntity = authService.getUserByEmailAndPassword(reqDto.getEmail(), reqDto.getPassword());
                 this.setCurrentUser(userEntity);
 
-                // UserInfo 데이터를 JSON 문자열로 파싱
-                String dataJsonPayload = JsonUtil.toJson(resDto.getUser());
+                JsonNode dataNode = JsonUtil.toJsonNode(resDto.getUser());
 
                 ResponsePacket responsePacket = new ResponsePacket(
                     ServerProtocol.LOGIN,
                     true,
                     resDto.getCode(),
                     resDto.getMessage(),
-                    dataJsonPayload
+                    dataNode
                 );
                 sendMessage(JsonUtil.toJson(responsePacket));
             } else {
@@ -293,22 +291,65 @@ public class ClientThread extends Thread {
         }
     }
 
-    // 인기 프로그램 순위 파싱 및 처리
+    // 인기 프로그램 순위 JSON 처리
+    private void handlePopularRankingJson(String dataJson) {
+        try {
+            PopularRankingDto.Request reqDto = JsonUtil.fromJson(dataJson, PopularRankingDto.Request.class);
+
+            if (reqDto.getStartDate() == null || reqDto.getEndDate() == null) {
+                sendPopularRankingError(400, "시작일과 종료일이 필요합니다.");
+                return;
+            }
+
+            if (reqDto.getStartDate().isAfter(reqDto.getEndDate())) {
+                sendPopularRankingError(400, "시작일은 종료일보다 늦을 수 없습니다.");
+                return;
+            }
+
+            PopularRankingDto.Response resDto = rankingService.getPopularRankings(reqDto);
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.POPULAR_RANKING_GET,
+                resDto.isSuccess(),
+                resDto.isSuccess() ? 200 : 400,
+                resDto.getMessage(),
+                JsonUtil.toJsonNode(resDto)
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendPopularRankingError(400, "인기 순위 요청 데이터 파싱 실패: " + e.getMessage());
+        }
+    }
+
+    private void sendPopularRankingError(int code, String message) {
+        ResponsePacket responsePacket = new ResponsePacket(
+            ServerProtocol.POPULAR_RANKING_GET,
+            false,
+            code,
+            message,
+            null
+        );
+        sendMessage(JsonUtil.toJson(responsePacket));
+    }
+
+    // 인기 프로그램 순위 구분자 방식 처리
     private void handlePopularRanking(String data) {
         try {
             String ageGroup = "ALL";
             String gender = "ALL";
-            String periodType = "DAILY";
+            LocalDate startDate = LocalDate.now();
+            LocalDate endDate = LocalDate.now();
 
             if (data != null && !data.isEmpty()) {
                 String[] params = data.split(ServerProtocol.MODE2);
                 if (params.length > 0 && !params[0].isEmpty()) ageGroup = params[0];
                 if (params.length > 1 && !params[1].isEmpty()) gender = params[1];
-                if (params.length > 2 && !params[2].isEmpty()) periodType = params[2];
+                if (params.length > 2 && !params[2].isEmpty()) startDate = LocalDate.parse(params[2]);
+                if (params.length > 3 && !params[3].isEmpty()) endDate = LocalDate.parse(params[3]);
             }
 
             // Request DTO 생성
-            PopularRankingDto.Request reqDto = new PopularRankingDto.Request(ageGroup, gender, periodType);
+            PopularRankingDto.Request reqDto = new PopularRankingDto.Request(ageGroup, gender, startDate, endDate);
 
             // Service 호출
             PopularRankingDto.Response resDto = rankingService.getPopularRankings(reqDto);
@@ -340,17 +381,13 @@ public class ClientThread extends Thread {
         try {
             UsageLogSaveDto.Request reqDto = JsonUtil.fromJson(dataJson, UsageLogSaveDto.Request.class);
             UsageLogSaveDto.Response resDto = usageLogService.saveUsageLogs(getLoggedInUserId(), reqDto);
-
-            String resDataPayload = resDto.getSavedCount() != null ? "{\"savedCount\":" + resDto.getSavedCount() + "}" : null;
-
             ResponsePacket responsePacket = new ResponsePacket(
                 ServerProtocol.USAGE_LOG_SAVE,
                 resDto.isSuccess(),
                 resDto.getCode(),
                 resDto.getMessage(),
-                resDataPayload
+                JsonUtil.toJsonNode(resDto)
             );
-
             sendMessage(JsonUtil.toJson(responsePacket));
         } catch (Exception e) {
             e.printStackTrace();
@@ -365,26 +402,20 @@ public class ClientThread extends Thread {
         }
     }
 
-    // 사용 기록 저장 (구분자 기반 폴백 처리)
-    public void handleUsageLogSave(String data){
+    // 사용 기록 저장 (기존 구분자 방식)
+    public void handleUsageLogSave(String data) {
         try {
             if (data == null || data.trim().isEmpty()) {
                 sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "저장할 데이터가 없습니다.");
                 return;
             }
 
-            // data 포맷: email;usageDate;hour;programName;seconds|email;usageDate;hour;programName;seconds...
             String[] entries = data.split("\\|");
-            if (entries.length == 0) {
-                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "올바르지 않은 데이터 형식입니다.");
-                return;
-            }
-
             String email = null;
             String usageDate = null;
             List<UsageLogSaveDto.LogItem> logItems = new ArrayList<>();
 
-            for (String entry : entries) {
+            for(String entry : entries) {
                 String[] params = entry.split(ServerProtocol.MODE2);
                 if (params.length < 5) continue;
 
@@ -393,18 +424,13 @@ public class ClientThread extends Thread {
                 int hour = Integer.parseInt(params[2]);
                 String programName = params[3];
                 long seconds = Long.parseLong(params[4]);
-
                 logItems.add(new UsageLogSaveDto.LogItem(hour, programName, seconds));
             }
 
             UsageLogSaveDto.Request reqDto = new UsageLogSaveDto.Request(email, usageDate, logItems);
             UsageLogSaveDto.Response resDto = usageLogService.saveUsageLogs(getLoggedInUserId(), reqDto);
-
-            if (resDto.isSuccess()) {
-                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + resDto.getMessage());
-            } else {
-                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
-            }
+            String status = resDto.isSuccess() ? ServerProtocol.SUCCESS : ServerProtocol.FAIL;
+            sendMessage(status + ServerProtocol.MODE1 + resDto.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "사용 기록 저장 중 오류 발생");

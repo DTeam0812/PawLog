@@ -8,6 +8,12 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.time.LocalDate;
+import java.util.List;
+
+import com.pawlog.client.network.PawLogClient;
+import com.pawlog.common.dto.ranking.PopularRankingDto;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -16,21 +22,17 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 
 public class PopularRankingPanel extends JPanel {
+    private final JComboBox<String> ageBox = combo("전체 연령", "10대", "20대", "30대", "40대", "50대", "60대 이상");
+    private final JComboBox<String> genderBox = combo("전체 성별", "남성", "여성");
+    private final JButton searchButton = primaryButton("필터 적용");
+    private final JLabel statusLabel = label("기간을 선택하고 조회해주세요.", Font.PLAIN, 12, SUB_TEXT);
     private final JPanel rankingList = transparentPanel();
-    private final String[][] programs = {
-        {"VS Code", "개발 도구", "3시간 12분", "18.4%"},
-        {"Chrome", "브라우저", "2시간 48분", "16.1%"},
-        {"Discord", "커뮤니케이션", "2시간 05분", "12.0%"},
-        {"Notion", "생산성", "1시간 42분", "9.8%"},
-        {"Figma", "디자인", "1시간 31분", "8.7%"},
-        {"Slack", "커뮤니케이션", "1시간 12분", "6.9%"},
-        {"Steam", "게임", "58분", "5.6%"},
-        {"Spotify", "음악", "47분", "4.5%"},
-        {"Postman", "개발 도구", "41분", "3.9%"},
-        {"Firefox", "브라우저", "35분", "3.4%"}
-    };
+    private final PawLogClient pawLogClient = PawLogClient.getInstance();
+    private LocalDate lastStartDate;
+    private LocalDate lastEndDate;
 
     public PopularRankingPanel() {
         this(false);
@@ -43,6 +45,32 @@ public class PopularRankingPanel extends JPanel {
         add(createHeader(embedded), BorderLayout.NORTH);
         add(createRankingCard(), BorderLayout.CENTER);
     }
+    public void loadRankings(LocalDate startDate, LocalDate endDate) {
+        lastStartDate = startDate;
+        lastEndDate = endDate;
+        String gender = getSelectedGender();
+        String ageGroup = getSelectedAgeGroup();
+
+        statusLabel.setText("조회 중...");
+        searchButton.setEnabled(false);
+
+        new Thread(() -> {
+            try {
+                PopularRankingDto.Response response = pawLogClient.getPopularRankings(startDate, endDate, gender, ageGroup);
+                SwingUtilities.invokeLater(() -> {
+                    statusLabel.setText(response.getMessage());
+                    if (response.isSuccess()) updateRankingList(response.getRankings());
+                    searchButton.setEnabled(true);
+                });
+            } catch (Exception exception) {
+                SwingUtilities.invokeLater(() -> {
+                    statusLabel.setText("서버 연결에 실패했습니다.");
+                    searchButton.setEnabled(true);
+                });
+                exception.printStackTrace();
+            }
+        }, "popular-ranking-request").start();
+    }
 
     private JPanel createHeader(boolean embedded) {
         JPanel header = transparentPanel(new BorderLayout());
@@ -53,16 +81,21 @@ public class PopularRankingPanel extends JPanel {
         }
 
         JPanel filters = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 8, 3));
-        JComboBox<String> ageBox = combo("전체 연령", "10대", "20대", "30대", "40대", "50대", "60대 이상");
-        JComboBox<String> genderBox = combo("전체 성별", "남성", "여성");
         ageBox.setPreferredSize(new Dimension(115, 36));
         genderBox.setPreferredSize(new Dimension(105, 36));
-        JButton searchButton = primaryButton("필터 적용");
         searchButton.setPreferredSize(new Dimension(90, 36));
+        searchButton.addActionListener(event -> {
+            if (lastStartDate == null || lastEndDate == null) {
+                statusLabel.setText("먼저 기간을 선택하고 조회해주세요.");
+                return;
+            }
+            loadRankings(lastStartDate, lastEndDate);
+        });
         filters.add(ageBox);
         filters.add(genderBox);
         filters.add(searchButton);
         header.add(filters, BorderLayout.EAST);
+        header.add(statusLabel, BorderLayout.SOUTH);
         return header;
     }
 
@@ -73,7 +106,6 @@ public class PopularRankingPanel extends JPanel {
         card.add(createTableHeader(), BorderLayout.NORTH);
 
         rankingList.setLayout(new BoxLayout(rankingList, BoxLayout.Y_AXIS));
-        for(int i = 0; i < programs.length; i++) rankingList.add(createRankingRow(i + 1, programs[i]));
 
         JScrollPane scroll = new JScrollPane(rankingList);
         scroll.setBorder(null);
@@ -95,20 +127,48 @@ public class PopularRankingPanel extends JPanel {
         return row;
     }
 
-    private JPanel createRankingRow(int rank, String[] data) {
+    private void updateRankingList(List<PopularRankingDto.RankingItem> rankings) {
+        rankingList.removeAll();
+        if (rankings != null) {
+            for(PopularRankingDto.RankingItem item : rankings) rankingList.add(createRankingRow(item));
+        }
+        rankingList.revalidate();
+        rankingList.repaint();
+    }
+
+    private JPanel createRankingRow(PopularRankingDto.RankingItem item) {
         JPanel row = transparentPanel(new GridLayout(1, 5));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         row.setPreferredSize(new Dimension(700, 48));
         row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, TABLE_DIVIDER));
 
+        int rank = item.getRank();
         JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 14, rank <= 3 ? PRIMARY : SUB_TEXT);
-        JLabel nameLabel = label(data[0], Font.BOLD, 13, TEXT);
+        JLabel nameLabel = label(item.getProgramName(), Font.BOLD, 13, TEXT);
         row.add(cell(rankLabel));
         row.add(cell(nameLabel));
-        row.add(cell(label(data[1], Font.PLAIN, 12, SUB_TEXT)));
-        row.add(cell(label(data[2], Font.PLAIN, 12, TEXT)));
-        row.add(cell(label(data[3], Font.BOLD, 12, PRIMARY)));
+        row.add(cell(label(item.getCategoryName(), Font.PLAIN, 12, SUB_TEXT)));
+        row.add(cell(label(item.getAvgUsageFormatted(), Font.PLAIN, 12, TEXT)));
+        row.add(cell(label(item.getUsagePercentage() + "%", Font.BOLD, 12, PRIMARY)));
         return row;
+    }
+
+    private String getSelectedGender() {
+        String selected = String.valueOf(genderBox.getSelectedItem());
+        if ("남성".equals(selected)) return "M";
+        if ("여성".equals(selected)) return "F";
+        return "ALL";
+    }
+
+    private String getSelectedAgeGroup() {
+        String selected = String.valueOf(ageBox.getSelectedItem());
+        if ("10대".equals(selected)) return "10";
+        if ("20대".equals(selected)) return "20";
+        if ("30대".equals(selected)) return "30";
+        if ("40대".equals(selected)) return "40";
+        if ("50대".equals(selected)) return "50";
+        if ("60대 이상".equals(selected)) return "60";
+        return "ALL";
     }
 
     private JPanel cell(JLabel label) {

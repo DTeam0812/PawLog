@@ -35,7 +35,7 @@ public class RankingService {
     }
 
     // 테스트용
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         RankingService rankingService = new RankingService();
 
         // 1. 전체 조건 요청 테스트
@@ -60,5 +60,5 @@ public class RankingService {
             }
         }
         System.out.println("==============================================");
-    }
+    }*/
 }

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
+import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.client.AuthStore.AuthStore;
@@ -33,6 +34,7 @@ public class PawLogClient {
     private static final String SUCCESS = "SUCCESS";
     private static final String INIT = "INIT";
     private static final String DJOIN = "DJOIN";
+    private static final String POPULAR_RANKING_GET ="POPULAR_RANKING_GET";
     private static final PawLogClient instance = new PawLogClient();
     private final String host;
     private final int port;
@@ -70,34 +72,59 @@ public class PawLogClient {
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendJson(requestJson);
     }
-    public Response DateJoin(String id ,String startdate , String enddate) throws Exception{
-        String data =  id + MODE2 + startdate + MODE2 + enddate;
-        //여기서 JSON 변환 ?
+    private synchronized PopularRankingDto.Response sendPopularRankingJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
 
-        return send(DJOIN ,data);
+        if (responseJson == null) {
+            disconnect();
+            return new PopularRankingDto.Response(false, "서버 연결이 종료되었습니다.", List.of());
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        String message = root.path("message").asText("");
+
+        if (!success) {
+            return new PopularRankingDto.Response(false, message, List.of());
+        }
+
+        JsonNode dataNode = root.path("data");
+        if (dataNode.isMissingNode() || dataNode.isNull()) {
+            return new PopularRankingDto.Response(true, message, List.of());
+        }
+
+        return JsonUtil.fromJson(dataNode.toString(), PopularRankingDto.Response.class);
     }
 
-
+    public PopularRankingDto.Response getPopularRankings(LocalDate startDate, LocalDate endDate, String gender, String ageGroup) throws Exception {
+        PopularRankingDto.Request rankingData = new PopularRankingDto.Request(ageGroup, gender, startDate, endDate);
+        JsonNode dataNode = JsonUtil.toJsonNode(rankingData);
+        RequestPacket requestPacket = new RequestPacket(POPULAR_RANKING_GET, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendPopularRankingJson(requestJson);
+    }
 
     public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
         if (data == null || data.isEmpty()) {
             return new Response(false, "저장할 사용 기록이 없습니다.");
         }
-
         //map - > list변환 
         List<UsageLogSaveDto.LogItem> logs = new ArrayList<>();
         for(Map.Entry<UsageKey, Long> entry : data.entrySet()) {
             UsageKey key = entry.getKey();
             long seconds = entry.getValue();
 
-            UsageLogSaveDto.LogItem logItem = new UsageLogSaveDto.LogItem(key.hour(), key.programName(), seconds);
+            UsageLogSaveDto.LogItem logItem = new UsageLogSaveDto.LogItem(key.hour(), key.programName(), seconds , key.usageDate().toString());
             logs.add(logItem);
-        }
+        }   
 
         UsageLogSaveDto.Request request = new UsageLogSaveDto.Request(AuthStore.getInstance().getEmail(), LocalDate.now().toString(), logs);
         JsonNode dataNode = JsonUtil.toJsonNode(request);
         RequestPacket packet = new RequestPacket("USAGE_LOG_SAVE", dataNode);
         String requestJson = JsonUtil.toJson(packet);
+        System.out.println(requestJson);
         return sendJson(requestJson);
     }
 
@@ -109,22 +136,7 @@ public class PawLogClient {
         return sendJson(requestJson);
     }
 
-    private synchronized Response send(String command, String data) throws Exception {
-        connect();
-        output.println(command + MODE1 + data);
-        String line = input.readLine();
-
-        if (line == null) {
-            disconnect();
-            return new Response(false, "서버 연결이 종료되었습니다.");
-        }
-
-        int delimiterIndex = line.indexOf(MODE1);
-        String status = delimiterIndex < 0 ? line : line.substring(0, delimiterIndex);
-        String message = delimiterIndex < 0 ? "" : line.substring(delimiterIndex + MODE1.length());
-        return new Response(SUCCESS.equals(status), message);
-    }
-
+   
     private synchronized Response sendJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
@@ -134,7 +146,7 @@ public class PawLogClient {
             disconnect();
             return new Response(false, "서버 연결이 종료되었습니다.");
         }
-
+        
         JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
         boolean success = root.path("success").asBoolean();
         String message = root.path("message").asText("");
