@@ -37,7 +37,7 @@ import org.w3c.dom.Text;
 
 
 public class Login extends JPanel{
-    private final PawLogClient pawLogClient = new PawLogClient();
+    private final PawLogClient pawLogClient = PawLogClient.getInstance();
     AuthStore authStore = AuthStore.getInstance();
     public Login(Runnable showRegister , Runnable loginsuccess) {
         setLayout(new BorderLayout());

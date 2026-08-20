@@ -46,7 +46,7 @@ public class Register extends JPanel{
 
     private JRadioButton maleButton;
     private JRadioButton femaleButton;
-    private final PawLogClient pawLogClient = new PawLogClient();
+    private final PawLogClient pawLogClient = PawLogClient.getInstance();
 
     private JPanel BirthPanel (){
         

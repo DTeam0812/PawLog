@@ -28,7 +28,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 public class StatisticsPanel extends JPanel {
     private static final String PERSONAL = "PERSONAL";
-    private final PawLogClient pawLogClient = new PawLogClient();
+    private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final JLabel warnlabel = label("",Font.PLAIN,12 ,SUB_TEXT);
     private static final String POPULAR = "POPULAR";
     private DatePicker datePicker = new DatePicker();

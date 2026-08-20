@@ -40,7 +40,7 @@ import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
 public class HomePanel extends JPanel {
-    private final PawLogClient pawLogClient = new PawLogClient();
+    private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final AuthStore authStore = AuthStore.getInstance();
 
     private JLabel mostProgramLabel;
