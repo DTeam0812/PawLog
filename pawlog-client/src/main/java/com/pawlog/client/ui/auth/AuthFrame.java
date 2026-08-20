@@ -2,25 +2,13 @@ package com.pawlog.client.ui.auth;
 
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URL;
 import java.util.Map;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.ProgramTracker;
@@ -88,12 +76,28 @@ public class AuthFrame extends JFrame {
         headerPanel.setBackground(PRIMARY);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 5));
 
-        JLabel titleLabel = new JLabel("🐾 Pawlog");
+//----------------원본-----------------------
+//      JLabel titleLabel = new JLabel("🐾 Pawlog");
+//---------------------------------------
+
+//----------------수정본-----------------------
+        JLabel titleLabel;
+        // 이미지 로드 및 리사이징 (24x24)
+        ImageIcon icon = null;
+        URL imgUrl = getClass().getResource("/images/pawIcon_card.png");
+        if (imgUrl == null) {
+            titleLabel = new JLabel("🐾 Pawlog");
+        }else {
+            Image img = new ImageIcon(imgUrl).getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH);
+            icon = new ImageIcon(img);
+            titleLabel = new JLabel("Pawlog", icon, SwingConstants.LEFT);
+            titleLabel.setIconTextGap(8); // 이미지와 텍스트 사이 간격
+        }
+//---------------------------------------
+
+
         titleLabel.setForeground(CARD);
         titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 22));
-        
-
-   
 
         JButton closeButton = new JButton("×");
         closeButton.setFont(new Font("맑은 고딕", Font.BOLD, 22));

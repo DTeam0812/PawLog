@@ -17,8 +17,6 @@ public class ProgramUsageStatEntity {
     private long programId;
     private String periodType;
     private Date statDate;
-    private float avgForegroundSec;
-    private float avgBackgroundSec;
     private float avgDurationSec;
     private int totalUsers;
     private String gender;
@@ -26,13 +24,11 @@ public class ProgramUsageStatEntity {
 
     @Override
     public String toString() {
-        return "ProgramUsageStatsDTO ["
+        return "ProgramUsageStatEntity ["
                 + "statId=" + statId
                 + ", programId=" + programId
                 + ", periodType=" + periodType
                 + ", statDate=" + statDate
-                + ", avgForegroundSec=" + avgForegroundSec
-                + ", avgBackgroundSec=" + avgBackgroundSec
                 + ", avgDurationSec=" + avgDurationSec
                 + ", totalUsers=" + totalUsers
                 + ", gender=" + gender

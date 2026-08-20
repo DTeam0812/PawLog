@@ -2,31 +2,14 @@ package com.pawlog.client.ui.auth;
 
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.TextArea;
+import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URL;
 import java.time.Year;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
@@ -139,8 +122,34 @@ public class Login extends JPanel{
             new Dimension(Integer.MAX_VALUE, 49)
         );
 
+//----------------원본-----------------------
+//        JLabel title = new JLabel("🐾 Pawlog");
+//        title.setFont(new Font("맑은 고딕", Font.BOLD, 32));
+//        title.setForeground(PRIMARY);
+//        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+//        JPanel titlePanel = new JPanel(new GridBagLayout());
+//        titlePanel.setOpaque(false);
+//        titlePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+//        titlePanel.setMaximumSize(
+//            new Dimension(Integer.MAX_VALUE, 50)
+//        );
+//
+//        titlePanel.add(title);
+//---------------------------------------
 
-        JLabel title = new JLabel("🐾 Pawlog");
+
+//----------------수정본-----------------------
+        JLabel title;
+        ImageIcon icon = null;
+        URL imgUrl = getClass().getResource("/images/pawIcon_primary.png");
+        if (imgUrl == null) {
+            title = new JLabel("🐾 Pawlog");
+        }else{
+            Image img = new ImageIcon(imgUrl).getImage().getScaledInstance(36, 36, Image.SCALE_SMOOTH);
+            icon = new ImageIcon(img);
+            title = new JLabel("Pawlog", icon, SwingConstants.CENTER);
+            title.setIconTextGap(10); // 이미지와 텍스트 사이 간격
+        }
         title.setFont(new Font("맑은 고딕", Font.BOLD, 32));
         title.setForeground(PRIMARY);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -148,10 +157,12 @@ public class Login extends JPanel{
         titlePanel.setOpaque(false);
         titlePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         titlePanel.setMaximumSize(
-            new Dimension(Integer.MAX_VALUE, 50)
+                new Dimension(Integer.MAX_VALUE, 50)
         );
 
         titlePanel.add(title);
+//---------------------------------------
+
         Font labelFont = new Font("맑은 고딕", Font.BOLD, 14);
 
         emailLabel.setFont(labelFont);

@@ -5,26 +5,20 @@ import static com.pawlog.client.ui.dashboard.UiComponents.*;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.ui.auth.AuthFrame;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.prefs.Preferences; // windows 레지스트리에 사용자설정을 저장
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+
+import javax.swing.ImageIcon;
+import java.net.URL;
 
 public class Widget {
 
@@ -104,15 +98,56 @@ public class Widget {
     loadWindowLocation();
 }
 
+//----------------원본-----------------------
+//    private JLabel createDogLabel() {
+//        JLabel dogLabel = new JLabel("🐶", SwingConstants.CENTER);
+//        dogLabel.setForeground(CARD);
+//        dogLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 72));
+//        dogLabel.setOpaque(false);
+//        dogLabel.setToolTipText("클릭: 상세 정보 / 드래그: 이동 / 우클릭: 메뉴");
+//
+//        return dogLabel;
+//    }
+//---------------------------------------
+
+
+
+//----------------수정본-----------------------
     private JLabel createDogLabel() {
-        JLabel dogLabel = new JLabel("🐶", SwingConstants.CENTER);
-        dogLabel.setForeground(CARD);
-        dogLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 72));
+//        //강아지 gif 버전
+//        URL imgUrl = getClass().getResource("/images/dogIcon_move.gif");
+//        JLabel dogLabel;
+//
+//        if (imgUrl == null) {
+//            dogLabel = new JLabel("🐶", SwingConstants.CENTER);
+//            dogLabel.setForeground(CARD);
+//            dogLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 72));
+//        }else{
+//            ImageIcon icon = new ImageIcon(imgUrl);
+//            dogLabel = new JLabel(icon, SwingConstants.CENTER);
+//        }
+
+        //발바닥 버전
+        URL imgUrl = getClass().getResource("/images/pawIcon.png");
+        JLabel dogLabel;
+
+        if (imgUrl == null) {
+            dogLabel = new JLabel("🐶", SwingConstants.CENTER);
+            dogLabel.setForeground(CARD);
+            dogLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 72));
+        }else{
+            // 이미지를 72x72 크기로 부드럽게 리사이징
+            Image img = new ImageIcon(imgUrl).getImage().getScaledInstance(72, 72, Image.SCALE_SMOOTH);
+            ImageIcon icon = new ImageIcon(img);
+            dogLabel = new JLabel(icon, SwingConstants.CENTER);
+        }
+
         dogLabel.setOpaque(false);
         dogLabel.setToolTipText("클릭: 상세 정보 / 드래그: 이동 / 우클릭: 메뉴");
 
         return dogLabel;
     }
+//------------------------------------------
 
     private void addMouseEvents(JLabel dogLabel) {
         MouseAdapter mouseAdapter = new MouseAdapter() {
