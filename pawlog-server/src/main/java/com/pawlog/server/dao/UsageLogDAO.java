@@ -17,22 +17,22 @@ public class UsageLogDAO {
     }
 
     // 프로그램 사용 기록 저장
-    public boolean insertUsageLog(UsageLogEntity entity) {
+    public boolean upsertUsageLog(UsageLogEntity entity) {
         Connection con = null;
         PreparedStatement pstmt = null;
 
-        String sql = "INSERT INTO usage_logs (user_id, program_id, is_foreground, start_time, end_time, duration_sec) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO usage_logs (user_id, program_id, usage_date, usage_hour, duration_sec) "
+                + "VALUES (?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE duration_sec = VALUES(duration_sec)";
 
         try {
             con = pool.getConnection();
             pstmt = con.prepareStatement(sql);
             pstmt.setLong(1, entity.getUserId());
             pstmt.setLong(2, entity.getProgramId());
-            pstmt.setBoolean(3, entity.isForeground());
-            pstmt.setTimestamp(4, entity.getStartTime());
-            pstmt.setTimestamp(5, entity.getEndTime());
-            pstmt.setInt(6, entity.getDurationSec());
+            pstmt.setDate(3, entity.getUsageDate());
+            pstmt.setInt(4, entity.getUsageHour());
+            pstmt.setInt(5, entity.getDurationSec());
 
             int result = pstmt.executeUpdate();
             return result > 0;
@@ -51,8 +51,8 @@ public class UsageLogDAO {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
-        String sql = "SELECT log_id, user_id, program_id, is_foreground, start_time, end_time, duration_sec "
-                + "FROM usage_logs WHERE user_id = ? ORDER BY end_time DESC LIMIT 1";
+        String sql = "SELECT log_id, user_id, program_id, usage_date, usage_hour, duration_sec "
+                + "FROM usage_logs WHERE user_id = ? ORDER BY usage_date DESC, usage_hour DESC LIMIT 1";
 
         try {
             con = pool.getConnection();
@@ -65,9 +65,8 @@ public class UsageLogDAO {
                 entity.setLogId(rs.getLong("log_id"));
                 entity.setUserId(rs.getLong("user_id"));
                 entity.setProgramId(rs.getLong("program_id"));
-                entity.setForeground(rs.getBoolean("is_foreground"));
-                entity.setStartTime(rs.getTimestamp("start_time"));
-                entity.setEndTime(rs.getTimestamp("end_time"));
+                entity.setUsageDate(rs.getDate("usage_date"));
+                entity.setUsageHour(rs.getInt("usage_hour"));
                 entity.setDurationSec(rs.getInt("duration_sec"));
                 return entity;
             }
