@@ -8,7 +8,7 @@ import com.pawlog.client.ui.widget.Widget;
 public class App {
     
     public static void main(String[] args) {
-        ProgramTracker.startTracking();
+        
         
         SwingUtilities.invokeLater(() -> {
             Widget widget = new Widget();
