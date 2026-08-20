@@ -17,10 +17,7 @@ public class DailyUsageSummaryEntity {
     private long userId;
     private long programId;
     private Date summaryDate;
-    private long foregroundDurationSec;
-    private long backgroundDurationSec;
     private long totalDurationSec;
-
 
     @Override
     public String toString() {
@@ -29,8 +26,6 @@ public class DailyUsageSummaryEntity {
                 + ", userId=" + userId
                 + ", programId=" + programId
                 + ", summaryDate=" + summaryDate
-                + ", foregroundDurationSec=" + foregroundDurationSec
-                + ", backgroundDurationSec=" + backgroundDurationSec
                 + ", totalDurationSec=" + totalDurationSec
                 + "]";
     }
