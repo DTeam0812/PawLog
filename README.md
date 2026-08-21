@@ -14,142 +14,127 @@ Windows의 활성 창을 기준으로 프로그램 사용 시간을 기록하고
 
 1. Extension Pack for Java 확장을 설치합니다.
 2. `src/ui.Widget.java` 또는 `src/Main.java`를 엽니다.
-3. `main` 메서드 위의 **Run**을 누릅니다.
+3. `main` 메�## DB 스키마
 
-Windows API를 사용하는 `Main` 실행 시 JVM 옵션으로 아래 값을 사용합니다.
-
-```text
---enable-native-access=ALL-UNNAMED
-```
-
-## DB 스키마
 ```mermaid
 erDiagram
-    users ||--o{ program_likes : "likes"
-    programs ||--o{ program_likes : "liked by"
-    categories ||--o{ programs : "categorizes"
+    users ||--o{ programs_likes : "likes"
+    programs ||--o{ programs_likes : "liked by"
+
     users ||--o{ usage_logs : "records"
-    programs ||--o{ usage_logs : "tracked in"
+    programs ||--o{ usage_logs : "logged in"
+
     users ||--o{ daily_usage_summary : "summarizes"
     programs ||--o{ daily_usage_summary : "summarized in"
-    programs ||--o{ program_rankings : "ranked in"
-    programs ||--o{ program_usage_stats : "analyzed in"
+
+    categories ||--o{ programs : "classifies"
+    programs ||--o{ program_usage_stats : "has stats"
+
     users ||--o{ posts : "writes"
     programs ||--o{ posts : "tagged in"
-    posts ||--o{ comments : "has"
+
+    posts ||--o{ comments : "contains"
     users ||--o{ comments : "writes"
+
     users ||--o{ post_likes : "likes"
     posts ||--o{ post_likes : "liked by"
+
     prediction_events ||--o{ prediction_votes : "contains"
-    users ||--o{ prediction_votes : "votes"
+    users ||--o{ prediction_votes : "casts"
     programs ||--o{ prediction_votes : "voted for"
 
     users {
-        bigint user_id PK "사용자 고유 번호"
-        varchar email UK "이메일 계정"
-        varchar password_hash "암호화된 비밀번호"
-        varchar nickname "닉네임"
-        enum gender "성별 (M, F)"
-        date birth_date "생년월일"
-        datetime created_at "가입 일시"
+        bigint user_id PK "AUTO_INCREMENT"
+        varchar(255) email UK "NOT NULL"
+        varchar(255) password_hash "NOT NULL"
+        varchar(255) nickname "NOT NULL"
+        enum gender "NOT NULL ('M', 'F')"
+        date birth_date "NOT NULL"
+        datetime created_at "NOT NULL, DEFAULT CURRENT_TIMESTAMP"
     }
 
     categories {
-        int category_id PK "카테고리 고유 번호"
-        varchar name UK "카테고리명"
+        int category_id PK "AUTO_INCREMENT"
+        varchar(50) name UK "NOT NULL"
     }
 
     programs {
-        bigint program_id PK "프로그램 고유 번호"
-        varchar process_name UK "실행 파일명"
-        varchar display_name "화면 표시용 이름"
-        int category_id FK "카테고리 번호"
+        bigint program_id PK "AUTO_INCREMENT"
+        varchar(255) process_name UK "NOT NULL"
+        varchar(255) display_name "NOT NULL"
+        int category_id FK "NULLABLE"
     }
 
-    program_likes {
-        bigint user_id PK, FK "사용자 번호"
-        bigint program_id PK, FK "프로그램 번호"
+    programs_likes {
+        bigint program_id PK, FK
+        bigint user_id PK, FK
     }
 
     usage_logs {
-        bigint log_id PK "사용 기록 고유 번호"
-        bigint user_id FK "사용자 번호"
-        bigint program_id FK "프로그램 번호"
-        date usage_date "사용 날짜"
-        tinyint usage_hour "사용 시간대 (0~23)"
-        int duration_sec "누적 사용 시간(초)"
+        bigint log_id PK "AUTO_INCREMENT"
+        bigint user_id FK "NOT NULL"
+        bigint program_id FK "NOT NULL"
+        date usage_date "NOT NULL"
+        tinyint usage_hour "NOT NULL (0~23)"
+        int duration_sec "NOT NULL"
     }
 
     daily_usage_summary {
-        bigint summary_id PK "요약 데이터 고유 번호"
-        bigint user_id FK "사용자 번호"
-        bigint program_id FK "프로그램 번호"
-        date summary_date "집계 대상 날짜"
-        bigint foreground_duration_sec "포그라운드 시간"
-        bigint background_duration_sec "백그라운드 시간"
-        bigint total_duration_sec "총 사용 시간(초)"
-    }
-
-    program_rankings {
-        bigint ranking_id PK "순위 기록 고유 번호"
-        bigint program_id FK "프로그램 번호"
-        enum period_type "집계 주기 (DAILY, WEEKLY, MONTHLY)"
-        date ranking_date "순위 기준 날짜"
-        int rank_position "순위"
-        bigint total_duration_sec "총 사용 시간"
-        enum gender "분류 성별 (M, F)"
-        varchar age_group "분류 연령대"
+        bigint summary_id PK "AUTO_INCREMENT"
+        bigint user_id FK "NOT NULL"
+        bigint program_id FK "NOT NULL"
+        date summary_date "NOT NULL"
+        bigint total_duration_sec "NOT NULL, DEFAULT 0"
     }
 
     program_usage_stats {
-        bigint stat_id PK "통계 데이터 고유 번호"
-        bigint program_id FK "프로그램 번호"
-        enum period_type "집계 주기 (DAILY, WEEKLY, MONTHLY)"
-        date stat_date "통계 기준 날짜"
-        float avg_foreground_sec "평균 포그라운드 시간"
-        float avg_background_sec "평균 백그라운드 시간"
-        float avg_duration_sec "하루 평균 총 사용 시간"
-        int total_users "이용 유저 수"
-        enum gender "분류 성별 (M, F)"
-        varchar age_group "분류 연령대"
+        bigint stat_id PK "AUTO_INCREMENT"
+        bigint program_id FK "NOT NULL"
+        date stat_date "NOT NULL"
+        float avg_foreground_sec "NOT NULL, DEFAULT 0"
+        float avg_background_sec "NOT NULL, DEFAULT 0"
+        float avg_duration_sec "NOT NULL"
+        int total_users "NOT NULL"
+        enum gender "NULLABLE ('M', 'F')"
+        varchar(20) age_group "NULLABLE"
     }
 
     posts {
-        bigint post_id PK "게시글 고유 번호"
-        bigint user_id FK "작성자 번호"
-        bigint program_id FK "태그 프로그램 번호"
-        varchar title "게시글 제목"
-        text content "본문 내용"
-        datetime created_at "작성 일시"
+        bigint post_id PK "AUTO_INCREMENT"
+        bigint user_id FK "NOT NULL"
+        bigint program_id FK "NULLABLE"
+        varchar(255) title "NOT NULL"
+        text content "NOT NULL"
+        datetime created_at "DEFAULT CURRENT_TIMESTAMP"
     }
 
     comments {
-        bigint comment_id PK "댓글 고유 번호"
-        bigint post_id FK "게시글 번호"
-        bigint user_id FK "작성자 번호"
-        text content "댓글 내용"
-        datetime created_at "작성 일시"
+        bigint comment_id PK "AUTO_INCREMENT"
+        bigint post_id FK "NOT NULL"
+        bigint user_id FK "NOT NULL"
+        text content "NOT NULL"
+        datetime created_at "DEFAULT CURRENT_TIMESTAMP"
     }
 
     post_likes {
-        bigint user_id PK, FK "사용자 번호"
-        bigint post_id PK, FK "게시글 번호"
+        bigint user_id PK, FK
+        bigint post_id PK, FK
     }
 
     prediction_events {
-        bigint event_id PK "예측 이벤트 고유 번호"
-        varchar title "이벤트 제목"
-        datetime created_at "생성 일시"
-        datetime voting_deadline "마감 기한"
-        enum status "상태 (OPEN, CLOSED, ANNOUNCED)"
-        date target_date "예측 대상 날짜"
-        enum event_type "단위 (WEEKLY, MONTHLY)"
+        bigint event_id PK "AUTO_INCREMENT"
+        varchar(50) title "NOT NULL"
+        datetime created_at "DEFAULT CURRENT_TIMESTAMP"
+        datetime voting_deadline "NOT NULL"
+        enum status "NOT NULL, DEFAULT 'ANNOUNCED'"
+        date target_date "NOT NULL"
+        enum event_type "NOT NULL ('WEEKLY', 'MONTHLY')"
     }
 
     prediction_votes {
-        bigint vote_id PK "투표 기록 고유 번호"
-        bigint event_id FK "예측 이벤트 번호"
-        bigint user_id FK "투표 사용자 번호"
-        bigint program_id FK "대상 프로그램 번호"
+        bigint vote_id PK "AUTO_INCREMENT"
+        bigint event_id FK "NOT NULL"
+        bigint user_id FK "NOT NULL"
+        bigint program_id FK "NOT NULL"
     }
 ```

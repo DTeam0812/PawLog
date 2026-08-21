@@ -80,6 +80,8 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             System.err.println(socket + " 접속 종료.......");
         } finally {
+            // 연결 종료 시 세션 레지스트리에서 제거 (본인 세션만 제거)
+            SessionRegistry.getInstance().remove(loggedInUserId, this);
             closeAll();
         }
     }
@@ -225,6 +227,9 @@ public class ClientThread extends Thread {
                 // 소켓 세션에 로그인 유저 정보 저장
                 UserEntity userEntity = authService.getUserByEmailAndPassword(reqDto.getEmail(), reqDto.getPassword());
                 this.setCurrentUser(userEntity);
+
+                // 세션 레지스트리에 등록 (동일 userId 기존 세션이 있으면 자동으로 강제 로그아웃 푸시)
+                SessionRegistry.getInstance().register(this.loggedInUserId, this);
 
                 JsonNode dataNode = JsonUtil.toJsonNode(resDto.getUser());
 
@@ -443,6 +448,22 @@ public class ClientThread extends Thread {
 
     public void handleCategoryGet(){
 
+    }
+
+    /**
+     * 중복 로그인 감지 시 기존 세션(클라이언트)에 강제 로그아웃을 푸시한다.
+     * 소켓을 서버에서 직접 닫지 않으며, 클라이언트가 데이터를 업로드한 후 스스로 연결을 종료한다.
+     * SessionRegistry에서 호출된다.
+     */
+    public void forceLogout() {
+        ResponsePacket push = new ResponsePacket(
+            ServerProtocol.SESSION_FORCE_LOGOUT,
+            true,
+            200,
+            "다른 기기에서 로그인이 감지되었습니다. 데이터를 업로드 후 로그아웃됩니다.",
+            null
+        );
+        sendMessage(JsonUtil.toJson(push));
     }
 
     // 클라이언트로 메시지 전송

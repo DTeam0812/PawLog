@@ -120,6 +120,7 @@ public class DatabaseConfig {
             );
             """,
 
+                /* 삭제
             // 6. program_rankings (프로그램 인기 순위)
             """
             CREATE TABLE IF NOT EXISTS program_rankings (
@@ -136,19 +137,20 @@ public class DatabaseConfig {
             );
             """,
 
+                 */
+
             // 7. program_usage_stats (프로그램 평균 사용률 통계)
             """
             CREATE TABLE IF NOT EXISTS program_usage_stats (
                 stat_id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 program_id BIGINT NOT NULL,
-                period_type ENUM('DAILY', 'WEEKLY', 'MONTHLY') NOT NULL DEFAULT 'DAILY',
                 stat_date DATE NOT NULL,
                 avg_duration_sec DOUBLE NOT NULL DEFAULT 0,
                 total_users INT NOT NULL DEFAULT 0,
                 gender ENUM('M', 'F'),
                 age_group VARCHAR(20),
                 FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE CASCADE,
-                UNIQUE KEY uq_stat (program_id, period_type, stat_date, gender, age_group)
+                UNIQUE KEY uq_stat (program_id, stat_date, gender, age_group)
             );
             """,
 

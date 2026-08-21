@@ -41,3 +41,4 @@ ehthumbs.db
 *.war
 *.ear
 !gradle/wrapper/gradle-wrapper.jar
+AGENTS.md
