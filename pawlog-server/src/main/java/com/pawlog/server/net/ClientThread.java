@@ -364,13 +364,16 @@ public class ClientThread extends Thread {
                 StringBuilder responseData = new StringBuilder();
                 responseData.append(ServerProtocol.SUCCESS).append(ServerProtocol.MODE1).append(resDto.getMessage());
 
-                for (PopularRankingDto.RankingItem item : resDto.getRankings()) {
-                    responseData.append(ServerProtocol.MODE2)
+                // NPE 방어 로직
+                if(resDto.getRankings() != null){
+                    for (PopularRankingDto.RankingItem item : resDto.getRankings()) {
+                        responseData.append(ServerProtocol.MODE2)
                                 .append(item.getRank()).append(",")
                                 .append(item.getProgramName()).append(",")
                                 .append(item.getCategoryName()).append(",")
                                 .append(item.getAvgUsageFormatted()).append(",")
                                 .append(item.getUsagePercentage()).append("%");
+                    }
                 }
                 sendMessage(responseData.toString());
             } else {
