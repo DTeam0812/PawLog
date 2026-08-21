@@ -10,7 +10,7 @@ public class RankingService {
     // 인기 프로그램 순위 데이터 조회 (더미 데이터 반환)
     public PopularRankingDto.Response getPopularRankings(PopularRankingDto.Request dto) {
         if (dto == null) {
-            return new PopularRankingDto.Response(false, "유효하지 않은 요청입니다.", null);
+            return new PopularRankingDto.Response(false, 400, "유효하지 않은 요청입니다.", null);
         }
 
         List<PopularRankingDto.RankingItem> items = new ArrayList<>();
@@ -31,7 +31,7 @@ public class RankingService {
                 dto.getAgeGroup() != null ? dto.getAgeGroup() : "전체",
                 dto.getGender() != null ? dto.getGender() : "전체");
 
-        return new PopularRankingDto.Response(true, "인기 순위 조회 성공 " + filterInfo, items);
+        return new PopularRankingDto.Response(true, 200, "인기 순위 조회 성공 " + filterInfo, items);
     }
 
     // 테스트용

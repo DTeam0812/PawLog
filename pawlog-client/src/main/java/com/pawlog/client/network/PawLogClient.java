@@ -86,23 +86,35 @@ public class PawLogClient {
 
         if (responseJson == null) {
             disconnect();
-            return new PopularRankingDto.Response(false, "서버 연결이 종료되었습니다.", List.of());
+            return new PopularRankingDto.Response(false,500, "서버 연결이 종료되었습니다.", List.of());
         }
 
         JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
         boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
         String message = root.path("message").asText("");
 
         if (!success) {
-            return new PopularRankingDto.Response(false, message, List.of());
+            return new PopularRankingDto.Response(false, code, message, List.of());
         }
 
         JsonNode dataNode = root.path("data");
         if (dataNode.isMissingNode() || dataNode.isNull()) {
-            return new PopularRankingDto.Response(true, message, List.of());
+            return new PopularRankingDto.Response(true, code, message, List.of());
         }
 
-        return JsonUtil.fromJson(dataNode.toString(), PopularRankingDto.Response.class);
+        List<PopularRankingDto.RankingItem> rankings = new ArrayList<>();
+
+        for(JsonNode itemNode : dataNode) {
+            PopularRankingDto.RankingItem item = JsonUtil.fromJson(
+                itemNode.toString(),
+                PopularRankingDto.RankingItem.class
+            );
+
+            rankings.add(item);
+        }
+
+        return new PopularRankingDto.Response(true, code, message, rankings);
     }
 
     public PopularRankingDto.Response getPopularRankings(LocalDate startDate, LocalDate endDate, String gender, String ageGroup) throws Exception {

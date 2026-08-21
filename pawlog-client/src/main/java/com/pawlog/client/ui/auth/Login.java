@@ -76,20 +76,22 @@ public class Login extends JPanel{
                 return;
             }
 
-            try {
-                PawLogClient.Response response = pawLogClient.login(email, password);
+            PawLogClient.Response response;
 
-                if (response.success()) {
-                    warn.setText("");
-                    //Authstore loggin = true
-                    authStore.login(email);
-                
-                    loginsuccess.run();
-                } else {
-                    warn.setText(response.message());
-                }
+            try {
+                response = pawLogClient.login(email, password);
             } catch (Exception exception) {
                 warn.setText("서버에 연결할 수 없습니다.");
+                exception.printStackTrace();
+                return;
+            }
+
+            if (response.success()) {
+                warn.setText("");
+                authStore.login(email);
+                loginsuccess.run();
+            } else {
+                warn.setText(response.message());
             }
         });
 

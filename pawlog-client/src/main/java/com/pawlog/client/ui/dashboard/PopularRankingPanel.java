@@ -156,12 +156,12 @@ public class PopularRankingPanel extends JPanel {
 
     private String getSelectedAgeGroup() {
         String selected = String.valueOf(ageBox.getSelectedItem());
-        if ("10대".equals(selected)) return "10";
-        if ("20대".equals(selected)) return "20";
-        if ("30대".equals(selected)) return "30";
-        if ("40대".equals(selected)) return "40";
-        if ("50대".equals(selected)) return "50";
-        if ("60대 이상".equals(selected)) return "60";
+        if ("10대".equals(selected)) return "10s";
+        if ("20대".equals(selected)) return "20s";
+        if ("30대".equals(selected)) return "30s";
+        if ("40대".equals(selected)) return "40s";
+        if ("50대".equals(selected)) return "50s";
+        if ("60대 이상".equals(selected)) return "60s";
         return "ALL";
     }
 
