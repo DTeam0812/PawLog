@@ -54,8 +54,8 @@ public class DashboardFrame extends JFrame {
         this.showLogin = showLogin;
         setUndecorated(true);
         setTitle("Pawlog");
-        setSize(900, 600);
-        setMinimumSize(new Dimension(750, 500));
+        setSize(1200, 800);
+        setMinimumSize(new Dimension(1100, 800));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setLayout(new BorderLayout());

@@ -19,14 +19,16 @@ import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.common.util.JsonUtil;
 public class PawLogClient {
+    private static final int CliVersion = 1; //클라이언트 버전관리
     private static final String DEFAULT_HOST = "192.168.0.13";//서버주소
-    private static final int DEFAULT_PORT = 8005;
+    private static final int DEFAULT_PORT = 8005;//활성 포트
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
     private static final int READ_TIMEOUT_MILLIS = 5000;
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
     private static final String LOGIN = "LOGIN";
+    private static final String NoticeBoardDto = "NoticeBoardDto";
     private static final String REGISTER = "REGISTER";
     private static final String POPULAR_RANKING_GET ="POPULAR_RANKING_GET";
     private static final PawLogClient instance = new PawLogClient();
@@ -67,6 +69,13 @@ public class PawLogClient {
         System.out.println(requestJson);
         return sendJson(requestJson);
     }
+
+
+   /*  private synchronized NoticeBoardDto.Response sendNoticeBoard(){
+
+    }*/
+
+
     private synchronized PopularRankingDto.Response sendPopularRankingJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);

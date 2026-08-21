@@ -21,7 +21,6 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
 public class PopularRankingPanel extends JPanel {
@@ -107,12 +106,7 @@ public class PopularRankingPanel extends JPanel {
 
         rankingList.setLayout(new BoxLayout(rankingList, BoxLayout.Y_AXIS));
 
-        JScrollPane scroll = new JScrollPane(rankingList);
-        scroll.setBorder(null);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        scroll.getVerticalScrollBar().setUnitIncrement(12);
-        card.add(scroll, BorderLayout.CENTER);
+        card.add(rankingList, BorderLayout.CENTER);
         return card;
     }
 
@@ -138,8 +132,8 @@ public class PopularRankingPanel extends JPanel {
 
     private JPanel createRankingRow(PopularRankingDto.RankingItem item) {
         JPanel row = transparentPanel(new GridLayout(1, 5));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-        row.setPreferredSize(new Dimension(700, 48));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        row.setPreferredSize(new Dimension(0, 42));
         row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, TABLE_DIVIDER));
 
         int rank = item.getRank();
@@ -172,7 +166,7 @@ public class PopularRankingPanel extends JPanel {
     }
 
     private JPanel cell(JLabel label) {
-        JPanel panel = transparentPanel(new FlowLayout(FlowLayout.LEFT, 10, 14));
+        JPanel panel = transparentPanel(new FlowLayout(FlowLayout.LEFT, 10, 11));
         panel.add(label);
         return panel;
     }
