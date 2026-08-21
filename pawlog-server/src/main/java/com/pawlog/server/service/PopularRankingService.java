@@ -11,6 +11,16 @@ public class PopularRankingService {
     private final ProgramUsageStatDAO statsDAO = new ProgramUsageStatDAO();
 
     public PopularRankingDto.Response getPopularRankings(PopularRankingDto.Request request) {
+        // 요청 파라미터 검증
+        if (request == null) {
+            return new PopularRankingDto.Response(false, 400, "요청 데이터가 없습니다.");
+        }
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            return new PopularRankingDto.Response(false, 400, "시작일과 종료일이 필요합니다.");
+        }
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            return new PopularRankingDto.Response(false, 400, "시작일은 종료일보다 늦을 수 없습니다.");
+        }
         try {
             List<ProgramUsageStatDAO.RawRankData> rawList = statsDAO.getTop10PopularRankingsRaw(
                     request.getGender(),
@@ -36,16 +46,16 @@ public class PopularRankingService {
                 rankingItems.add(item);
             }
 
-            // 100% 정수 비율 보정 (Service 책임)
+            // 100% 정수 비율 보정
             if (totalDuration > 0 && !rankingItems.isEmpty()) {
                 applyExact100Percentage(rankingItems, rawDurations, totalDuration);
             }
 
-            return new PopularRankingDto.Response(true, "인기 순위 조회 성공", rankingItems);
+            return new PopularRankingDto.Response(true, 200, "인기 순위 조회 성공", rankingItems);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return new PopularRankingDto.Response(false, "조회 중 오류 발생: " + e.getMessage(), null);
+            return new PopularRankingDto.Response(false, 500, "조회 중 오류 발생: " + e.getMessage());
         }
     }
 

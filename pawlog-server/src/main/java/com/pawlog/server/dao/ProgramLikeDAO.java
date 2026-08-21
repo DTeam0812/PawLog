@@ -1,7 +1,6 @@
 package com.pawlog.server.dao;
 
 import com.pawlog.server.db.DBConnectionMgr;
-import com.pawlog.server.entity.PostLikeEntity;
 import com.pawlog.server.entity.ProgramLikeEntity;
 
 import java.sql.Connection;
@@ -16,7 +15,6 @@ public class ProgramLikeDAO {
     }
 
 
-    // 수정필요(postLike 복사해둔 거임, 컬럼명이랑 매개변수 수정해야함)
     // 1. 프로그램 좋아요 추가
     public boolean insertProgramLike(ProgramLikeEntity entity) {
         Connection con = null;
