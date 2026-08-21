@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Date;
-
+//삭제 예정
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
