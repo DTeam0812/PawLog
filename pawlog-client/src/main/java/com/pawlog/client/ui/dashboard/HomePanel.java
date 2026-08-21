@@ -2,13 +2,10 @@ package com.pawlog.client.ui.dashboard;
 
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
-import com.pawlog.Sync.Usagebatch;
-import com.pawlog.Sync.UsagebatchFactory;
 import com.pawlog.client.AuthStore.AuthStore;
-import com.pawlog.client.network.PawLogClient;
-import com.pawlog.client.network.PawLogClient.Response;
+import com.pawlog.client.Storage.UsageLocalSaveService;
+import com.pawlog.client.Storage.UsageServerSyncService;
 import com.pawlog.client.tracker.ProgramTracker;
-import com.pawlog.client.tracker.UsageKey;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -42,8 +39,9 @@ import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
 public class HomePanel extends JPanel {
-    private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final AuthStore authStore = AuthStore.getInstance();
+    private final UsageLocalSaveService localSaveService = new UsageLocalSaveService();
+    private final UsageServerSyncService serverSyncService = new UsageServerSyncService();
 
     private JLabel mostProgramLabel;
     private JLabel activeProgramNameLabel;
@@ -142,40 +140,41 @@ public class HomePanel extends JPanel {
         saveButton.setPreferredSize(new Dimension(88, 30));
         saveButton.setMargin(new Insets(0, 8, 0, 8));
         saveButton.addActionListener(event -> {
-            Map<UsageKey, Long> data =
-                ProgramTracker.getHourlyUsageMap();
-
-            if (data.isEmpty()) {
-                lastSavedLabel.setText("저장할 기록 없음");
-                return;
-            }
-            Usagebatch batch = UsagebatchFactory.create(data);
-            
-            System.out.println(batch);
-
             saveButton.setEnabled(false);
             saveButton.setText("저장 중...");
-            lastSavedLabel.setText("서버 연결 중");
+            lastSavedLabel.setText("기록 저장 중");
 
-            new SwingWorker<Response, Void>() {
+            new SwingWorker<SaveResult, Void>() {
                 @Override
-                protected Response doInBackground() throws Exception {
-                    return pawLogClient.saveUsage(batch);
+                protected SaveResult doInBackground() throws Exception {
+                    boolean locallySaved = localSaveService.savePending();
+
+                    try {
+                        int syncedCount = serverSyncService.syncPending();
+                        return new SaveResult(locallySaved, syncedCount, false);
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                        return new SaveResult(locallySaved, 0, true);
+                    }
                 }
 
                 @Override
                 protected void done() {
                     try {
-                        Response response = get();
+                        SaveResult result = get();
 
-                        if (response.success()) {
+                        if (result.serverFailed()) {
+                            lastSavedLabel.setText("서버 전송 대기");
+                        } else if (result.syncedCount() > 0) {
                             String savedTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
                             lastSavedLabel.setText("마지막 저장 " + savedTime);
+                        } else if (result.locallySaved()) {
+                            lastSavedLabel.setText("서버 전송 대기");
                         } else {
-                            lastSavedLabel.setText("저장 실패");
+                            lastSavedLabel.setText("저장할 기록 없음");
                         }
                     } catch (Exception exception) {
-                        lastSavedLabel.setText("서버 응답 없음");
+                        lastSavedLabel.setText("로컬 저장 실패");
                         exception.printStackTrace();
                     } finally {
                         saveButton.setEnabled(true);
@@ -619,5 +618,8 @@ public class HomePanel extends JPanel {
         public boolean getScrollableTracksViewportHeight() {
             return false;
         }
+    }
+
+    private record SaveResult(boolean locallySaved, int syncedCount, boolean serverFailed) {
     }
 }

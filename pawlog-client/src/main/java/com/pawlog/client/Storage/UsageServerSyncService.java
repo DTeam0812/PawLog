@@ -7,6 +7,8 @@ import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 
 public class UsageServerSyncService {
+    private static final Object SYNC_LOCK = new Object();
+
     private final UsageOutboxRepository repository;
     private final PawLogClient pawLogClient;
 
@@ -16,6 +18,12 @@ public class UsageServerSyncService {
     }
 
     public int syncPending() throws Exception {
+        synchronized(SYNC_LOCK) {
+            return syncPendingLocked();
+        }
+    }
+
+    private int syncPendingLocked() throws Exception {
         String currentEmail =
             AuthStore.getInstance().getEmail();
 
@@ -37,7 +45,9 @@ public class UsageServerSyncService {
                 pawLogClient.saveUsage(batch);
 
             if (!response.success()) {
-                break;
+                throw new IllegalStateException(
+                    "사용 기록 전송 실패: " + response.message()
+                );
             }
 
             boolean deleted =
