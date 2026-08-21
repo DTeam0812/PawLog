@@ -133,3 +133,4 @@ public class MyPagePanel extends JPanel {
         return field;
     }
 }
+    

@@ -11,6 +11,10 @@ import java.util.Map;
 import javax.swing.*;
 
 import com.pawlog.client.AuthStore.AuthStore;
+import com.pawlog.client.Storage.ServerSyncScheduler;
+import com.pawlog.client.Storage.UsageAutoSaveScheduler;
+import com.pawlog.client.Storage.UsageLocalSaveService;
+import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.client.ui.dashboard.DashboardFrame;
@@ -21,8 +25,9 @@ public class AuthFrame extends JFrame {
     private Point headerDragOffset;
     private final DashboardFrame dashboardFrame;
     private boolean loggedIn;
-    
-    
+    private final UsageAutoSaveScheduler autoSaveScheduler = new UsageAutoSaveScheduler();
+    private final ServerSyncScheduler serverSyncScheduler = new ServerSyncScheduler();
+    private final UsageLocalSaveService localSaveService = new UsageLocalSaveService();
     private static AuthStore authStore = AuthStore.getInstance();
     String email = authStore.getEmail();
     
@@ -39,6 +44,9 @@ public class AuthFrame extends JFrame {
         setLayout(new BorderLayout());
 
         Login loginPanel = new Login(() -> showPage("REGISTER"), () -> {
+            serverSyncScheduler.start();
+            autoSaveScheduler.start();
+            ProgramTracker.startTracking();
             loggedIn = true;
             setVisible(false);
             dashboardFrame.open();
@@ -62,6 +70,19 @@ public class AuthFrame extends JFrame {
     }
 
     private void showLoginAfterLogout() {
+        ProgramTracker.stopTracking();
+        autoSaveScheduler.stop();
+        serverSyncScheduler.stop();
+
+        try {
+            localSaveService.savePending();
+        } catch (Exception exception) {
+            System.out.println("로그아웃 전 사용 기록 저장 실패");
+            exception.printStackTrace();
+        }
+
+        PawLogClient.getInstance().disconnect();
+        authStore.logout();
         loggedIn = false;
         showPage("LOGIN");
         setState(JFrame.NORMAL);

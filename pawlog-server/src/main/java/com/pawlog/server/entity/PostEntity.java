@@ -15,7 +15,7 @@ import java.sql.Timestamp;
 public class PostEntity {
     private long postId;
     private long userId;
-    private long programId;
+    private Long programId;
     private String title;
     private String content;
     private Timestamp createdAt;

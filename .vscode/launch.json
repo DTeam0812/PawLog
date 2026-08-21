@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "SQLiteConnectionTest",
+            "request": "launch",
+            "mainClass": "com.pawlog.client.Storage.SQLiteConnectionTest",
+            "projectName": "pawlog-client"
+        },
+        {
+            "type": "java",
             "name": "DeviceIdManager",
             "request": "launch",
             "mainClass": "com.pawlog.Device.DeviceIdManager",

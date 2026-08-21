@@ -15,6 +15,8 @@ import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.pawlog.Sync.Usagebatch;
+import com.pawlog.Sync.Usageitem;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.common.util.JsonUtil;
@@ -70,12 +72,13 @@ public class PawLogClient {
         return sendJson(requestJson);
     }
 
-
-   /*  private synchronized NoticeBoardDto.Response sendNoticeBoard(){
-
+    // AUTHOR TITLE CATEGORY CONTENT SEND
+    //ID AUTHOR TITLE CATEGORY CONTENT POST_LIKE COMMENT REUTRN  
+   /*  private synchronized Enroll_PostDto.Response Enroll_Post(String Author , String Title , String Category , String Content){
+`   
     }*/
 
-
+    
     private synchronized PopularRankingDto.Response sendPopularRankingJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
@@ -110,7 +113,7 @@ public class PawLogClient {
         return sendPopularRankingJson(requestJson);
     }
 
-    public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
+   /*  public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
         if (data == null || data.isEmpty()) {
             return new Response(false, "저장할 사용 기록이 없습니다.");
         }
@@ -131,7 +134,47 @@ public class PawLogClient {
         System.out.println(requestJson);
         return sendJson(requestJson);
     }
+*/
 
+    public  Response saveUsage(Usagebatch batch) throws Exception{
+        if (batch == null) {
+        return new Response(false, "전송할 배치가 없습니다.");
+    }
+
+        if (batch.logs() == null || batch.logs().isEmpty()) {
+            return new Response(false, "전송할 사용 기록이 없습니다.");
+    }
+
+        if (batch.email() == null || batch.email().isBlank()) {
+            return new Response(false, "사용자 이메일이 없습니다.");
+    }
+     List<UsageLogSaveDto.LogItem> logs = new ArrayList<>();
+
+     for(Usageitem item : batch.logs()) {
+        UsageLogSaveDto.LogItem logItem =
+            new UsageLogSaveDto.LogItem(
+                item.hour(),
+                item.programName(),
+                item.durationSec(),
+                item.usageDate().toString()
+            );
+        logs.add(logItem);
+    }
+    String usageDate = batch.logs().get(0).usageDate().toString();
+
+    UsageLogSaveDto.Request request = new UsageLogSaveDto.Request(
+            batch.email(),
+            usageDate,
+            logs
+        );
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket packet =
+            new RequestPacket("USAGE_LOG_SAVE", dataNode);
+
+        String requestJson = JsonUtil.toJson(packet);
+
+        return sendJson(requestJson);
+    }
     public Response register(String email, String password, String nickname, String gender, LocalDate birthDate) throws Exception {
         AuthRegisterDto.Request registerData = new AuthRegisterDto.Request(nickname, email, password, birthDate.toString(), gender);
         JsonNode dataNode = JsonUtil.toJsonNode(registerData);

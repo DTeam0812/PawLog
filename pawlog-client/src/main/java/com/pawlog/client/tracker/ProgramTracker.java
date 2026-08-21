@@ -13,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.pawlog.client.Storage.SQLiteInitializer;
+import com.pawlog.client.Storage.UsageAutoSaveScheduler;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.ptr.IntByReference;
@@ -42,9 +44,10 @@ public class ProgramTracker {
         if (scheduler != null && !scheduler.isShutdown()) {
             return;
         }
-
+      
         scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(ProgramTracker::trackForegroundWindow, 0, 1, TimeUnit.SECONDS);
+        
     }
     
     public static synchronized void stopTracking() {//중지
@@ -144,22 +147,35 @@ public class ProgramTracker {
 
     public static Map<UsageKey, Long> getHourlyUsageMap() {
         return new HashMap<>(hourlyUsageMap);
+    }
 
+    public static synchronized Map<UsageKey, Long> drainPendingUsage() {//복사후 초기화 
+    Map<UsageKey, Long> snapshot = new HashMap<>(pendingUsageMap);
+    pendingUsageMap.clear();
+    return snapshot;
     }
-    public static Map<UsageKey, Long> getSnapshotUsagemap(){ //sqllite작성을 위한 임시함수 생성
-        Map<UsageKey, Long> snapshot = new HashMap<>(pendingUsageMap); //임시함수
-        pendingUsageMap.clear();//초기화
-        return snapshot;
+
+    public static synchronized void restorePendingUsage(Map<UsageKey, Long> data) {//요청 실패시 데이터 병합
+    if (data == null || data.isEmpty()) {
+        return;
+        }
+
+    for(Map.Entry<UsageKey, Long> entry : data.entrySet()) {
+        UsageKey key = entry.getKey();
+        long seconds = entry.getValue();
+
+        pendingUsageMap.merge(key, seconds, Long::sum);
+        }
     }
-    
     
 
     int currentHour = LocalDateTime.now().getHour();
 
     public static List<Map.Entry<String, Long>> getTopPrograms() {
+        //KEY [DATE ,PROGRAMNAME , HOUR(시간대)]  VALUE 로 SECONDS가 오는 구조
         return usageMap.entrySet().stream()
             .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-            .toList();
+            .toList();//시간 (value) 내림차순 정렬로 최근 활성 프로그램 정렬
     }
 
 

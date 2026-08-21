@@ -24,13 +24,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-import com.pawlog.client.AuthStore.AuthStore;
-import com.pawlog.client.network.PawLogClient;
-import com.pawlog.client.tracker.ProgramTracker;
-import com.pawlog.client.tracker.UsageKey;
-
 public class DashboardFrame extends JFrame {
-    AuthStore authStore = AuthStore.getInstance();
     private final Runnable showLogin;
     private static final String HOME = "HOME";
     private static final String STATISTICS = "STATISTICS";
@@ -151,9 +145,6 @@ public class DashboardFrame extends JFrame {
         JButton logout = createMenuButton("로그아웃", LOGOUT);
         logout.addActionListener(event -> {
             setVisible(false);
-            PawLogClient.getInstance().disconnect();
-            authStore.logout();
-            ProgramTracker.stopTracking();
             showLogin.run();
         });
         sidebarPanel.add(homeButton);

@@ -6,12 +6,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.pawlog.Device.DeviceIdManager;
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.UsageKey;
 
 public class UsagebatchFactory {
     private UsagebatchFactory() {
     }
-
+    
     public static Usagebatch create(Map<UsageKey, Long> data) {
         String deviceId = DeviceIdManager.getDeviceId();
         String batchId = UUID.randomUUID().toString();
@@ -29,6 +30,7 @@ public class UsagebatchFactory {
         return new Usagebatch(
             deviceId,
             batchId,
+            AuthStore.getInstance().getEmail(),
             items
         );
     }

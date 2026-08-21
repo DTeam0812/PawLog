@@ -83,7 +83,7 @@ public class Login extends JPanel{
                     warn.setText("");
                     //Authstore loggin = true
                     authStore.login(email);
-                    ProgramTracker.startTracking();
+                
                     loginsuccess.run();
                 } else {
                     warn.setText(response.message());

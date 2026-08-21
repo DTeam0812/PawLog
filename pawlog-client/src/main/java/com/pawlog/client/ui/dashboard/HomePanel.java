@@ -57,7 +57,7 @@ public class HomePanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(BACKGROUND);
 
-        JPanel bodyPanel = new JPanel();
+        JPanel bodyPanel = new ViewportWidthPanel();
         bodyPanel.setLayout(new BoxLayout(bodyPanel, BoxLayout.Y_AXIS));
         bodyPanel.setBackground(BACKGROUND);
         bodyPanel.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
@@ -73,7 +73,16 @@ public class HomePanel extends JPanel {
 
         bodyPanel.add(createBottomRowPanel());
 
-        add(bodyPanel, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(bodyPanel);
+
+        scrollPane.setBorder(null);
+        scrollPane.setBackground(BACKGROUND);
+        scrollPane.getViewport().setBackground(BACKGROUND);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        add(scrollPane, BorderLayout.CENTER);
 
         Timer uiTimer = new Timer(1000, event -> {
             updateActiveProgram();
@@ -141,6 +150,7 @@ public class HomePanel extends JPanel {
                 return;
             }
             Usagebatch batch = UsagebatchFactory.create(data);
+            
             System.out.println(batch);
 
             saveButton.setEnabled(false);
@@ -150,7 +160,7 @@ public class HomePanel extends JPanel {
             new SwingWorker<Response, Void>() {
                 @Override
                 protected Response doInBackground() throws Exception {
-                    return pawLogClient.saveUsage(data);
+                    return pawLogClient.saveUsage(batch);
                 }
 
                 @Override
@@ -583,4 +593,31 @@ public class HomePanel extends JPanel {
         return card;
     }
 
+    private static class ViewportWidthPanel extends JPanel implements Scrollable {
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return Math.max(16, visibleRect.height - 16);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
+    }
 }
