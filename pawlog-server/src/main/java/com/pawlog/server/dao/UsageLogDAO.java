@@ -21,9 +21,10 @@ public class UsageLogDAO {
         Connection con = null;
         PreparedStatement pstmt = null;
 
+        // 클라이언트가 60초 단위 델타값을 전송하므로, 중복 시 덮어쓰지 않고 누적 합산
         String sql = "INSERT INTO usage_logs (user_id, program_id, usage_date, usage_hour, duration_sec) "
                 + "VALUES (?, ?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE duration_sec = VALUES(duration_sec)";
+                + "ON DUPLICATE KEY UPDATE duration_sec = duration_sec + VALUES(duration_sec)";
 
         try {
             con = pool.getConnection();

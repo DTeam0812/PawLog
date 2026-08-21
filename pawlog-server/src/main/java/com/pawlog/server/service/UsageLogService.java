@@ -1,12 +1,12 @@
 package com.pawlog.server.service;
 
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
-import com.pawlog.server.dao.DailyUsageSummaryDAO;
 import com.pawlog.server.dao.ProgramDAO;
 import com.pawlog.server.dao.UsageLogDAO;
 import com.pawlog.server.dao.UserDAO;
 import com.pawlog.server.entity.ProgramEntity;
 import com.pawlog.server.entity.UsageLogEntity;
+import com.pawlog.server.net.SummaryScheduler;
 
 import java.sql.Date;
 import java.time.LocalDate;
@@ -15,13 +15,11 @@ public class UsageLogService {
     private final UsageLogDAO usageLogDAO;
     private final ProgramDAO programDAO;
     private final UserDAO userDAO;
-    private final DailyUsageSummaryDAO dailyUsageSummaryDAO;
 
     public UsageLogService() {
         this.usageLogDAO = new UsageLogDAO();
         this.programDAO = new ProgramDAO();
         this.userDAO = new UserDAO();
-        this.dailyUsageSummaryDAO = new DailyUsageSummaryDAO();
     }
 
     public UsageLogSaveDto.Response saveUsageLogs(Long sessionUserId, UsageLogSaveDto.Request req) {
@@ -91,8 +89,12 @@ public class UsageLogService {
             boolean success = usageLogDAO.upsertUsageLog(logEntity);
             if (success) {
                 savedCount++;
-                // usage_logs 저장 성공 시 daily_usage_summary 즉시 동기화
-                syncDailySummary(logEntity);
+                // 즉시 동기화하지 않고 SummaryScheduler에 dirty 키만 등록 (5분마다 일괄 동기화)
+                SummaryScheduler.getInstance().markDirty(
+                    logEntity.getUserId(),
+                    logEntity.getProgramId(),
+                    logEntity.getUsageDate()
+                );
             }
         }
 
@@ -102,39 +104,4 @@ public class UsageLogService {
             return new UsageLogSaveDto.Response(false, 500, "사용 기록 저장에 실패하였습니다.", 0);
         }
     }
-
-    /*
-     * usage_logs 저장 성공 시 daily_usage_summary를 즉시 동기화
-     * usage_logs의 해당 (user, program, date) 시간대별 합계를 재집계하여 summary 테이블에 UPSERT한
-     * 동기화 실패는 saveUsageLogs의 응답에 영향을 주지 않도록 예외를 내부에서 흡수
-     */
-    private void syncDailySummary(UsageLogEntity logEntity) {
-        try {
-            dailyUsageSummaryDAO.syncFromUsageLogs(
-                    logEntity.getUserId(),
-                    logEntity.getUsageDate(),
-                    logEntity.getProgramId()
-            );
-        } catch (Exception e) {
-            System.err.println("[WARN] daily_usage_summary 동기화 실패 "
-                    + "(userId=" + logEntity.getUserId()
-                    + ", programId=" + logEntity.getProgramId()
-                    + ", date=" + logEntity.getUsageDate() + "): "
-                    + e.getMessage());
-        }
-    }
-
-    // =========================================================================
-    // 테스트 코드 (동기화 파이프라인 검증용)
-    // =========================================================================
-
-    /**
-     * [TC1] 기본 저장 테스트
-     * - 목적: usage_logs에 저장된 데이터가 daily_usage_summary에 즉시 반영되는지 확인
-     * - 기대 결과:
-     *   usage_logs   : (2026-08-20, hour=9)  → 1800초
-     *   usage_logs   : (2026-08-20, hour=10) → 3600초
-     *   daily_summary: (2026-08-20, chrome.exe) → 5400초 (합산)
-     */
-
 }
