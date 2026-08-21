@@ -10,6 +10,7 @@ import com.pawlog.common.protocol.ServerProtocol;
 import com.pawlog.common.util.JsonUtil;
 import com.pawlog.server.entity.UserEntity;
 import com.pawlog.server.service.AuthService;
+import com.pawlog.server.service.PopularRankingService;
 import com.pawlog.server.service.RankingService;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
@@ -28,7 +29,7 @@ public class ClientThread extends Thread {
     private BufferedReader in;
     private PrintWriter out;
     private AuthService authService;
-    private RankingService rankingService;
+    private PopularRankingService popularRankingService;
     private UsageLogService usageLogService;
 
     // 로그인된 유저 세션 정보
@@ -41,7 +42,7 @@ public class ClientThread extends Thread {
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             this.out = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
             this.authService = new AuthService();
-            this.rankingService = new RankingService();
+            this.popularRankingService = new PopularRankingService();
             this.usageLogService = new UsageLogService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
@@ -311,13 +312,13 @@ public class ClientThread extends Thread {
                 return;
             }
 
-            PopularRankingDto.Response resDto = rankingService.getPopularRankings(reqDto);
+            PopularRankingDto.Response resDto = popularRankingService.getPopularRankings(reqDto);
             ResponsePacket responsePacket = new ResponsePacket(
                 ServerProtocol.POPULAR_RANKING_GET,
                 resDto.isSuccess(),
-                resDto.isSuccess() ? 200 : 400,
+                resDto.getCode(),
                 resDto.getMessage(),
-                JsonUtil.toJsonNode(resDto)
+                resDto.isSuccess() ? JsonUtil.toJsonNode(resDto.getRankings()) : null
             );
             sendMessage(JsonUtil.toJson(responsePacket));
         } catch (Exception e) {
@@ -357,7 +358,7 @@ public class ClientThread extends Thread {
             PopularRankingDto.Request reqDto = new PopularRankingDto.Request(ageGroup, gender, startDate, endDate);
 
             // Service 호출
-            PopularRankingDto.Response resDto = rankingService.getPopularRankings(reqDto);
+            PopularRankingDto.Response resDto = popularRankingService.getPopularRankings(reqDto);
 
             if (resDto.isSuccess()) {
                 StringBuilder responseData = new StringBuilder();
