@@ -15,7 +15,7 @@ import java.sql.Timestamp;
 public class PostEntity {
     private long postId;
     private long userId;
-    private Long programId; // NULLABLE (자유게시판일 경우 NULL)
+    private long programId;
     private String title;
     private String content;
     private Timestamp createdAt;

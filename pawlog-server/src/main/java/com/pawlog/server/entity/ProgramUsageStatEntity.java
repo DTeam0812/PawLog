@@ -15,9 +15,8 @@ import java.sql.Date;
 public class ProgramUsageStatEntity {
     private long statId;
     private long programId;
-    private String periodType;
     private Date statDate;
-    private float avgDurationSec;
+    private double avgDurationSec;
     private int totalUsers;
     private String gender;
     private String ageGroup;
@@ -27,7 +26,6 @@ public class ProgramUsageStatEntity {
         return "ProgramUsageStatEntity ["
                 + "statId=" + statId
                 + ", programId=" + programId
-                + ", periodType=" + periodType
                 + ", statDate=" + statDate
                 + ", avgDurationSec=" + avgDurationSec
                 + ", totalUsers=" + totalUsers
