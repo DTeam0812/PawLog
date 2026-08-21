@@ -43,7 +43,7 @@ public class ProgramUsageStatDAO {
         String sql = "SELECT s.program_id, "
                 + "COALESCE(p.display_name, p.process_name) AS program_name, "
                 + "COALESCE(c.name, '기타') AS category_name, "
-                + "AVG(s.avg_duration_sec) AS avg_duration_sec "
+                + "SUM(s.avg_duration_sec * s.total_users) / NULLIF(SUM(s.total_users), 0) AS avg_duration_sec "
                 + "FROM program_usage_stats s "
                 + "INNER JOIN programs p ON s.program_id = p.program_id "
                 + "LEFT JOIN categories c ON p.category_id = c.category_id "
@@ -56,6 +56,7 @@ public class ProgramUsageStatDAO {
         else sql += "AND s.age_group IS NULL ";
 
         sql += "GROUP BY s.program_id, p.display_name, p.process_name, c.name "
+                + "HAVING SUM(s.total_users) >= 5"
                 + "ORDER BY avg_duration_sec DESC "
                 + "LIMIT 10";
 
