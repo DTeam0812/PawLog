@@ -10,7 +10,7 @@ public class PawLogServer {
     public static final int PORT = 8005;
 
     public PawLogServer() {
-        // daily_usage_summary 5분 주기 동기화 스케줄러 시작
+        // daily_usage_summary 5분 주기 스케줄러
         SummaryScheduler.getInstance().start();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {

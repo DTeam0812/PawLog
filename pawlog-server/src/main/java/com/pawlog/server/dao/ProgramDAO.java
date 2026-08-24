@@ -99,4 +99,39 @@ public class ProgramDAO {
             pool.freeConnection(con, pstmt);
         }
     }
+
+    // 4. 키워드로 프로그램 검색 (process_name 또는 display_name LIKE 검색)
+    public List<ProgramEntity> searchPrograms(String keyword, int limit) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<ProgramEntity> list = new ArrayList<>();
+
+        String sql = "SELECT program_id, process_name, display_name FROM programs "
+                   + "WHERE LOWER(process_name) LIKE ? OR LOWER(display_name) LIKE ? "
+                   + "ORDER BY program_id ASC LIMIT ?";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            String searchPattern = "%" + (keyword != null ? keyword.toLowerCase().trim() : "") + "%";
+            pstmt.setString(1, searchPattern);
+            pstmt.setString(2, searchPattern);
+            pstmt.setInt(3, limit > 0 ? limit : 10);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                ProgramEntity entity = new ProgramEntity();
+                entity.setProgramId(rs.getLong("program_id"));
+                entity.setProcessName(rs.getString("process_name"));
+                entity.setDisplayName(rs.getString("display_name"));
+                list.add(entity);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return list;
+    }
 }

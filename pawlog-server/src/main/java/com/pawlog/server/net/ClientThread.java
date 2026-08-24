@@ -16,6 +16,8 @@ import com.pawlog.server.service.StatisticsService;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
+import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.server.service.UtilService;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,6 +36,7 @@ public class ClientThread extends Thread {
     private PopularRankingService popularRankingService;
     private UsageLogService usageLogService;
     private StatisticsService statisticsService;
+    private UtilService utilService;
 
     // 로그인된 유저 세션 정보
     private Long loggedInUserId;
@@ -48,6 +51,7 @@ public class ClientThread extends Thread {
             this.popularRankingService = new PopularRankingService();
             this.usageLogService = new UsageLogService();
             this.statisticsService = new StatisticsService();
+            this.utilService = new UtilService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -126,6 +130,9 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
                     handleMyStatisticsJson(dataJson);
                 }
+                else if (ServerProtocol.PROGRAM_SEARCH.equals(command)) {
+                    handleProgramSearchJson(dataJson);
+                }
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -163,6 +170,9 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
             handleMyStatistics(data);
+        }
+        else if (ServerProtocol.PROGRAM_SEARCH.equals(command)) {
+            handleProgramSearch(data);
         }
     }
 
@@ -626,6 +636,65 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "개인 통계 조회 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // 프로그램 검색 (JSON 처리)
+    private void handleProgramSearchJson(String dataJson) {
+        try {
+            ProgramSearchDto.Request reqDto = JsonUtil.fromJson(dataJson, ProgramSearchDto.Request.class);
+            ProgramSearchDto.Response resDto = utilService.searchPrograms(reqDto);
+
+            JsonNode dataNode = null;
+            if (resDto.isSuccess() && resDto.getPrograms() != null) {
+                dataNode = JsonUtil.toJsonNode(resDto.getPrograms());
+            }
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.PROGRAM_SEARCH,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                dataNode
+            );
+
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.PROGRAM_SEARCH,
+                false,
+                400,
+                "프로그램 검색 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 프로그램 검색 (구분자 처리)
+    private void handleProgramSearch(String data) {
+        try {
+            String[] params = data.split(ServerProtocol.MODE2);
+            String keyword = params.length > 0 ? params[0] : "";
+            int limit = 10;
+            if (params.length > 1) {
+                try {
+                    limit = Integer.parseInt(params[1]);
+                } catch (NumberFormatException ignored) {}
+            }
+
+            ProgramSearchDto.Request reqDto = new ProgramSearchDto.Request(keyword, limit);
+            ProgramSearchDto.Response resDto = utilService.searchPrograms(reqDto);
+
+            if (resDto.isSuccess()) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + JsonUtil.toJson(resDto.getPrograms()));
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "프로그램 검색 중 오류 발생");
         }
     }
 
