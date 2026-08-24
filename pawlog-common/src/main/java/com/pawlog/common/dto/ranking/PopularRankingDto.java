@@ -25,7 +25,6 @@ public class PopularRankingDto {
     public static class RankingItem {
         private int rank;
         private String programName;
-        private String categoryName;
         private String avgUsageFormatted;
         private int usagePercentage;
     }

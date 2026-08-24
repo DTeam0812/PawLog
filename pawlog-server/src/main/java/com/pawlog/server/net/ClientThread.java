@@ -123,9 +123,6 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.USAGE_LOG_GET.equals(command)){
                     handleUsageLogGet();
                 }
-                else if (ServerProtocol.CATEGORY_GET.equals(command)){
-                    handleCategoryGet();
-                }
                 else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
                     handleMyStatisticsJson(dataJson);
                 }
@@ -163,9 +160,6 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.USAGE_LOG_GET.equals(command)){
             handleUsageLogGet();
-        }
-        else if (ServerProtocol.CATEGORY_GET.equals(command)){
-            handleCategoryGet();
         }
         else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
             handleMyStatistics(data);
@@ -481,7 +475,6 @@ public class ClientThread extends Thread {
                         responseData.append(ServerProtocol.MODE2)
                                 .append(item.getRank()).append(",")
                                 .append(item.getProgramName()).append(",")
-                                .append(item.getCategoryName()).append(",")
                                 .append(item.getAvgUsageFormatted()).append(",")
                                 .append(item.getUsagePercentage()).append("%");
                     }
@@ -558,10 +551,6 @@ public class ClientThread extends Thread {
     }
 
     public void handleUsageLogGet(){
-
-    }
-
-    public void handleCategoryGet(){
 
     }
 

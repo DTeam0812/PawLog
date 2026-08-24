@@ -38,7 +38,6 @@ public class PopularRankingService {
                 PopularRankingDto.RankingItem item = new PopularRankingDto.RankingItem();
                 item.setRank(rank++);
                 item.setProgramName(raw.programName);
-                item.setCategoryName(raw.categoryName);
                 item.setAvgUsageFormatted(formatDuration((long) raw.avgDurationSec));
 
                 rawDurations.add(raw.avgDurationSec);
@@ -119,10 +118,9 @@ public class PopularRankingService {
 //        if (response.getRankings() != null) {
 //            int totalPercent = 0;
 //            for (PopularRankingDto.RankingItem item : response.getRankings()) {
-//                System.out.printf("[%d위] %s (%s) | 평균: %s | 점유율: %d%%\n",
+//                System.out.printf("[%d위] %s | 평균: %s | 점유율: %d%%\n",
 //                        item.getRank(),
 //                        item.getProgramName(),
-//                        item.getCategoryName(),
 //                        item.getAvgUsageFormatted(),
 //                        item.getUsagePercentage());
 //                totalPercent += item.getUsagePercentage();
