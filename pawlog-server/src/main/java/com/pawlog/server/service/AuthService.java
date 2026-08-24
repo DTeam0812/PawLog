@@ -2,6 +2,7 @@ package com.pawlog.server.service;
 
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
+import com.pawlog.common.dto.auth.AuthUpdateDto;
 import com.pawlog.server.dao.UserDAO;
 import com.pawlog.server.entity.UserEntity;
 
@@ -71,6 +72,60 @@ public class AuthService {
         } catch (Exception e) {
             e.printStackTrace();
             return new AuthLoginDto.Response(false, 500, "로그인 처리 중 서버 오류가 발생하였습니다.");
+        }
+    }
+
+    // 마이페이지 정보 수정 서비스 (닉네임, 비밀번호 선택적 변경)
+    public AuthUpdateDto.Response updateUser(long userId, AuthUpdateDto.Request dto) {
+        if (dto == null) {
+            return new AuthUpdateDto.Response(false, 400, "수정할 데이터가 없습니다.");
+        }
+
+        try {
+            UserEntity currentUser = userDAO.getUserById(userId);
+            if (currentUser == null) {
+                return new AuthUpdateDto.Response(false, 404, "사용자 정보를 찾을 수 없습니다.");
+            }
+
+            String newNickname = dto.getNickname();
+            String newPassword = dto.getNewPassword();
+            String currentPassword = dto.getCurrentPassword();
+
+            // 1. 비밀번호 변경 시 유효성 검증
+            if (newPassword != null && !newPassword.trim().isEmpty()) {
+                if (currentPassword == null || currentPassword.trim().isEmpty()) {
+                    return new AuthUpdateDto.Response(false, 400, "비밀번호 변경을 위해 현재 비밀번호를 입력해야 합니다.");
+                }
+
+                // 현재 비밀번호와 새 비밀번호 동일 여부 체크
+                if (currentPassword.equals(newPassword)) {
+                    return new AuthUpdateDto.Response(false, 400, "새 비밀번호는 현재 비밀번호와 다르게 설정해야 합니다.");
+                }
+
+                // DB 비밀번호와 대조
+                if (!currentUser.getPasswordHash().equals(currentPassword)) {
+                    return new AuthUpdateDto.Response(false, 401, "현재 비밀번호가 일치하지 않습니다.");
+                }
+            }
+
+            // 2. 수정 대상 필드 존재 여부 체크
+            if ((newNickname == null || newNickname.trim().isEmpty()) &&
+                    (newPassword == null || newPassword.trim().isEmpty())) {
+                return new AuthUpdateDto.Response(false, 400, "수정할 항목이 지정되지 않았습니다.");
+            }
+
+            // 3. DB 동적 업데이트 수행
+            boolean isUpdated = userDAO.updateUser(userId, newNickname, newPassword);
+            if (isUpdated) {
+                String updatedNick = (newNickname != null && !newNickname.trim().isEmpty()) ? newNickname.trim() : currentUser.getNickname();
+                return new AuthUpdateDto.Response(true, 200, "회원 정보가 성공적으로 변경되었습니다.", updatedNick);
+            } else {
+                return new AuthUpdateDto.Response(false, 500, "회원 정보 수정 DB 처리 실패");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new AuthUpdateDto.Response(false, 500, "정보 수정 중 서버 오류 발생: " + e.getMessage());
         }
     }
 
