@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
+import com.pawlog.common.dto.ranking.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,6 +21,7 @@ import com.pawlog.Sync.Usageitem;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.common.util.JsonUtil;
+import com.pawlog.common.protocol.ServerProtocol;
 public class PawLogClient {
     private static final int CliVersion = 1; //클라이언트 버전관리
     private static final String DEFAULT_HOST = "192.168.0.13";//서버주소
@@ -124,7 +126,46 @@ public class PawLogClient {
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendPopularRankingJson(requestJson);
     }
+    private synchronized MyStatisticsDto.Response sendMyStatisticsJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
+        if (responseJson == null) {
+            disconnect();
+            return new MyStatisticsDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+        }
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        if (!success) {
+            return new MyStatisticsDto.Response(false, code, message, null);
+        }
 
+        JsonNode dataNode = root.path("data");
+        if (dataNode.isMissingNode() || dataNode.isNull()) {
+            return new MyStatisticsDto.Response(true, code, message, null);
+        }
+
+        MyStatisticsDto.MyStatistics data = JsonUtil.fromJson(
+            dataNode.toString(),
+            MyStatisticsDto.MyStatistics.class
+        );
+
+        return new MyStatisticsDto.Response(true, code, message, data);
+    }
+
+    public MyStatisticsDto.Response getMyStatistics(String id, LocalDate startDate, LocalDate endDate) throws Exception {
+        String sdate = startDate.toString();
+        String edate = endDate.toString();
+        MyStatisticsDto.Request request = new MyStatisticsDto.Request(id, sdate, edate);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.MY_STATISTICS_GET, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+
+        return sendMyStatisticsJson(requestJson);
+    }
+    
    /*  public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
         if (data == null || data.isEmpty()) {
             return new Response(false, "저장할 사용 기록이 없습니다.");
@@ -194,7 +235,7 @@ public class PawLogClient {
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendJson(requestJson);
     }
-
+    
    
     private synchronized Response sendJson(String requestJson) throws Exception {
         connect();

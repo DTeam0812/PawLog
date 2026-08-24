@@ -76,7 +76,7 @@ public class UsageOutboxRepository {
     }
     public List<Usagebatch> findPending() throws SQLException {
     List<Usagebatch> batchHeaders = new ArrayList<>();
-
+        
     String sql = """
         SELECT
             batch_id,
