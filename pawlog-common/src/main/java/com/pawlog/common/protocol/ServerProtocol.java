@@ -9,7 +9,6 @@ public class ServerProtocol {
     public static final String MY_STATISTICS_GET = "MY_STATISTICS_GET";     // 기간 지정 통계 조회
     public static final String USAGE_LOG_SAVE = "USAGE_LOG_SAVE";
     public static final String USAGE_LOG_GET = "USAGE_LOG_GET";
-    public static final String CATEGORY_GET = "CATEGORY_GET";
     public static final String PROGRAM_SEARCH = "PROGRAM_SEARCH";
     public static final String POST_LIST_GET = "POST_LIST_GET";
     // 서버 푸시 커맨드 (Server → Client)

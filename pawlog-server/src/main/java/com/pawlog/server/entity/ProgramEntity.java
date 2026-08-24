@@ -14,7 +14,6 @@ public class ProgramEntity {
     private long programId;
     private String processName;
     private String displayName;
-    private Integer categoryId;
 
 
     @Override
@@ -23,7 +22,6 @@ public class ProgramEntity {
                 + "programId=" + programId
                 + ", processName=" + processName
                 + ", displayName=" + displayName
-                + ", categoryId=" + categoryId
                 + "]";
     }
 }

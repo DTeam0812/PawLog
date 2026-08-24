@@ -23,7 +23,7 @@ public class ProgramDAO {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
-        String sql = "SELECT program_id, process_name, display_name, category_id FROM programs WHERE process_name = ?";
+        String sql = "SELECT program_id, process_name, display_name FROM programs WHERE process_name = ?";
 
         try {
             con = pool.getConnection();
@@ -37,12 +37,6 @@ public class ProgramDAO {
                 entity.setProcessName(rs.getString("process_name"));
                 entity.setDisplayName(rs.getString("display_name"));
 
-                int categoryId = rs.getInt("category_id");
-                if (rs.wasNull()) {
-                    entity.setCategoryId(null);
-                } else {
-                    entity.setCategoryId(categoryId);
-                }
                 return entity;
             }
         } catch (Exception e) {
@@ -59,7 +53,7 @@ public class ProgramDAO {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
-        String sql = "SELECT program_id, process_name, display_name, category_id FROM programs WHERE program_id = ?";
+        String sql = "SELECT program_id, process_name, display_name FROM programs WHERE program_id = ?";
 
         try {
             con = pool.getConnection();
@@ -73,12 +67,6 @@ public class ProgramDAO {
                 entity.setProcessName(rs.getString("process_name"));
                 entity.setDisplayName(rs.getString("display_name"));
 
-                int categoryId = rs.getInt("category_id");
-                if (rs.wasNull()) {
-                    entity.setCategoryId(null);
-                } else {
-                    entity.setCategoryId(categoryId);
-                }
                 return entity;
             }
         } catch (Exception e) {
@@ -101,116 +89,6 @@ public class ProgramDAO {
             pstmt = con.prepareStatement(sql);
             pstmt.setString(1, processName);
             pstmt.setString(2, displayName);
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            pool.freeConnection(con, pstmt);
-        }
-    }
-
-    // 4. 카테고리 포함 프로그램 등록
-    public boolean insertProgramWithCategory(ProgramEntity entity) {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-
-        String sql = "INSERT INTO programs (process_name, display_name, category_id) VALUES (?, ?, ?)";
-
-        try {
-            con = pool.getConnection();
-            pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, entity.getProcessName());
-            pstmt.setString(2, entity.getDisplayName());
-
-            if (entity.getCategoryId() == null) {
-                pstmt.setNull(3, Types.INTEGER);
-            } else {
-                pstmt.setInt(3, entity.getCategoryId());
-            }
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            pool.freeConnection(con, pstmt);
-        }
-    }
-
-    // 5. 특정 카테고리의 프로그램 목록 조회 (드롭다운/필터링용)
-    public List<ProgramEntity> getProgramsByCategoryId(int categoryId) {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        List<ProgramEntity> list = new ArrayList<>();
-
-        String sql = "SELECT program_id, process_name, display_name, category_id FROM programs WHERE category_id = ?";
-
-        try {
-            con = pool.getConnection();
-            pstmt = con.prepareStatement(sql);
-            pstmt.setInt(1, categoryId);
-            rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                ProgramEntity entity = new ProgramEntity();
-                entity.setProgramId(rs.getLong("program_id"));
-                entity.setProcessName(rs.getString("process_name"));
-                entity.setDisplayName(rs.getString("display_name"));
-                entity.setCategoryId(rs.getInt("category_id"));
-                list.add(entity);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            pool.freeConnection(con, pstmt, rs);
-        }
-        return list;
-    }
-
-    // 6. 프로그램 카테고리 지정 및 수정
-    public boolean updateCategory(long programId, Integer categoryId) {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-
-        String sql = "UPDATE programs SET category_id = ? WHERE program_id = ?";
-
-        try {
-            con = pool.getConnection();
-            pstmt = con.prepareStatement(sql);
-
-            if (categoryId == null) {
-                pstmt.setNull(1, Types.INTEGER);
-            } else {
-                pstmt.setInt(1, categoryId);
-            }
-            pstmt.setLong(2, programId);
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            pool.freeConnection(con, pstmt);
-        }
-    }
-
-    // 7. 프로그램 삭제
-    public boolean deleteProgram(long programId) {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-
-        String sql = "DELETE FROM programs WHERE program_id = ?";
-
-        try {
-            con = pool.getConnection();
-            pstmt = con.prepareStatement(sql);
-            pstmt.setLong(1, programId);
 
             int result = pstmt.executeUpdate();
             return result > 0;
