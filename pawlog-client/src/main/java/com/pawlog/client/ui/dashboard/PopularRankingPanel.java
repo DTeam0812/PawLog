@@ -145,7 +145,7 @@ public class PopularRankingPanel extends JPanel {
         JLabel nameLabel = label(item.getProgramName(), Font.BOLD, 13, TEXT);
         row.add(cell(rankLabel));
         row.add(cell(nameLabel));
-        row.add(cell(label(item.getCategoryName(), Font.PLAIN, 12, SUB_TEXT)));
+        /*row.add(cell(label(item.getCategoryName(), Font.PLAIN, 12, SUB_TEXT)));*/
         row.add(cell(label(item.getAvgUsageFormatted(), Font.PLAIN, 12, TEXT)));
         row.add(cell(label(item.getUsagePercentage() + "%", Font.BOLD, 12, PRIMARY)));
         return row;
