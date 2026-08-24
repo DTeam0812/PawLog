@@ -10,6 +10,9 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import com.github.lgooddatepicker.components.DatePicker;
+import com.pawlog.client.AuthStore.AuthStore;
+import com.pawlog.client.network.PawLogClient;
+import com.pawlog.common.dto.statistics.MyStatisticsDto;
 
 import java.awt.GridLayout;
 import java.time.LocalDate;
@@ -21,6 +24,8 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingWorker;
 public class StatisticsPanel extends JPanel {
     private static final String PERSONAL = "PERSONAL";
     private final PopularRankingPanel popularPanel = new PopularRankingPanel(true);
@@ -33,6 +38,13 @@ public class StatisticsPanel extends JPanel {
     private final JPanel statisticsContent = new JPanel(statisticsLayout);
     private final List<JButton> typeButtons = new ArrayList<>();
     private final JButton joinbutton = new JButton("조회");
+    private final PawLogClient pawLogClient = PawLogClient.getInstance();
+    private final AuthStore authStore = AuthStore.getInstance();
+    private final JLabel totalTimeValueLabel = label("0초", Font.BOLD, 19, PRIMARY);
+    private final JLabel mostUsedValueLabel = label("기록 없음", Font.BOLD, 19, PRIMARY);
+    private final JLabel programCountValueLabel = label("0개", Font.BOLD, 19, PRIMARY);
+    private final JPanel usageRowsPanel = transparentPanel();
+    
     public StatisticsPanel() {
         setLayout(new BorderLayout(0, 16));
         setBackground(BACKGROUND);
@@ -105,8 +117,10 @@ public class StatisticsPanel extends JPanel {
                 popularPanel.loadRankings(startDate, endDate);
                 return;
             }
-
-            warnlabel.setText("내 사용 통계 기간 조회는 아직 연결되지 않았습니다.");
+            if(PERSONAL.equals(selectedType)){
+                loadPersonalStatistics(startDate, endDate);
+                return;
+            }
         });
         return panel;
     }
@@ -142,39 +156,150 @@ public class StatisticsPanel extends JPanel {
         JPanel page = transparentPanel(new BorderLayout(0, 13));
         JPanel summaryArea = transparentPanel(new BorderLayout(0, 10));
         JPanel summaryCards = transparentPanel(new GridLayout(1, 3, 12, 0));
-        summaryCards.add(createSummaryCard("총 사용 시간", "4시간 20분", "어제보다 18분 증가"));
-        summaryCards.add(createSummaryCard("가장 오래 사용", "Chrome", "1시간 45분"));
-        summaryCards.add(createSummaryCard("사용한 프로그램", "7개", "개발 도구 3개"));
+        summaryCards.add(createSummaryCard("총 사용 시간", totalTimeValueLabel));
+        summaryCards.add(createSummaryCard("가장 오래 사용", mostUsedValueLabel));
+        summaryCards.add(createSummaryCard("사용한 프로그램", programCountValueLabel));
         summaryArea.add(summaryCards, BorderLayout.CENTER);
         page.add(summaryArea, BorderLayout.NORTH);
         page.add(createUsageCard(), BorderLayout.CENTER);
         return page;
     }
 
-    private JPanel createSummaryCard(String title, String value, String description) {
+    private JPanel createSummaryCard(String title, JLabel valueLabel) {
         UiComponents.RoundedPanel card = card();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(BorderFactory.createEmptyBorder(14, 17, 14, 17));
         card.add(label(title, Font.PLAIN, 11, SUB_TEXT));
         card.add(Box.createVerticalStrut(5));
-        card.add(label(value, Font.BOLD, 19, PRIMARY));
-        card.add(Box.createVerticalStrut(4));
-        card.add(label(description, Font.PLAIN, 10, SUB_TEXT));
+        card.add(valueLabel);
         return card;
     }
 
     private JPanel createUsageCard() {
         UiComponents.RoundedPanel card = card();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setLayout(new BorderLayout(0, 12));
         card.setBorder(BorderFactory.createEmptyBorder(17, 20, 17, 20));
-        card.add(label("프로그램별 사용 비율", Font.BOLD, 15, TEXT));
-        card.add(Box.createVerticalStrut(12));
-        card.add(createUsageRow("Chrome", "1시간 45분", 40, PRIMARY));
-        card.add(createUsageRow("VS Code", "1시간 10분", 27, CHART_BLUE));
-        card.add(createUsageRow("Slack", "35분", 13, SUCCESS));
-        card.add(createUsageRow("Notion", "25분", 10, CHART_PURPLE));
-        card.add(createUsageRow("Figma", "20분", 8, CHART_PINK));
+        usageRowsPanel.setLayout(new BoxLayout(usageRowsPanel, BoxLayout.Y_AXIS));
+        usageRowsPanel.add(label("조회할 기간을 선택해주세요.", Font.PLAIN, 11, SUB_TEXT));
+
+        JScrollPane scrollPane = new JScrollPane(usageRowsPanel);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(14);
+
+        card.add(label("프로그램별 사용 비율", Font.BOLD, 15, TEXT), BorderLayout.NORTH);
+        card.add(scrollPane, BorderLayout.CENTER);
         return card;
+    }
+
+    private void loadPersonalStatistics(LocalDate startDate, LocalDate endDate) {
+        if (authStore.getUserId() <= 0) {
+            warnlabel.setText("로그인 사용자 정보를 확인할 수 없습니다.");
+            return;
+        }
+
+        joinbutton.setEnabled(false);
+        warnlabel.setText("내 사용 통계 조회 중...");
+
+        new SwingWorker<MyStatisticsDto.Response, Void>() {
+            @Override
+            protected MyStatisticsDto.Response doInBackground() throws Exception {
+                return pawLogClient.getMyStatistics(
+                    String.valueOf(authStore.getUserId()),
+                    startDate,
+                    endDate
+                );
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    MyStatisticsDto.Response response = get();
+
+                    if (!response.isSuccess()) {
+                        warnlabel.setText(response.getMessage());
+                        return;
+                    }
+
+                    if (response.getData() == null) {
+                        warnlabel.setText("통계 데이터가 없습니다.");
+                        return;
+                    }
+
+                    updatePersonalStatistics(response.getData());
+                    warnlabel.setText("");
+                } catch (Exception exception) {
+                    warnlabel.setText("서버 연결에 실패했습니다.");
+                    exception.printStackTrace();
+                } finally {
+                    joinbutton.setEnabled(true);
+                }
+            }
+        }.execute();
+    }
+
+    private void updatePersonalStatistics(MyStatisticsDto.DataPayload data) {
+        totalTimeValueLabel.setText(formatSeconds(data.getTotalTime()));
+        mostUsedValueLabel.setText(
+            data.getMostUsedItem() == null || data.getMostUsedItem().isBlank()
+                ? "기록 없음"
+                : data.getMostUsedItem()
+        );
+        programCountValueLabel.setText(data.getAmountUsedItem() + "개");
+
+        usageRowsPanel.removeAll();
+
+        if (data.getRatio() == null || data.getRatio().isEmpty()) {
+            usageRowsPanel.add(label("해당 기간의 사용 기록이 없습니다.", Font.PLAIN, 11, SUB_TEXT));
+        } else {
+            Color[] colors = {PRIMARY, CHART_BLUE, SUCCESS, CHART_PURPLE, CHART_PINK};
+
+            for(int i = 0; i < data.getRatio().size(); i++) {
+                MyStatisticsDto.ProgramRatioItem item = data.getRatio().get(i);
+                usageRowsPanel.add(createUsageRow(
+                    item.getProgramName(),
+                    formatSeconds(item.getProgramTime()),
+                    item.getProgramRatio(),
+                    colors[i % colors.length]
+                ));
+            }
+        }
+
+        usageRowsPanel.revalidate();
+        usageRowsPanel.repaint();
+    }
+
+    private String formatSeconds(String secondsText) {
+        try {
+            long totalSeconds = Long.parseLong(secondsText);
+            long hours = totalSeconds / 3600;
+            long minutes = totalSeconds % 3600 / 60;
+            long seconds = totalSeconds % 60;
+
+            if (hours > 0) return hours + "시간 " + minutes + "분";
+            if (minutes > 0) return minutes + "분 " + seconds + "초";
+            return seconds + "초";
+        } catch (Exception exception) {
+            return secondsText == null || secondsText.isBlank() ? "0초" : secondsText;
+        }
+    }
+
+    public void resetUserData() {
+        startDatePicker.setDate(null);
+        endDatePicker.setDate(null);
+        totalTimeValueLabel.setText("0초");
+        mostUsedValueLabel.setText("기록 없음");
+        programCountValueLabel.setText("0개");
+        warnlabel.setText("");
+        joinbutton.setEnabled(true);
+
+        usageRowsPanel.removeAll();
+        usageRowsPanel.add(label("조회할 기간을 선택해주세요.", Font.PLAIN, 11, SUB_TEXT));
+        usageRowsPanel.revalidate();
+        usageRowsPanel.repaint();
     }
 
     private JPanel createUsageRow(String program, String time, int percent, Color color) {

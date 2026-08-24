@@ -14,6 +14,7 @@ import javax.swing.*;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.tracker.ProgramTracker;
+import com.pawlog.common.dto.auth.AuthLoginDto;
 
 import org.w3c.dom.Text;
 
@@ -76,7 +77,7 @@ public class Login extends JPanel{
                 return;
             }
 
-            PawLogClient.Response response;
+            AuthLoginDto.Response response;
 
             try {
                 response = pawLogClient.login(email, password);
@@ -86,12 +87,16 @@ public class Login extends JPanel{
                 return;
             }
 
-            if (response.success()) {
+            if (response.isSuccess() && response.getUser() != null) {
                 warn.setText("");
-                authStore.login(email);
+                authStore.login(
+                    response.getUser().getUserId(),
+                    response.getUser().getEmail(),
+                    response.getUser().getNickname()
+                );
                 loginsuccess.run();
             } else {
-                warn.setText(response.message());
+                warn.setText(response.getMessage());
             }
         });
 

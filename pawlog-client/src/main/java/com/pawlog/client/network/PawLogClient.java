@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
-import com.pawlog.common.dto.ranking.MyStatisticsDto;
+import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
+import com.pawlog.common.dto.usage.MyInfoDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.Sync.Usagebatch;
@@ -24,7 +26,7 @@ import com.pawlog.common.util.JsonUtil;
 import com.pawlog.common.protocol.ServerProtocol;
 public class PawLogClient {
     private static final int CliVersion = 1; //클라이언트 버전관리
-    private static final String DEFAULT_HOST = "192.168.0.13";//서버주소
+    private static final String DEFAULT_HOST = "127.0.0.1";//서버주소
     private static final int DEFAULT_PORT = 8005;//활성 포트
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
     private static final int READ_TIMEOUT_MILLIS = 5000;
@@ -35,6 +37,7 @@ public class PawLogClient {
     private static final String NoticeBoardDto = "NoticeBoardDto";
     private static final String REGISTER = "REGISTER";
     private static final String POPULAR_RANKING_GET ="POPULAR_RANKING_GET";
+    private static final String TODAY_STATISTICS_GET = "TODAY_STATISTICS_GET";
     private static final PawLogClient instance = new PawLogClient();
     private final String host;
     private final int port;
@@ -64,14 +67,87 @@ public class PawLogClient {
         input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         output = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
     }
+    private synchronized ProgramSearchDto.Response sendProgramSearchJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
 
-    public Response login(String email, String password) throws Exception {
+        if (responseJson == null) {
+            disconnect();
+            return new ProgramSearchDto.Response(false, 500, "서버 연결이 종료되었습니다.", List.of());
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+
+        if (!success) {
+            return new ProgramSearchDto.Response(false, code, message, List.of());
+        }
+
+        JsonNode dataNode = root.path("data");
+
+        if (!dataNode.isArray()) {
+            return new ProgramSearchDto.Response(false, 500, "프로그램 검색 응답 형식이 올바르지 않습니다.", List.of());
+        }
+
+        List<ProgramSearchDto.ProgramItem> programs = new ArrayList<>();
+
+        for(JsonNode itemNode : dataNode) {
+            ProgramSearchDto.ProgramItem program = JsonUtil.fromJson(
+                itemNode.toString(),
+                ProgramSearchDto.ProgramItem.class
+            );
+
+            programs.add(program);
+        }
+
+        return new ProgramSearchDto.Response(true, code, message, programs);
+    }
+
+    public ProgramSearchDto.Response searchPrograms(String keyword, int limit) throws Exception {
+        ProgramSearchDto.Request request = new ProgramSearchDto.Request(keyword, limit);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.PROGRAM_SEARCH, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendProgramSearchJson(requestJson);
+    }
+
+    private synchronized AuthLoginDto.Response sendLoginJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
+
+        if (responseJson == null) {
+            disconnect();
+            return new AuthLoginDto.Response(false, 500, "서버 연결이 종료되었습니다.");
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        JsonNode dataNode = root.path("data");
+
+        if (!success || dataNode.isMissingNode() || dataNode.isNull()) {
+            return new AuthLoginDto.Response(success, code, message);
+        }
+
+        AuthLoginDto.UserInfo user = JsonUtil.fromJson(
+            dataNode.toString(),
+            AuthLoginDto.UserInfo.class
+        );
+
+        return new AuthLoginDto.Response(true, code, message, user);
+    }
+
+    public AuthLoginDto.Response login(String email, String password) throws Exception {
         AuthLoginDto.Request loginData = new AuthLoginDto.Request(email, password);
         JsonNode dataNode = JsonUtil.toJsonNode(loginData);
         RequestPacket requestPacket = new RequestPacket(LOGIN, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
-        System.out.println(requestJson);
-        return sendJson(requestJson);
+        return sendLoginJson(requestJson);
     }
 
     // AUTHOR TITLE CATEGORY CONTENT SEND
@@ -79,8 +155,45 @@ public class PawLogClient {
    /*  private synchronized Enroll_PostDto.Response Enroll_Post(String Author , String Title , String Category , String Content){
 `   
     }*/
+    private synchronized MyInfoDto.Response sendMyInfoJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
 
-    
+        if (responseJson == null) {
+            disconnect();
+            return new MyInfoDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+
+        if (!success) {
+            return new MyInfoDto.Response(false, code, message, null);
+        }
+
+        JsonNode dataNode = root.path("data");
+        if (dataNode.isMissingNode() || dataNode.isNull()) {
+            return new MyInfoDto.Response(true, code, message, null);
+        }
+
+        MyInfoDto.TodayInfo data = JsonUtil.fromJson(
+            dataNode.toString(),
+            MyInfoDto.TodayInfo.class
+        );
+
+        return new MyInfoDto.Response(true, code, message, data);
+    }
+
+    public MyInfoDto.Response getTodayInfo(String email, LocalDate usageDate) throws Exception {
+        MyInfoDto.Request request = new MyInfoDto.Request(email, usageDate.toString());
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(TODAY_STATISTICS_GET, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendMyInfoJson(requestJson);
+    }
     private synchronized PopularRankingDto.Response sendPopularRankingJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
@@ -126,6 +239,7 @@ public class PawLogClient {
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendPopularRankingJson(requestJson);
     }
+    
     private synchronized MyStatisticsDto.Response sendMyStatisticsJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
@@ -147,18 +261,15 @@ public class PawLogClient {
             return new MyStatisticsDto.Response(true, code, message, null);
         }
 
-        MyStatisticsDto.MyStatistics data = JsonUtil.fromJson(
+        MyStatisticsDto.DataPayload data = JsonUtil.fromJson(
             dataNode.toString(),
-            MyStatisticsDto.MyStatistics.class
+            MyStatisticsDto.DataPayload.class
         );
 
         return new MyStatisticsDto.Response(true, code, message, data);
     }
-
-    public MyStatisticsDto.Response getMyStatistics(String id, LocalDate startDate, LocalDate endDate) throws Exception {
-        String sdate = startDate.toString();
-        String edate = endDate.toString();
-        MyStatisticsDto.Request request = new MyStatisticsDto.Request(id, sdate, edate);
+    public synchronized MyStatisticsDto.Response getMyStatistics(String id, LocalDate startDate, LocalDate endDate) throws Exception {
+        MyStatisticsDto.Request request = new MyStatisticsDto.Request(id, startDate, endDate);
         JsonNode dataNode = JsonUtil.toJsonNode(request);
         RequestPacket requestPacket = new RequestPacket(ServerProtocol.MY_STATISTICS_GET, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);

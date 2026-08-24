@@ -81,6 +81,8 @@ public class AuthFrame extends JFrame {
             exception.printStackTrace();
         }
 
+        ProgramTracker.resetTrackingData();
+        dashboardFrame.resetUserData();
         PawLogClient.getInstance().disconnect();
         authStore.logout();
         loggedIn = false;

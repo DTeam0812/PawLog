@@ -2,6 +2,9 @@ package com.pawlog.client.ui.dashboard;
 
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
+import com.pawlog.client.network.PawLogClient;
+import com.pawlog.common.dto.board.ProgramSearchDto;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -29,10 +32,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 public class ProgramBoardPanel extends JPanel {
     private static final String SELECT = "SELECT";
@@ -42,9 +48,18 @@ public class ProgramBoardPanel extends JPanel {
     private static final int PAGE_SIZE = 9;
     private static final int PAGE_BUTTON_COUNT = 5;
     private static final int MAX_CONTENT_LENGTH = 500;
+    private static final List<String> PROGRAMS = List.of(
+        "VS Code", "Visual Studio", "IntelliJ IDEA", "Eclipse", "Chrome",
+        "Firefox", "Edge", "Discord", "Slack", "KakaoTalk", "Figma",
+        "Notion", "Obsidian", "GitHub Desktop", "Postman", "Docker Desktop"
+    );
     private final CardLayout cardLayout = new CardLayout();
+    private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final List<PostItem> posts = new ArrayList<>();
-    private final JComboBox<String> programBox = combo("VS Code", "Chrome", "Discord", "Figma", "Notion");
+    private final List<String> recentPrograms = new ArrayList<>(List.of("VS Code", "Chrome", "Discord"));
+    private final JTextField programSearchField = textField("프로그램 이름을 검색하세요");
+    private final JPanel programSearchResults = transparentPanel(new FlowLayout(FlowLayout.LEFT, 7, 0));
+    private final JPanel recentProgramButtons = transparentPanel(new FlowLayout(FlowLayout.LEFT, 7, 0));
     private final JLabel boardTitle = label("VS Code 게시판", Font.BOLD, 24, TEXT);
     private final JPanel postRows = transparentPanel();
     private final JPanel paginationPanel = transparentPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
@@ -61,10 +76,12 @@ public class ProgramBoardPanel extends JPanel {
     private final JButton detailLikeButton = outlineButton("♡ 0");
     private int currentPage;
     private int detailLikeCount;
+    private long selectedProgramId = -1;
 
     public ProgramBoardPanel() {
         createSamplePosts();
         configureContentLimit();
+        configureProgramSearch();
         setLayout(cardLayout);
         add(createSelectPage(), SELECT);
         add(createBoardPage(), BOARD);
@@ -147,43 +164,192 @@ public class ProgramBoardPanel extends JPanel {
 
     private JPanel createSelectionCard() {
         UiComponents.RoundedPanel card = card();
-        card.setLayout(new BorderLayout(15, 12));
-        card.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        card.setLayout(new BorderLayout(0, 12));
+        card.setBorder(BorderFactory.createEmptyBorder(17, 20, 17, 20));
         card.setAlignmentX(LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 145));
-        card.setPreferredSize(new Dimension(700, 145));
-        card.add(label("프로그램별 게시판 찾기", Font.BOLD, 14, TEXT), BorderLayout.NORTH);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 270));
+        card.setPreferredSize(new Dimension(700, 270));
 
-        JComboBox<String> category = combo("개발 도구", "브라우저", "커뮤니케이션", "디자인", "생산성");
-        JPanel fields = transparentPanel(new GridLayout(1, 2, 12, 0));
-        fields.add(createField("카테고리", category));
-        fields.add(createField("프로그램", programBox));
-        card.add(fields, BorderLayout.CENTER);
+        JPanel heading = transparentPanel();
+        heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
+        JLabel title = label("프로그램별 게시판 찾기", Font.BOLD, 15, TEXT);
+        JLabel description = label("프로그램 이름을 검색하거나 최근 본 게시판을 선택하세요.", Font.PLAIN, 11, SUB_TEXT);
+        title.setAlignmentX(LEFT_ALIGNMENT);
+        description.setAlignmentX(LEFT_ALIGNMENT);
+        heading.add(title);
+        heading.add(Box.createVerticalStrut(3));
+        heading.add(description);
+        card.add(heading, BorderLayout.NORTH);
 
-        JPanel action = transparentPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton enterButton = primaryButton("게시판 입장");
-        enterButton.addActionListener(event -> openBoard(String.valueOf(programBox.getSelectedItem())));
-        action.add(enterButton);
-        card.add(action, BorderLayout.EAST);
+        JPanel body = transparentPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        programSearchField.setAlignmentX(LEFT_ALIGNMENT);
+        programSearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        programSearchField.setPreferredSize(new Dimension(620, 38));
+        programSearchResults.setAlignmentX(LEFT_ALIGNMENT);
+        programSearchResults.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        body.add(programSearchField);
+        body.add(Box.createVerticalStrut(8));
+        body.add(programSearchResults);
+        body.add(Box.createVerticalStrut(10));
+        body.add(createProgramShortcutSection("최근 본 프로그램", recentProgramButtons));
+
+        updateRecentProgramButtons();
+        updateProgramSearchResults();
+        card.add(body, BorderLayout.CENTER);
         return card;
     }
 
-    private JPanel createField(String name, JComboBox<String> comboBox) {
-        JPanel field = transparentPanel();
-        field.setLayout(new BoxLayout(field, BoxLayout.Y_AXIS));
-        JLabel fieldLabel = label(name, Font.BOLD, 11, TEXT);
-        fieldLabel.setAlignmentX(LEFT_ALIGNMENT);
-        comboBox.setAlignmentX(LEFT_ALIGNMENT);
-        comboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        field.add(fieldLabel);
-        field.add(Box.createVerticalStrut(5));
-        field.add(comboBox);
-        return field;
+    private JPanel createProgramShortcutSection(String title, JPanel buttons) {
+        JPanel section = transparentPanel();
+        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
+        section.setAlignmentX(LEFT_ALIGNMENT);
+        section.setMaximumSize(new Dimension(Integer.MAX_VALUE, 82));
+        section.setPreferredSize(new Dimension(620, 82));
+        JLabel titleLabel = label(title, Font.BOLD, 11, TEXT);
+        titleLabel.setAlignmentX(LEFT_ALIGNMENT);
+        buttons.setAlignmentX(LEFT_ALIGNMENT);
+        buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
+        section.add(titleLabel);
+        section.add(Box.createVerticalStrut(6));
+        section.add(buttons);
+        return section;
+    }
+
+    private JButton createProgramShortcutButton(String programName) {
+        JButton button = outlineButton(programName);
+        button.setPreferredSize(new Dimension(Math.max(76, programName.length() * 9 + 24), 28));
+        button.addActionListener(event -> openBoard(programName));
+        return button;
+    }
+
+    private JButton createProgramSearchResultButton(ProgramSearchDto.ProgramItem program) {
+        JButton button = outlineButton(program.getDisplayName());
+        button.setPreferredSize(new Dimension(Math.max(76, program.getDisplayName().length() * 9 + 24), 28));
+        button.addActionListener(event -> openBoard(program.getProgramId(), program.getDisplayName()));
+        return button;
+    }
+
+    private void configureProgramSearch() {
+        programSearchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent event) {
+                updateProgramSearchResults();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent event) {
+                updateProgramSearchResults();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent event) {
+                updateProgramSearchResults();
+            }
+        });
+
+        programSearchField.addActionListener(event -> {
+            String keyword = programSearchField.getText().trim();
+            PROGRAMS.stream()
+                .filter(program -> program.toLowerCase().contains(keyword.toLowerCase()))
+                .findFirst()
+                .ifPresent(this::openBoard);
+        });
+    }
+
+    private void updateProgramSearchResults() {
+        programSearchResults.removeAll();
+        String keyword = programSearchField.getText().trim().toLowerCase();
+
+        if (keyword.isBlank()) {
+            programSearchResults.add(label("검색 결과가 여기에 표시됩니다.", Font.PLAIN, 11, SUB_TEXT));
+        } else {
+            //서버 만들어지기 전까지 주석처리
+            
+            loadProgramSearchResultsFromServer(keyword);
+            
+
+           
+
+           
+        }
+
+        programSearchResults.revalidate();
+        programSearchResults.repaint();
+    }
+
+    private void loadProgramSearchResultsFromServer(String keyword) {
+        programSearchResults.removeAll();
+        programSearchResults.add(label("프로그램 검색 중...", Font.PLAIN, 11, SUB_TEXT));
+        programSearchResults.revalidate();
+        programSearchResults.repaint();
+
+        new SwingWorker<ProgramSearchDto.Response, Void>() {
+            @Override
+            protected ProgramSearchDto.Response doInBackground() throws Exception {
+                return pawLogClient.searchPrograms(keyword, 6);
+            }
+
+            @Override
+            protected void done() {
+                if (!programSearchField.getText().trim().equalsIgnoreCase(keyword)) {
+                    return;
+                }
+
+                programSearchResults.removeAll();
+
+                try {
+                    ProgramSearchDto.Response response = get();
+
+                    if (!response.isSuccess()) {
+                        programSearchResults.add(label(response.getMessage(), Font.PLAIN, 11, RED));
+                    } else if (response.getPrograms() == null || response.getPrograms().isEmpty()) {
+                        programSearchResults.add(label("일치하는 프로그램이 없습니다.", Font.PLAIN, 11, SUB_TEXT));
+                    } else {
+                        for(ProgramSearchDto.ProgramItem program : response.getPrograms()) {
+                            programSearchResults.add(createProgramSearchResultButton(program));
+                        }
+                    }
+                } catch (Exception exception) {
+                    programSearchResults.add(label("서버 연결에 실패했습니다.", Font.PLAIN, 11, RED));
+                    exception.printStackTrace();
+                }
+
+                programSearchResults.revalidate();
+                programSearchResults.repaint();
+            }
+        }.execute();
+    }
+
+    private void updateRecentProgramButtons() {
+        recentProgramButtons.removeAll();
+
+        for(String program : recentPrograms) {
+            recentProgramButtons.add(createProgramShortcutButton(program));
+        }
+
+        recentProgramButtons.revalidate();
+        recentProgramButtons.repaint();
     }
 
     private void openBoard(String programName) {
-        programBox.setSelectedItem(programName);
+        openBoard(-1, programName);
+    }
+
+    private void openBoard(long programId, String programName) {
+        selectedProgramId = programId;
+        recentPrograms.remove(programName);
+        recentPrograms.add(0, programName);
+
+        while(recentPrograms.size() > 8) {
+            recentPrograms.remove(recentPrograms.size() - 1);
+        }
+
+        updateRecentProgramButtons();
+        programSearchField.setText("");
         boardTitle.setText(programName + " 게시판");
+
         cardLayout.show(this, BOARD);
     }
 
@@ -207,7 +373,6 @@ public class ProgramBoardPanel extends JPanel {
 
         JPanel titleRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titleRow.add(boardTitle);
-        titleRow.add(createTagLabel("개발 도구", new Color(238, 242, 245), SUB_TEXT));
         titleRow.setAlignmentX(LEFT_ALIGNMENT);
         header.add(titleRow);
         header.add(Box.createVerticalStrut(15));

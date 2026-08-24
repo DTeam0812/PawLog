@@ -53,7 +53,20 @@ public class ProgramTracker {
     public static synchronized void stopTracking() {//중지
         if (scheduler != null) {
             scheduler.shutdownNow();
+            scheduler = null;
         }
+    }
+
+    public static synchronized void resetTrackingData() {
+        usageMap.clear();
+        hourlyUsageMap.clear();
+        pendingUsageMap.clear();
+        trackingDate = LocalDate.now();
+        previousProgram = null;
+        currentProgram = "확인 중...";
+        currentWindowTitle = "활성 창을 확인하고 있습니다.";
+        usageSeconds = 0;
+        totalSeconds = 0;
     }
 
     private static void trackForegroundWindow() {//프로그램 추적 알고리즘
