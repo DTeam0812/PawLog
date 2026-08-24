@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
+import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.protocol.RequestPacket;
 import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.protocol.ServerProtocol;
@@ -12,6 +13,7 @@ import com.pawlog.server.entity.UserEntity;
 import com.pawlog.server.service.AuthService;
 import com.pawlog.server.service.PopularRankingService;
 import com.pawlog.server.service.RankingService;
+import com.pawlog.server.service.StatisticsService;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
 
@@ -31,6 +33,7 @@ public class ClientThread extends Thread {
     private AuthService authService;
     private PopularRankingService popularRankingService;
     private UsageLogService usageLogService;
+    private StatisticsService statisticsService;
 
     // 로그인된 유저 세션 정보
     private Long loggedInUserId;
@@ -44,6 +47,7 @@ public class ClientThread extends Thread {
             this.authService = new AuthService();
             this.popularRankingService = new PopularRankingService();
             this.usageLogService = new UsageLogService();
+            this.statisticsService = new StatisticsService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -119,6 +123,9 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.CATEGORY_GET.equals(command)){
                     handleCategoryGet();
                 }
+                else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
+                    handleMyStatisticsJson(dataJson);
+                }
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -153,6 +160,9 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.CATEGORY_GET.equals(command)){
             handleCategoryGet();
+        }
+        else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
+            handleMyStatistics(data);
         }
     }
 
@@ -452,6 +462,81 @@ public class ClientThread extends Thread {
 
     public void handleCategoryGet(){
 
+    }
+
+    // 개인 통계 조회 (JSON 처리)
+    private void handleMyStatisticsJson(String dataJson) {
+        try {
+            MyStatisticsDto.Request reqDto = JsonUtil.fromJson(dataJson, MyStatisticsDto.Request.class);
+            MyStatisticsDto.Response resDto = statisticsService.getMyStatistics(reqDto);
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.MY_STATISTICS_GET,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                resDto.isSuccess() && resDto.getData() != null ? JsonUtil.toJsonNode(resDto.getData()) : null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.MY_STATISTICS_GET,
+                false,
+                400,
+                "개인 통계 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 개인 통계 조회 (구분자 방식 폴백: id;startDate;endDate)
+    private void handleMyStatistics(String data) {
+        try {
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "요청 데이터가 없습니다.");
+                return;
+            }
+
+            String[] params = data.split(ServerProtocol.MODE2);
+            if (params.length < 3) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "파라미터가 부족합니다 (id;startDate;endDate).");
+                return;
+            }
+
+            String id = params[0];
+            LocalDate startDate = LocalDate.parse(params[1]);
+            LocalDate endDate = LocalDate.parse(params[2]);
+
+            MyStatisticsDto.Request reqDto = new MyStatisticsDto.Request(id, startDate, endDate);
+            MyStatisticsDto.Response resDto = statisticsService.getMyStatistics(reqDto);
+
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(ServerProtocol.SUCCESS).append(ServerProtocol.MODE1).append(resDto.getMessage());
+                MyStatisticsDto.DataPayload payload = resDto.getData();
+                sb.append(ServerProtocol.MODE2)
+                  .append(payload.getTotalTime()).append(",")
+                  .append(payload.getMostUsedItem()).append(",")
+                  .append(payload.getAmountUsedItem());
+
+                if (payload.getRatio() != null) {
+                    for (MyStatisticsDto.ProgramRatioItem item : payload.getRatio()) {
+                        sb.append(ServerProtocol.MODE2)
+                          .append(item.getProgramName()).append(",")
+                          .append(item.getProgramTime()).append(",")
+                          .append(item.getProgramRatio()).append("%");
+                    }
+                }
+                sendMessage(sb.toString());
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "개인 통계 조회 중 오류 발생: " + e.getMessage());
+        }
     }
 
     /**

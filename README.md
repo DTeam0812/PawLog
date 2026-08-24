@@ -19,16 +19,15 @@ Windows의 활성 창을 기준으로 프로그램 사용 시간을 기록하고
 ```mermaid
 erDiagram
     users ||--o{ programs_likes : "likes"
-    programs ||--o{ programs_likes : "liked by"
+    programs ||--o{ programs_likes : "is liked by"
 
     users ||--o{ usage_logs : "records"
     programs ||--o{ usage_logs : "logged in"
 
-    users ||--o{ daily_usage_summary : "summarizes"
+    users ||--o{ daily_usage_summary : "has"
     programs ||--o{ daily_usage_summary : "summarized in"
 
-    categories ||--o{ programs : "classifies"
-    programs ||--o{ program_usage_stats : "has stats"
+    programs ||--o{ program_usage_stats : "aggregated into"
 
     users ||--o{ posts : "writes"
     programs ||--o{ posts : "tagged in"
@@ -37,104 +36,97 @@ erDiagram
     users ||--o{ comments : "writes"
 
     users ||--o{ post_likes : "likes"
-    posts ||--o{ post_likes : "liked by"
+    posts ||--o{ post_likes : "is liked by"
 
-    prediction_events ||--o{ prediction_votes : "contains"
+    prediction_events ||--o{ prediction_votes : "includes"
     users ||--o{ prediction_votes : "casts"
     programs ||--o{ prediction_votes : "voted for"
 
     users {
-        bigint user_id PK "AUTO_INCREMENT"
-        varchar(255) email UK "NOT NULL"
-        varchar(255) password_hash "NOT NULL"
-        varchar(255) nickname "NOT NULL"
-        enum gender "NOT NULL ('M', 'F')"
-        date birth_date "NOT NULL"
-        datetime created_at "NOT NULL, DEFAULT CURRENT_TIMESTAMP"
-    }
-
-    categories {
-        int category_id PK "AUTO_INCREMENT"
-        varchar(50) name UK "NOT NULL"
+        BIGINT user_id PK
+        VARCHAR(255) email UK
+        VARCHAR(255) password_hash
+        VARCHAR(255) nickname
+        ENUM gender
+        DATE birth_date
+        DATETIME created_at
     }
 
     programs {
-        bigint program_id PK "AUTO_INCREMENT"
-        varchar(255) process_name UK "NOT NULL"
-        varchar(255) display_name "NOT NULL"
-        int category_id FK "NULLABLE"
+        BIGINT program_id PK
+        VARCHAR(255) process_name UK
+        VARCHAR(255) display_name
     }
 
     programs_likes {
-        bigint program_id PK, FK
-        bigint user_id PK, FK
+        BIGINT program_id PK,FK
+        BIGINT user_id PK,FK
     }
 
     usage_logs {
-        bigint log_id PK "AUTO_INCREMENT"
-        bigint user_id FK "NOT NULL"
-        bigint program_id FK "NOT NULL"
-        date usage_date "NOT NULL"
-        tinyint usage_hour "NOT NULL (0~23)"
-        int duration_sec "NOT NULL"
+        BIGINT log_id PK
+        BIGINT user_id FK
+        BIGINT program_id FK
+        DATE usage_date
+        TINYINT usage_hour
+        INT duration_sec
     }
 
     daily_usage_summary {
-        bigint summary_id PK "AUTO_INCREMENT"
-        bigint user_id FK "NOT NULL"
-        bigint program_id FK "NOT NULL"
-        date summary_date "NOT NULL"
-        bigint total_duration_sec "NOT NULL, DEFAULT 0"
+        BIGINT summary_id PK
+        BIGINT user_id FK
+        BIGINT program_id FK
+        DATE summary_date
+        BIGINT total_duration_sec
     }
 
     program_usage_stats {
-        bigint stat_id PK "AUTO_INCREMENT"
-        bigint program_id FK "NOT NULL"
-        date stat_date "NOT NULL"
-        float avg_foreground_sec "NOT NULL, DEFAULT 0"
-        float avg_background_sec "NOT NULL, DEFAULT 0"
-        float avg_duration_sec "NOT NULL"
-        int total_users "NOT NULL"
-        enum gender "NULLABLE ('M', 'F')"
-        varchar(20) age_group "NULLABLE"
+        BIGINT stat_id PK
+        BIGINT program_id FK
+        DATE stat_date
+        FLOAT avg_duration_sec
+        INT total_users
+        ENUM gender
+        VARCHAR(20) age_group
     }
 
     posts {
-        bigint post_id PK "AUTO_INCREMENT"
-        bigint user_id FK "NOT NULL"
-        bigint program_id FK "NULLABLE"
-        varchar(255) title "NOT NULL"
-        text content "NOT NULL"
-        datetime created_at "DEFAULT CURRENT_TIMESTAMP"
+        BIGINT post_id PK
+        BIGINT user_id FK
+        BIGINT program_id FK
+        VARCHAR(50) post_type
+        VARCHAR(255) title
+        TEXT content
+        DATETIME created_at
     }
 
     comments {
-        bigint comment_id PK "AUTO_INCREMENT"
-        bigint post_id FK "NOT NULL"
-        bigint user_id FK "NOT NULL"
-        text content "NOT NULL"
-        datetime created_at "DEFAULT CURRENT_TIMESTAMP"
+        BIGINT comment_id PK
+        BIGINT post_id FK
+        BIGINT user_id FK
+        TEXT content
+        DATETIME created_at
     }
 
     post_likes {
-        bigint user_id PK, FK
-        bigint post_id PK, FK
+        BIGINT user_id PK,FK
+        BIGINT post_id PK,FK
     }
 
     prediction_events {
-        bigint event_id PK "AUTO_INCREMENT"
-        varchar(50) title "NOT NULL"
-        datetime created_at "DEFAULT CURRENT_TIMESTAMP"
-        datetime voting_deadline "NOT NULL"
-        enum status "NOT NULL, DEFAULT 'ANNOUNCED'"
-        date target_date "NOT NULL"
-        enum event_type "NOT NULL ('WEEKLY', 'MONTHLY')"
+        BIGINT event_id PK
+        VARCHAR(50) title
+        DATETIME created_at
+        DATETIME voting_deadline
+        ENUM status
+        DATE target_date
+        ENUM event_type
     }
 
     prediction_votes {
-        bigint vote_id PK "AUTO_INCREMENT"
-        bigint event_id FK "NOT NULL"
-        bigint user_id FK "NOT NULL"
-        bigint program_id FK "NOT NULL"
+        BIGINT vote_id PK
+        BIGINT event_id FK
+        BIGINT user_id FK
+        BIGINT program_id FK
     }
 ```
