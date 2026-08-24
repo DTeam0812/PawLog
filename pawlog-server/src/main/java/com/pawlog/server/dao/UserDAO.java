@@ -124,19 +124,74 @@ public class UserDAO {
         return exists;
     }
 
-    // 마이페이지 회원 정보 수정 (생년월일, 성별, 비밀번호)
-    public boolean updateUser(UserEntity entity) {
+    // user_id로 사용자 엔티티 조회 (기존 비밀번호 대조 및 사용자 확인용)
+    public UserEntity getUserById(long userId) {
         Connection con = null;
         PreparedStatement pstmt = null;
-        String sql = "UPDATE users SET gender = ?, birth_date = ?, password_hash = ? WHERE user_id = ?";
+        ResultSet rs = null;
+
+        try {
+            con = pool.getConnection();
+            String sql = "SELECT user_id, email, password_hash, nickname, gender, birth_date, created_at FROM users WHERE user_id = ?";
+            pstmt = con.prepareStatement(sql);
+            pstmt.setLong(1, userId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                UserEntity entity = new UserEntity();
+                entity.setUserId(rs.getLong("user_id"));
+                entity.setEmail(rs.getString("email"));
+                entity.setPasswordHash(rs.getString("password_hash"));
+                entity.setNickname(rs.getString("nickname"));
+                entity.setGender(rs.getString("gender"));
+                entity.setBirthDate(rs.getDate("birth_date"));
+                entity.setCreatedAt(rs.getTimestamp("created_at"));
+                return entity;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return null;
+    }
+
+    // 마이페이지 회원 정보 수정 (닉네임, 비밀번호 선택적 수정)
+    public boolean updateUser(long userId, String nickname, String newPasswordHash) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        String sql = "UPDATE users SET ";
+        boolean needComma = false;
+
+        if (nickname != null && !nickname.trim().isEmpty()) {
+            sql += "nickname = ?";
+            needComma = true;
+        }
+        if (newPasswordHash != null && !newPasswordHash.trim().isEmpty()) {
+            if (needComma) sql += ", ";
+            sql += "password_hash = ?";
+            needComma = true;
+        }
+
+        // 수정할 항목이 없는 경우 방어
+        if (!needComma) {
+            return false;
+        }
+
+        sql += " WHERE user_id = ?";
 
         try {
             con = pool.getConnection();
             pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, entity.getGender());
-            pstmt.setDate(2, entity.getBirthDate());
-            pstmt.setString(3, entity.getPasswordHash());
-            pstmt.setLong(4, entity.getUserId());
+
+            int idx = 1;
+            if (nickname != null && !nickname.trim().isEmpty()) {
+                pstmt.setString(idx++, nickname.trim());
+            }
+            if (newPasswordHash != null && !newPasswordHash.trim().isEmpty()) {
+                pstmt.setString(idx++, newPasswordHash.trim());
+            }
+            pstmt.setLong(idx, userId);
 
             int result = pstmt.executeUpdate();
             return result > 0;
@@ -193,9 +248,4 @@ public class UserDAO {
                 }
                 return "";
     }
-
-
-//    public static void main(String[] args) {
-//        new UserDAO();
-//    }
 }

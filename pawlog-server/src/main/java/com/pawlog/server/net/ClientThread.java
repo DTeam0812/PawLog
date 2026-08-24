@@ -12,10 +12,10 @@ import com.pawlog.common.util.JsonUtil;
 import com.pawlog.server.entity.UserEntity;
 import com.pawlog.server.service.AuthService;
 import com.pawlog.server.service.PopularRankingService;
-import com.pawlog.server.service.RankingService;
 import com.pawlog.server.service.StatisticsService;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
+import com.pawlog.common.dto.auth.AuthUpdateDto;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -111,6 +111,9 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.LOGIN.equals(command)) {
                     handleLoginJson(dataJson);
                 }
+                else if (ServerProtocol.AUTH_UPDATE.equals(command)) {
+                    handleAuthUpdateJson(dataJson);
+                }
                 else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
                     handlePopularRankingJson(dataJson);
                 }
@@ -148,6 +151,9 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.LOGIN.equals(command)) {
             handleLogin(data);
+        }
+        else if (ServerProtocol.AUTH_UPDATE.equals(command)) {
+            handleAuthUpdate(data);
         }
         else if (ServerProtocol.POPULAR_RANKING_GET.equals(command)) {
             handlePopularRanking(data);
@@ -304,6 +310,101 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "로그인 처리 중 오류 발생");
+        }
+    }
+
+    // 회원 정보 수정 (JSON 처리)
+    private void handleAuthUpdateJson(String dataJson) {
+        try {
+            // 1. 비로그인 세션 차단 (401 방어)
+            if (!isLoggedIn()) {
+                ResponsePacket responsePacket = new ResponsePacket(
+                        ServerProtocol.AUTH_UPDATE,
+                        false,
+                        401,
+                        "로그인이 필요한 서비스입니다.",
+                        null
+                );
+                sendMessage(JsonUtil.toJson(responsePacket));
+                return;
+            }
+
+            // 2. DTO 파싱 및 Service 호출
+            AuthUpdateDto.Request reqDto = JsonUtil.fromJson(dataJson, AuthUpdateDto.Request.class);
+            AuthUpdateDto.Response resDto = authService.updateUser(this.loggedInUserId, reqDto);
+
+            // 3. 닉네임이 성공적으로 변경된 경우 현재 스레드 메모리(세션)의 닉네임도 동기화
+            if (resDto.isSuccess() && resDto.getUpdatedNickname() != null && this.currentUser != null) {
+                this.currentUser.setNickname(resDto.getUpdatedNickname());
+            }
+
+            // 4. 응답 패킷 생성 및 전송
+            ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.AUTH_UPDATE,
+                    resDto.isSuccess(),
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    resDto.isSuccess() ? JsonUtil.toJsonNode(resDto) : null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.AUTH_UPDATE,
+                    false,
+                    400,
+                    "회원 정보 수정 요청 데이터 파싱 실패: " + e.getMessage(),
+                    null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 회원 정보 수정 파싱 및 처리 (구분자 기반 폴백)
+    private void handleAuthUpdate(String data) {
+        try {
+            // 1. 세션 로그인 여부 검증
+            if (!isLoggedIn()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "로그인이 필요한 서비스입니다.");
+                return;
+            }
+
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "수정할 데이터가 없습니다.");
+                return;
+            }
+
+            // data 포맷: nickname;currentPassword;newPassword
+            // (구분자 뒤 빈 값 보존을 위해 limit -1 사용)
+            String[] params = data.split(ServerProtocol.MODE2, -1);
+
+            String nickname = params.length > 0 ? params[0] : "";
+            String currentPassword = params.length > 1 ? params[1] : "";
+            String newPassword = params.length > 2 ? params[2] : "";
+
+            // Request DTO 조립
+            AuthUpdateDto.Request reqDto = new AuthUpdateDto.Request();
+            if (!nickname.trim().isEmpty()) reqDto.setNickname(nickname.trim());
+            if (!currentPassword.trim().isEmpty()) reqDto.setCurrentPassword(currentPassword.trim());
+            if (!newPassword.trim().isEmpty()) reqDto.setNewPassword(newPassword.trim());
+
+            // Service 호출
+            AuthUpdateDto.Response resDto = authService.updateUser(this.loggedInUserId, reqDto);
+
+            if (resDto.isSuccess()) {
+                // 현재 세션의 닉네임 동기화
+                if (resDto.getUpdatedNickname() != null && this.currentUser != null) {
+                    this.currentUser.setNickname(resDto.getUpdatedNickname());
+                }
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + resDto.getMessage());
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "회원 정보 수정 중 오류 발생: " + e.getMessage());
         }
     }
 
