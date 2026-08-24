@@ -3,6 +3,7 @@ package com.pawlog.client.ui.dashboard;
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
 import com.pawlog.client.network.PawLogClient;
+import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 
 import java.awt.BorderLayout;
@@ -14,6 +15,9 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+
+
+
 import java.awt.GridLayout;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
@@ -48,11 +52,6 @@ public class ProgramBoardPanel extends JPanel {
     private static final int PAGE_SIZE = 9;
     private static final int PAGE_BUTTON_COUNT = 5;
     private static final int MAX_CONTENT_LENGTH = 500;
-    private static final List<String> PROGRAMS = List.of(
-        "VS Code", "Visual Studio", "IntelliJ IDEA", "Eclipse", "Chrome",
-        "Firefox", "Edge", "Discord", "Slack", "KakaoTalk", "Figma",
-        "Notion", "Obsidian", "GitHub Desktop", "Postman", "Docker Desktop"
-    );
     private final CardLayout cardLayout = new CardLayout();
     private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final List<PostItem> posts = new ArrayList<>();
@@ -79,7 +78,6 @@ public class ProgramBoardPanel extends JPanel {
     private long selectedProgramId = -1;
 
     public ProgramBoardPanel() {
-        createSamplePosts();
         configureContentLimit();
         configureProgramSearch();
         setLayout(cardLayout);
@@ -151,7 +149,7 @@ public class ProgramBoardPanel extends JPanel {
         });
         JButton boardButton = primaryButton("게시판 보기");
         boardButton.setPreferredSize(new Dimension(100, 28));
-        boardButton.addActionListener(event -> openBoard(name));
+        boardButton.addActionListener(event -> findProgramAndOpenBoard(name));
         buttons.add(recommendButton);
         buttons.add(boardButton);
         footer.add(buttons, BorderLayout.EAST);
@@ -220,13 +218,18 @@ public class ProgramBoardPanel extends JPanel {
     private JButton createProgramShortcutButton(String programName) {
         JButton button = outlineButton(programName);
         button.setPreferredSize(new Dimension(Math.max(76, programName.length() * 9 + 24), 28));
-        button.addActionListener(event -> openBoard(programName));
+
+        // 최근 프로그램과 핫 프로그램은 이름만 가지고 있다.
+        // 클릭하면 이름으로 서버를 검색해 programId를 얻은 다음 게시판을 연다.
+        button.addActionListener(event -> findProgramAndOpenBoard(programName));
         return button;
     }
 
     private JButton createProgramSearchResultButton(ProgramSearchDto.ProgramItem program) {
         JButton button = outlineButton(program.getDisplayName());
         button.setPreferredSize(new Dimension(Math.max(76, program.getDisplayName().length() * 9 + 24), 28));
+
+        // 검색 응답에는 이미 programId가 있으므로 다시 검색할 필요가 없다.
         button.addActionListener(event -> openBoard(program.getProgramId(), program.getDisplayName()));
         return button;
     }
@@ -251,10 +254,7 @@ public class ProgramBoardPanel extends JPanel {
 
         programSearchField.addActionListener(event -> {
             String keyword = programSearchField.getText().trim();
-            PROGRAMS.stream()
-                .filter(program -> program.toLowerCase().contains(keyword.toLowerCase()))
-                .findFirst()
-                .ifPresent(this::openBoard);
+            if (!keyword.isBlank()) findProgramAndOpenBoard(keyword);
         });
     }
 
@@ -266,13 +266,7 @@ public class ProgramBoardPanel extends JPanel {
             programSearchResults.add(label("검색 결과가 여기에 표시됩니다.", Font.PLAIN, 11, SUB_TEXT));
         } else {
             //서버 만들어지기 전까지 주석처리
-            
-            loadProgramSearchResultsFromServer(keyword);
-            
-
-           
-
-           
+            loadProgramSearchResultsFromServer(keyword); 
         }
 
         programSearchResults.revalidate();
@@ -333,10 +327,53 @@ public class ProgramBoardPanel extends JPanel {
         recentProgramButtons.repaint();
     }
 
-    private void openBoard(String programName) {
-        openBoard(-1, programName);
+    // 이름만 알고 있는 프로그램은 먼저 검색해서 고유한 programId를 확인한다.
+    private void findProgramAndOpenBoard(String programName) {
+        programSearchResults.removeAll();
+        programSearchResults.add(label("프로그램 확인 중...", Font.PLAIN, 11, SUB_TEXT));
+        programSearchResults.revalidate();
+        programSearchResults.repaint();
+
+        new SwingWorker<ProgramSearchDto.Response, Void>() {
+            @Override
+            protected ProgramSearchDto.Response doInBackground() throws Exception {
+                return pawLogClient.searchPrograms(programName, 10);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ProgramSearchDto.Response response = get();
+
+                    if (!response.isSuccess() || response.getPrograms() == null || response.getPrograms().isEmpty()) {
+                        showProgramSearchMessage("해당 프로그램을 찾을 수 없습니다.", RED);
+                        return;
+                    }
+
+                    // 대소문자를 무시하고 이름이 정확히 같은 프로그램을 우선 선택한다.
+                    ProgramSearchDto.ProgramItem program = response.getPrograms().stream()
+                        .filter(item -> programName.equalsIgnoreCase(item.getDisplayName())
+                            || programName.equalsIgnoreCase(item.getProcessName()))
+                        .findFirst()
+                        .orElse(response.getPrograms().get(0));
+
+                    openBoard(program.getProgramId(), program.getDisplayName());
+                } catch (Exception exception) {
+                    showProgramSearchMessage("서버 연결에 실패했습니다.", RED);
+                    exception.printStackTrace();
+                }
+            }
+        }.execute();
     }
 
+    private void showProgramSearchMessage(String message, Color color) {
+        programSearchResults.removeAll();
+        programSearchResults.add(label(message, Font.PLAIN, 11, color));
+        programSearchResults.revalidate();
+        programSearchResults.repaint();
+    }
+
+    // programName은 제목 표시용이고 programId는 서버 게시글 조회용이다.
     private void openBoard(long programId, String programName) {
         selectedProgramId = programId;
         recentPrograms.remove(programName);
@@ -350,9 +387,82 @@ public class ProgramBoardPanel extends JPanel {
         programSearchField.setText("");
         boardTitle.setText(programName + " 게시판");
 
-        cardLayout.show(this, BOARD);
+        // 프로그램 버튼을 누르는 순간 첫 페이지 게시글을 서버에 요청한다.
+        loadPostList(programId, 0);
     }
 
+    // 서버 통신은 EDT 밖에서 실행해 조회 중에도 Swing 화면이 멈추지 않게 한다.
+    private void loadPostList(long programId, int page) {
+        postRows.removeAll();
+        postRows.add(label("게시글을 불러오는 중...", Font.PLAIN, 13, SUB_TEXT));
+        postRows.revalidate();
+        postRows.repaint();
+        cardLayout.show(this, BOARD);
+
+        new SwingWorker<PostListDto.Response, Void>() {
+            @Override
+            protected PostListDto.Response doInBackground() throws Exception {
+                return pawLogClient.getPostList(programId, page, PAGE_SIZE);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    PostListDto.Response response = get();
+
+                    if (!response.isSuccess()) {
+                        showPostListMessage(response.getMessage());
+                        return;
+                    }
+
+                    renderPostList(response.getData());
+                } catch (Exception exception) {
+                    showPostListMessage("게시글 목록을 불러오지 못했습니다.");
+                    exception.printStackTrace();
+                }
+            }
+        }.execute();
+    }
+
+    private void showPostListMessage(String message) {
+        postRows.removeAll();
+        postRows.add(label(message, Font.PLAIN, 13, RED));
+        paginationPanel.removeAll();
+        postRows.revalidate();
+        postRows.repaint();
+        paginationPanel.revalidate();
+        paginationPanel.repaint();
+    }
+
+    // 서버 DTO를 현재 게시글 행 화면에서 사용하는 PostItem으로 변환한다.
+    private void renderPostList(PostListDto.PageData data) {
+        posts.clear();
+
+        if (data != null && data.getPosts() != null) {
+            for(PostListDto.PostItem post : data.getPosts()) {
+                posts.add(new PostItem(
+                    post.getPostId(),
+                    "게시글",
+                    post.getTitle(),
+                    "",
+                    post.getAuthorNickname(),
+                    post.getCreatedAt(),
+                    post.getLikeCount(),
+                    post.getCommentCount()
+                ));
+            }
+        }
+
+        currentPage = data == null ? 0 : data.getCurrentPage();
+        postRows.removeAll();
+
+        for(PostItem post : posts) postRows.add(createPostRow(post));
+        if (posts.isEmpty()) postRows.add(label("등록된 게시글이 없습니다.", Font.PLAIN, 13, SUB_TEXT));
+
+        renderPagination(data == null ? 1 : Math.max(1, data.getTotalPages()));
+        postRows.revalidate();
+        postRows.repaint();
+    }
     private JPanel createBoardPage() {
         JPanel page = new JPanel(new BorderLayout(0, 14));
         page.setBackground(BACKGROUND);
@@ -404,7 +514,7 @@ public class ProgramBoardPanel extends JPanel {
         table.add(postRows, BorderLayout.CENTER);
         table.add(paginationPanel, BorderLayout.SOUTH);
         renderPostPage();
-        return table;
+        return table;   
     }
     
     private JPanel createPostRow(PostItem post) {
@@ -468,8 +578,7 @@ public class ProgramBoardPanel extends JPanel {
         }
 
         addPaginationButton("≪ 처음", false, currentPage == 0, () -> {
-            currentPage = 0;
-            renderPostPage();
+            openPostPage(0);
         });
 
         int half = PAGE_BUTTON_COUNT / 2;
@@ -486,20 +595,30 @@ public class ProgramBoardPanel extends JPanel {
             int pageIndex = page;
             boolean selected = page == currentPage;
             addPaginationButton(String.valueOf(page + 1), selected, false, () -> {
-                currentPage = pageIndex;
-                renderPostPage();
+                openPostPage(pageIndex);
             });
         }
 
         if (endPage < pageCount - 1) addPaginationText("…");
 
         addPaginationButton("끝 ≫", false, currentPage == pageCount - 1, () -> {
-            currentPage = pageCount - 1;
-            renderPostPage();
+            openPostPage(pageCount - 1);
         });
 
         paginationPanel.revalidate();
         paginationPanel.repaint();
+    }
+
+    // 페이지 번호를 누를 때도 현재 선택한 programId와 새 페이지 번호를 서버에 보낸다.
+    private void openPostPage(int page) {
+        currentPage = page;
+
+        if (selectedProgramId > 0) {
+            loadPostList(selectedProgramId, page);
+            return;
+        }
+
+        renderPostPage();
     }
 
     private void addPaginationButton(String text, boolean selected, boolean disabled, Runnable action) {
@@ -527,59 +646,6 @@ public class ProgramBoardPanel extends JPanel {
             paginationPanel.add(label("|", Font.PLAIN, 12, MUTED_TEXT));
         }
     }
-
-    private void createSamplePosts() {
-        posts.add(new PostItem("질문", "VS Code에서 테마 추천 및 폰트 세팅 어떻게 하시나요?", "오래 작업해도 눈이 편한 테마와 개발용 폰트를 찾고 있습니다. 현재 사용 중인 조합을 추천해주세요.", "초보코더", "10분 전", 12, 4));
-        posts.add(new PostItem("정보", "2026년 필수 생산성 확장 프로그램 5선 정리", "Error Lens, GitLens, Prettier 등 개발할 때 유용한 확장 프로그램을 정리했습니다.", "코딩마스터", "2시간 전", 45, 12));
-        posts.add(new PostItem("잡담", "이번 업데이트로 단축키 살짝 바뀐 것 같네요", "업데이트 이후 일부 단축키 동작이 달라진 것 같습니다. 같은 현상을 겪는 분이 있나요?", "김철수", "어제", 8, 3));
-        posts.add(new PostItem("정보", "C++ 개발 환경 세팅 디테일한 튜토리얼 공유", "컴파일러 설치부터 tasks.json과 launch.json 설정까지 순서대로 정리했습니다.", "테크리드", "2일 전", 32, 8));
-        posts.add(new PostItem("질문", "Git 연동할 때 자꾸 충돌 에러가 나는데 조언 부탁드립니다.", "원격 저장소에서 pull할 때 충돌이 반복됩니다. 안전하게 해결하는 방법을 알고 싶습니다.", "리액트린이", "3일 전", 15, 19));
-        posts.add(new PostItem("팁", "자주 사용하는 단축키 모음", "Ctrl+P와 Ctrl+Shift+P부터 익히면 작업 속도를 높일 수 있습니다.", "단축키장인", "4일 전", 21, 7));
-        posts.add(new PostItem("정보", "설정 동기화 사용 후기", "집과 학교 PC에서 같은 설정을 사용할 수 있어서 편리했습니다.", "PawUser", "5일 전", 6, 3));
-        posts.add(new PostItem("질문", "Java 확장팩은 어떤 것을 사용하시나요?", "Java 프로젝트에 필요한 확장팩 추천을 받고 싶습니다.", "자바초보", "6일 전", 9, 5));
-        posts.add(new PostItem("팁", "터미널 기본 프로필 변경 방법", "VS Code 설정에서 기본 터미널을 PowerShell로 변경하는 방법입니다.", "윈도우개발자", "7일 전", 17, 6));
-        posts.add(new PostItem("정보", "새 버전 업데이트 내용 정리", "새 버전에서 변경된 편집기 기능과 단축키를 정리했습니다.", "업데이트봇", "8일 전", 24, 9));
-        posts.add(new PostItem("잡담", "여러분은 어떤 색상 테마를 쓰시나요?", "현재 다크 테마를 사용 중인데 다른 테마도 궁금합니다.", "테마수집가", "9일 전", 11, 8));
-        posts.add(new PostItem("질문", "자동 저장 주기는 얼마가 적당할까요?", "파일 자동 저장 주기를 어떻게 설정하는지 궁금합니다.", "개발새싹", "10일 전", 7, 2));
-         posts.add(new PostItem("질문", "VS Code에서 테마 추천 및 폰트 세팅 어떻게 하시나요?", "오래 작업해도 눈이 편한 테마와 개발용 폰트를 찾고 있습니다. 현재 사용 중인 조합을 추천해주세요.", "초보코더", "10분 전", 12, 4));
-        posts.add(new PostItem("정보", "2026년 필수 생산성 확장 프로그램 5선 정리", "Error Lens, GitLens, Prettier 등 개발할 때 유용한 확장 프로그램을 정리했습니다.", "코딩마스터", "2시간 전", 45, 12));
-        posts.add(new PostItem("잡담", "이번 업데이트로 단축키 살짝 바뀐 것 같네요", "업데이트 이후 일부 단축키 동작이 달라진 것 같습니다. 같은 현상을 겪는 분이 있나요?", "김철수", "어제", 8, 3));
-        posts.add(new PostItem("정보", "C++ 개발 환경 세팅 디테일한 튜토리얼 공유", "컴파일러 설치부터 tasks.json과 launch.json 설정까지 순서대로 정리했습니다.", "테크리드", "2일 전", 32, 8));
-        posts.add(new PostItem("질문", "Git 연동할 때 자꾸 충돌 에러가 나는데 조언 부탁드립니다.", "원격 저장소에서 pull할 때 충돌이 반복됩니다. 안전하게 해결하는 방법을 알고 싶습니다.", "리액트린이", "3일 전", 15, 19));
-        posts.add(new PostItem("팁", "자주 사용하는 단축키 모음", "Ctrl+P와 Ctrl+Shift+P부터 익히면 작업 속도를 높일 수 있습니다.", "단축키장인", "4일 전", 21, 7));
-        posts.add(new PostItem("정보", "설정 동기화 사용 후기", "집과 학교 PC에서 같은 설정을 사용할 수 있어서 편리했습니다.", "PawUser", "5일 전", 6, 3));
-        posts.add(new PostItem("질문", "Java 확장팩은 어떤 것을 사용하시나요?", "Java 프로젝트에 필요한 확장팩 추천을 받고 싶습니다.", "자바초보", "6일 전", 9, 5));
-        posts.add(new PostItem("팁", "터미널 기본 프로필 변경 방법", "VS Code 설정에서 기본 터미널을 PowerShell로 변경하는 방법입니다.", "윈도우개발자", "7일 전", 17, 6));
-        posts.add(new PostItem("정보", "새 버전 업데이트 내용 정리", "새 버전에서 변경된 편집기 기능과 단축키를 정리했습니다.", "업데이트봇", "8일 전", 24, 9));
-        posts.add(new PostItem("잡담", "여러분은 어떤 색상 테마를 쓰시나요?", "현재 다크 테마를 사용 중인데 다른 테마도 궁금합니다.", "테마수집가", "9일 전", 11, 8));
-         posts.add(new PostItem("질문", "VS Code에서 테마 추천 및 폰트 세팅 어떻게 하시나요?", "오래 작업해도 눈이 편한 테마와 개발용 폰트를 찾고 있습니다. 현재 사용 중인 조합을 추천해주세요.", "초보코더", "10분 전", 12, 4));
-        posts.add(new PostItem("정보", "2026년 필수 생산성 확장 프로그램 5선 정리", "Error Lens, GitLens, Prettier 등 개발할 때 유용한 확장 프로그램을 정리했습니다.", "코딩마스터", "2시간 전", 45, 12));
-        posts.add(new PostItem("잡담", "이번 업데이트로 단축키 살짝 바뀐 것 같네요", "업데이트 이후 일부 단축키 동작이 달라진 것 같습니다. 같은 현상을 겪는 분이 있나요?", "김철수", "어제", 8, 3));
-        posts.add(new PostItem("정보", "C++ 개발 환경 세팅 디테일한 튜토리얼 공유", "컴파일러 설치부터 tasks.json과 launch.json 설정까지 순서대로 정리했습니다.", "테크리드", "2일 전", 32, 8));
-        posts.add(new PostItem("질문", "Git 연동할 때 자꾸 충돌 에러가 나는데 조언 부탁드립니다.", "원격 저장소에서 pull할 때 충돌이 반복됩니다. 안전하게 해결하는 방법을 알고 싶습니다.", "리액트린이", "3일 전", 15, 19));
-        posts.add(new PostItem("팁", "자주 사용하는 단축키 모음", "Ctrl+P와 Ctrl+Shift+P부터 익히면 작업 속도를 높일 수 있습니다.", "단축키장인", "4일 전", 21, 7));
-        posts.add(new PostItem("정보", "설정 동기화 사용 후기", "집과 학교 PC에서 같은 설정을 사용할 수 있어서 편리했습니다.", "PawUser", "5일 전", 6, 3));
-        posts.add(new PostItem("질문", "Java 확장팩은 어떤 것을 사용하시나요?", "Java 프로젝트에 필요한 확장팩 추천을 받고 싶습니다.", "자바초보", "6일 전", 9, 5));
-        posts.add(new PostItem("팁", "터미널 기본 프로필 변경 방법", "VS Code 설정에서 기본 터미널을 PowerShell로 변경하는 방법입니다.", "윈도우개발자", "7일 전", 17, 6));
-        posts.add(new PostItem("정보", "새 버전 업데이트 내용 정리", "새 버전에서 변경된 편집기 기능과 단축키를 정리했습니다.", "업데이트봇", "8일 전", 24, 9));
-        posts.add(new PostItem("잡담", "여러분은 어떤 색상 테마를 쓰시나요?", "현재 다크 테마를 사용 중인데 다른 테마도 궁금합니다.", "테마수집가", "9일 전", 11, 8));
-         posts.add(new PostItem("질문", "VS Code에서 테마 추천 및 폰트 세팅 어떻게 하시나요?", "오래 작업해도 눈이 편한 테마와 개발용 폰트를 찾고 있습니다. 현재 사용 중인 조합을 추천해주세요.", "초보코더", "10분 전", 12, 4));
-        posts.add(new PostItem("정보", "2026년 필수 생산성 확장 프로그램 5선 정리", "Error Lens, GitLens, Prettier 등 개발할 때 유용한 확장 프로그램을 정리했습니다.", "코딩마스터", "2시간 전", 45, 12));
-        posts.add(new PostItem("잡담", "이번 업데이트로 단축키 살짝 바뀐 것 같네요", "업데이트 이후 일부 단축키 동작이 달라진 것 같습니다. 같은 현상을 겪는 분이 있나요?", "김철수", "어제", 8, 3));
-        posts.add(new PostItem("정보", "C++ 개발 환경 세팅 디테일한 튜토리얼 공유", "컴파일러 설치부터 tasks.json과 launch.json 설정까지 순서대로 정리했습니다.", "테크리드", "2일 전", 32, 8));
-        posts.add(new PostItem("질문", "Git 연동할 때 자꾸 충돌 에러가 나는데 조언 부탁드립니다.", "원격 저장소에서 pull할 때 충돌이 반복됩니다. 안전하게 해결하는 방법을 알고 싶습니다.", "리액트린이", "3일 전", 15, 19));
-        posts.add(new PostItem("팁", "자주 사용하는 단축키 모음", "Ctrl+P와 Ctrl+Shift+P부터 익히면 작업 속도를 높일 수 있습니다.", "단축키장인", "4일 전", 21, 7));
-        posts.add(new PostItem("정보", "설정 동기화 사용 후기", "집과 학교 PC에서 같은 설정을 사용할 수 있어서 편리했습니다.", "PawUser", "5일 전", 6, 3));
-        posts.add(new PostItem("질문", "Java 확장팩은 어떤 것을 사용하시나요?", "Java 프로젝트에 필요한 확장팩 추천을 받고 싶습니다.", "자바초보", "6일 전", 9, 5));
-        posts.add(new PostItem("팁", "터미널 기본 프로필 변경 방법", "VS Code 설정에서 기본 터미널을 PowerShell로 변경하는 방법입니다.", "윈도우개발자", "7일 전", 17, 6));
-        posts.add(new PostItem("정보", "새 버전 업데이트 내용 정리", "새 버전에서 변경된 편집기 기능과 단축키를 정리했습니다.", "업데이트봇", "8일 전", 24, 9));
-        posts.add(new PostItem("잡담", "여러분은 어떤 색상 테마를 쓰시나요?", "현재 다크 테마를 사용 중인데 다른 테마도 궁금합니다.", "테마수집가", "9일 전", 11, 8)); posts.add(new PostItem("질문", "VS Code에서 테마 추천 및 폰트 세팅 어떻게 하시나요?", "오래 작업해도 눈이 편한 테마와 개발용 폰트를 찾고 있습니다. 현재 사용 중인 조합을 추천해주세요.", "초보코더", "10분 전", 12, 4));
-        posts.add(new PostItem("정보", "2026년 필수 생산성 확장 프로그램 5선 정리", "Error Lens, GitLens, Prettier 등 개발할 때 유용한 확장 프로그램을 정리했습니다.", "코딩마스터", "2시간 전", 45, 12));
-        posts.add(new PostItem("잡담", "이번 업데이트로 단축키 살짝 바뀐 것 같네요", "업데이트 이후 일부 단축키 동작이 달라진 것 같습니다. 같은 현상을 겪는 분이 있나요?", "김철수", "어제", 8, 3));
-        posts.add(new PostItem("정보", "C++ 개발 환경 세팅 디테일한 튜토리얼 공유", "컴파일러 설치부터 tasks.json과 launch.json 설정까지 순서대로 정리했습니다.", "테크리드", "2일 전", 32, 8));
-  
-    
-    }   
 
     private JPanel createWritePage() {
         JPanel page = new JPanel(new BorderLayout(0, 14));
@@ -692,7 +758,8 @@ public class ProgramBoardPanel extends JPanel {
         }
 
         String category = String.valueOf(postCategoryBox.getSelectedItem());
-        posts.add(0, new PostItem(category, title, content, "PawUser", "방금 전", 0, 0));
+        
+        posts.add(0, new PostItem(-1, category, title, content, "PawUser", "방금 전", 0, 0));
         currentPage = 0;
         renderPostPage();
         postTitleField.setText("");
@@ -935,6 +1002,7 @@ public class ProgramBoardPanel extends JPanel {
     }
 
     private record PostItem(
+        long postId,
         String category,
         String title,
         String content,

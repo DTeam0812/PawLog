@@ -123,7 +123,11 @@ public class PopularRankingPanel extends JPanel {
 
     private void updateRankingList(List<PopularRankingDto.RankingItem> rankings) {
         rankingList.removeAll();
-        if (rankings != null) {
+        if (rankings == null || rankings.isEmpty()) {
+            JLabel emptyLabel = label("선택한 기간과 조건에 해당하는 인기 순위가 없습니다.", Font.PLAIN, 12, SUB_TEXT);
+            emptyLabel.setBorder(BorderFactory.createEmptyBorder(24, 10, 0, 10));
+            rankingList.add(emptyLabel);
+        } else {
             for(PopularRankingDto.RankingItem item : rankings) rankingList.add(createRankingRow(item));
         }
         rankingList.revalidate();

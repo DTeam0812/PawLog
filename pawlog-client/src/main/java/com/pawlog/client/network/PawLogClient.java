@@ -13,6 +13,7 @@ import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.usage.MyInfoDto;
@@ -112,6 +113,54 @@ public class PawLogClient {
         RequestPacket requestPacket = new RequestPacket(ServerProtocol.PROGRAM_SEARCH, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendProgramSearchJson(requestJson);
+    }
+
+    // 서버가 반환한 게시글 목록 응답 JSON을 PostListDto.Response으로 변환한다.
+    private synchronized PostListDto.Response sendPostListJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
+
+        if (responseJson == null) {
+            disconnect();
+            return new PostListDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+
+        if (!success) {
+            return new PostListDto.Response(false, code, message, null);
+        }
+
+        JsonNode dataNode = root.path("data");
+        if (dataNode.isMissingNode() || dataNode.isNull()) {
+            return new PostListDto.Response(true, code, message, null);
+        }
+
+        PostListDto.PageData pageData = JsonUtil.fromJson(
+            dataNode.toString(),
+            PostListDto.PageData.class
+        );
+
+        return new PostListDto.Response(true, code, message, pageData);
+    }
+
+    // 프로그램 ID와 페이지 정보를 묶어 게시글 목록을 서버에 요청한다.
+    public PostListDto.Response getPostList(long programId, int page, int pageSize) throws Exception {
+        PostListDto.Request request = new PostListDto.Request(
+            programId,
+            page,
+            pageSize,
+            "LATEST",
+            ""
+        );
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_LIST_GET, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendPostListJson(requestJson);
     }
 
     private synchronized AuthLoginDto.Response sendLoginJson(String requestJson) throws Exception {

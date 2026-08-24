@@ -11,7 +11,7 @@ public class MyStatisticsDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Request {
-        private String id;
+        private String id;//사용자 계정
         private String startDate;
         private String endDate;
     }

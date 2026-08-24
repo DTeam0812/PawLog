@@ -56,7 +56,7 @@ public class ProgramUsageStatDAO {
         else sql += "AND s.age_group IS NULL ";
 
         sql += "GROUP BY s.program_id, p.display_name, p.process_name, c.name "
-                + "HAVING SUM(s.total_users) >= 5"
+                + "HAVING SUM(s.total_users) >= 5 "
                 + "ORDER BY avg_duration_sec DESC "
                 + "LIMIT 10";
 
@@ -81,7 +81,7 @@ public class ProgramUsageStatDAO {
                 list.add(data);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("인기 순위 데이터 조회에 실패했습니다.", e);
         } finally {
             pool.freeConnection(con, pstmt, rs);
         }
