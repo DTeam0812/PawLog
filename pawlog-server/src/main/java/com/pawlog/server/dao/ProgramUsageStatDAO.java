@@ -21,7 +21,6 @@ public class ProgramUsageStatDAO {
     public static class RawRankData {
         public long programId;
         public String programName;
-        public String categoryName;
         public double avgDurationSec;
     }
 
@@ -42,11 +41,9 @@ public class ProgramUsageStatDAO {
 
         String sql = "SELECT s.program_id, "
                 + "COALESCE(p.display_name, p.process_name) AS program_name, "
-                + "COALESCE(c.name, '기타') AS category_name, "
                 + "SUM(s.avg_duration_sec * s.total_users) / NULLIF(SUM(s.total_users), 0) AS avg_duration_sec "
                 + "FROM program_usage_stats s "
                 + "INNER JOIN programs p ON s.program_id = p.program_id "
-                + "LEFT JOIN categories c ON p.category_id = c.category_id "
                 + "WHERE s.stat_date BETWEEN ? AND ? ";
 
         if (isGenderFilter) sql += "AND s.gender = ? ";
@@ -55,8 +52,8 @@ public class ProgramUsageStatDAO {
         if (isAgeFilter) sql += "AND s.age_group = ? ";
         else sql += "AND s.age_group IS NULL ";
 
-        sql += "GROUP BY s.program_id, p.display_name, p.process_name, c.name "
-                + "HAVING SUM(s.total_users) >= 5 "
+        sql += "GROUP BY s.program_id, p.display_name, p.process_name "
+                + "HAVING SUM(s.total_users) >= 1 "
                 + "ORDER BY avg_duration_sec DESC "
                 + "LIMIT 10";
 
@@ -76,7 +73,6 @@ public class ProgramUsageStatDAO {
                 RawRankData data = new RawRankData();
                 data.programId = rs.getLong("program_id");
                 data.programName = rs.getString("program_name");
-                data.categoryName = rs.getString("category_name");
                 data.avgDurationSec = rs.getDouble("avg_duration_sec");
                 list.add(data);
             }

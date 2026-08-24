@@ -16,16 +16,7 @@ public class RankingService {
         List<PopularRankingDto.RankingItem> items = new ArrayList<>();
 
         // 이미지 UI에 맞춘 상위 10개 프로그램 순위 데이터
-        items.add(new PopularRankingDto.RankingItem(1, "Chrome", "브라우저", "3시간 45분", 28));
-        items.add(new PopularRankingDto.RankingItem(2, "VS Code", "개발 도구", "3시간 12분", 24));
-        items.add(new PopularRankingDto.RankingItem(3, "Discord", "메신저", "1시간 50분", 14));
-        items.add(new PopularRankingDto.RankingItem(4, "KakaoTalk", "메신저", "1시간 22분", 11));
-        items.add(new PopularRankingDto.RankingItem(5, "YouTube", "엔터테인먼트", "1시간 05분", 8));
-        items.add(new PopularRankingDto.RankingItem(6, "Excel", "생산성", "55분", 6));
-        items.add(new PopularRankingDto.RankingItem(7, "Word", "생산성", "45분", 4));
-        items.add(new PopularRankingDto.RankingItem(8, "PowerPoint", "생산성", "35분", 2));
-        items.add(new PopularRankingDto.RankingItem(9, "Slack", "협업 도구", "25분", 1));
-        items.add(new PopularRankingDto.RankingItem(10, "Notion", "생산성", "18분", 1));
+       
 
         String filterInfo = String.format("(연령대: %s, 성별: %s)",
                 dto.getAgeGroup() != null ? dto.getAgeGroup() : "전체",
