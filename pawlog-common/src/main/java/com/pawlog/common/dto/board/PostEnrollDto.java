@@ -9,22 +9,30 @@ public class PostEnrollDto {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Request{
+    public static class Request {
         private long programId;
         private String title;
         private String content;
-
     }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Response{
+    public static class PostEnrollData {
+        private long postId;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Response {
         private boolean success;
         private int code;
         private String message;
-        private Long postId;
+        private PostEnrollData data;
 
+        public Response(boolean success, int code, String message) {
+            this(success, code, message, null);
+        }
     }
-
-
 }

@@ -163,6 +163,7 @@ public class DatabaseConfig {
                 title VARCHAR(255) NOT NULL,
                 content TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE,
                 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
                 FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE SET NULL
             );
@@ -176,6 +177,7 @@ public class DatabaseConfig {
                 user_id BIGINT NOT NULL,
                 content TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE,
                 FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE,
                 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
             );

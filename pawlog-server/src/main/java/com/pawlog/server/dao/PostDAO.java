@@ -19,14 +19,20 @@ public class PostDAO {
 
     // 1. 게시글 작성 (program_id가 null이면 추천 프로그램 게시판)
     public boolean insertPost(PostEntity entity) {
+        return insertPostAndGetId(entity) > 0;
+    }
+
+    // 1-1. 게시글 작성 및 생성된 post_id 반환 (실패 시 -1)
+    public long insertPostAndGetId(PostEntity entity) {
         Connection con = null;
         PreparedStatement pstmt = null;
+        ResultSet rs = null;
 
-        String sql = "INSERT INTO posts (user_id, program_id, title, content) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO posts (user_id, program_id, title, content, is_active) VALUES (?, ?, ?, ?, TRUE)";
 
         try {
             con = pool.getConnection();
-            pstmt = con.prepareStatement(sql);
+            pstmt = con.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS);
             pstmt.setLong(1, entity.getUserId());
 
             if (entity.getProgramId() == null) {
@@ -39,13 +45,18 @@ public class PostDAO {
             pstmt.setString(4, entity.getContent());
 
             int result = pstmt.executeUpdate();
-            return result > 0;
+            if (result > 0) {
+                rs = pstmt.getGeneratedKeys();
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
         } finally {
-            pool.freeConnection(con, pstmt);
+            pool.freeConnection(con, pstmt, rs);
         }
+        return -1L;
     }
 
     // 2. 게시글 단건 상세 조회
@@ -54,7 +65,7 @@ public class PostDAO {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
-        String sql = "SELECT post_id, user_id, program_id, title, content, created_at FROM posts WHERE post_id = ?";
+        String sql = "SELECT post_id, user_id, program_id, title, content, created_at, is_active FROM posts WHERE post_id = ? AND (is_active = TRUE OR is_active IS NULL)";
 
         try {
             con = pool.getConnection();
@@ -77,6 +88,7 @@ public class PostDAO {
                 entity.setTitle(rs.getString("title"));
                 entity.setContent(rs.getString("content"));
                 entity.setCreatedAt(rs.getTimestamp("created_at"));
+                entity.setIsActive(rs.getBoolean("is_active"));
                 return entity;
             }
         } catch (Exception e) {
@@ -94,8 +106,8 @@ public class PostDAO {
         ResultSet rs = null;
         List<PostEntity> list = new ArrayList<>();
 
-        String sql = "SELECT post_id, user_id, program_id, title, content, created_at "
-                + "FROM posts WHERE program_id IS NULL "
+        String sql = "SELECT post_id, user_id, program_id, title, content, created_at, is_active "
+                + "FROM posts WHERE program_id IS NULL AND (is_active = TRUE OR is_active IS NULL) "
                 + "ORDER BY created_at DESC LIMIT ? OFFSET ?";
 
         try {
@@ -113,6 +125,7 @@ public class PostDAO {
                 entity.setTitle(rs.getString("title"));
                 entity.setContent(rs.getString("content"));
                 entity.setCreatedAt(rs.getTimestamp("created_at"));
+                entity.setIsActive(rs.getBoolean("is_active"));
                 list.add(entity);
             }
         } catch (Exception e) {
@@ -130,8 +143,8 @@ public class PostDAO {
         ResultSet rs = null;
         List<PostEntity> list = new ArrayList<>();
 
-        String sql = "SELECT post_id, user_id, program_id, title, content, created_at "
-                + "FROM posts WHERE program_id = ? "
+        String sql = "SELECT post_id, user_id, program_id, title, content, created_at, is_active "
+                + "FROM posts WHERE program_id = ? AND (is_active = TRUE OR is_active IS NULL) "
                 + "ORDER BY created_at DESC LIMIT ? OFFSET ?";
 
         try {
@@ -150,6 +163,7 @@ public class PostDAO {
                 entity.setTitle(rs.getString("title"));
                 entity.setContent(rs.getString("content"));
                 entity.setCreatedAt(rs.getTimestamp("created_at"));
+                entity.setIsActive(rs.getBoolean("is_active"));
                 list.add(entity);
             }
         } catch (Exception e) {
@@ -165,7 +179,7 @@ public class PostDAO {
         Connection con = null;
         PreparedStatement pstmt = null;
 
-        String sql = "UPDATE posts SET title = ?, content = ? WHERE post_id = ? AND user_id = ?";
+        String sql = "UPDATE posts SET title = ?, content = ? WHERE post_id = ? AND user_id = ? AND (is_active = TRUE OR is_active IS NULL)";
 
         try {
             con = pool.getConnection();
@@ -185,12 +199,12 @@ public class PostDAO {
         }
     }
 
-    // 6. 게시글 삭제 (작성자 본인 확인 포함)
+    // 6. 게시글 삭제 (소프트 딜리트: is_active = FALSE로 변경, 작성자 본인 확인 포함)
     public boolean deletePost(long postId, long userId) {
         Connection con = null;
         PreparedStatement pstmt = null;
 
-        String sql = "DELETE FROM posts WHERE post_id = ? AND user_id = ?";
+        String sql = "UPDATE posts SET is_active = FALSE WHERE post_id = ? AND user_id = ?";
 
         try {
             con = pool.getConnection();
@@ -216,7 +230,7 @@ public class PostDAO {
         long count = 0;
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(*) FROM posts p WHERE ");
+        sql.append("SELECT COUNT(*) FROM posts p WHERE (p.is_active = TRUE OR p.is_active IS NULL) AND ");
         if (programId <= 0) {
             sql.append("p.program_id IS NULL ");
         } else {
@@ -280,7 +294,7 @@ public class PostDAO {
         }
         sql.append("FROM posts p ");
         sql.append("LEFT JOIN users u ON p.user_id = u.user_id ");
-        sql.append("WHERE ");
+        sql.append("WHERE (p.is_active = TRUE OR p.is_active IS NULL) AND ");
         if (programId <= 0) {
             sql.append("p.program_id IS NULL ");
         } else {
@@ -350,5 +364,75 @@ public class PostDAO {
         }
 
         return list;
+    }
+
+    // 9. 게시글 단건 상세 조회 (작성자 닉네임, 좋아요수, 댓글수, 본문, 사용자 좋아요 여부 포함)
+    public com.pawlog.common.dto.board.PostDetailDto.PostDetailData getPostDetailById(long postId, Long currentUserId) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT ");
+        sql.append("  p.post_id, ");
+        sql.append("  p.user_id, ");
+        sql.append("  p.program_id, ");
+        sql.append("  u.nickname AS author_nickname, ");
+        sql.append("  p.title, ");
+        sql.append("  p.content, ");
+        sql.append("  p.created_at, ");
+        sql.append("  (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.post_id) AS like_count, ");
+        sql.append("  (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id AND (c.is_active = TRUE OR c.is_active IS NULL)) AS comment_count, ");
+        if (currentUserId != null) {
+            sql.append("  (SELECT COUNT(*) FROM post_likes pl2 WHERE pl2.post_id = p.post_id AND pl2.user_id = ?) AS user_liked ");
+        } else {
+            sql.append("  0 AS user_liked ");
+        }
+        sql.append("FROM posts p ");
+        sql.append("LEFT JOIN users u ON p.user_id = u.user_id ");
+        sql.append("WHERE p.post_id = ? AND (p.is_active = TRUE OR p.is_active IS NULL)");
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql.toString());
+
+            int idx = 1;
+            if (currentUserId != null) {
+                pstmt.setLong(idx++, currentUserId);
+            }
+            pstmt.setLong(idx, postId);
+
+            rs = pstmt.executeQuery();
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
+            if (rs.next()) {
+                com.pawlog.common.dto.board.PostDetailDto.PostDetailData data = new com.pawlog.common.dto.board.PostDetailDto.PostDetailData();
+                data.setPostId(rs.getLong("post_id"));
+                data.setUserId(rs.getLong("user_id"));
+                data.setProgramId(rs.getLong("program_id"));
+                data.setAuthorNickname(rs.getString("author_nickname") != null ? rs.getString("author_nickname") : "");
+                data.setTitle(rs.getString("title"));
+                data.setContent(rs.getString("content") != null ? rs.getString("content") : "");
+
+                java.sql.Timestamp ts = rs.getTimestamp("created_at");
+                if (ts != null) {
+                    data.setCreatedAt(ts.toLocalDateTime().format(formatter));
+                } else {
+                    data.setCreatedAt("");
+                }
+
+                data.setLikeCount(rs.getInt("like_count"));
+                data.setCommentCount(rs.getInt("comment_count"));
+                data.setLiked(rs.getInt("user_liked") > 0);
+
+                return data;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+
+        return null;
     }
 }

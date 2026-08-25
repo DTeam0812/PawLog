@@ -17,6 +17,8 @@ import com.pawlog.server.service.StatisticsService;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
+import com.pawlog.common.dto.board.PostDetailDto;
+import com.pawlog.common.dto.board.PostEnrollDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 import com.pawlog.server.service.PostService;
@@ -144,6 +146,12 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.POST_LIST_GET.equals(command)) {
                     handlePostListGetJson(dataJson);
                 }
+                else if (ServerProtocol.POST_DETAIL_GET.equals(command)) {
+                    handlePostDetailGetJson(dataJson);
+                }
+                else if (ServerProtocol.POST_ENROLL.equals(command)) {
+                    handlePostEnrollJson(dataJson);
+                }
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -190,6 +198,12 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.POST_LIST_GET.equals(command)) {
             handlePostListGet(data);
+        }
+        else if (ServerProtocol.POST_DETAIL_GET.equals(command)) {
+            handlePostDetailGet(data);
+        }
+        else if (ServerProtocol.POST_ENROLL.equals(command)) {
+            handlePostEnroll(data);
         }
     }
 
@@ -828,6 +842,122 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 목록 조회 중 오류 발생");
+        }
+    }
+
+    // 게시글 상세 조회 (JSON 처리)
+    private void handlePostDetailGetJson(String dataJson) {
+        try {
+            PostDetailDto.Request reqDto = JsonUtil.fromJson(dataJson, PostDetailDto.Request.class);
+            PostDetailDto.Response resDto = postService.getPostDetail(reqDto, loggedInUserId);
+
+            JsonNode dataNode = null;
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                dataNode = JsonUtil.toJsonNode(resDto.getData());
+            }
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.POST_DETAIL_GET,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                dataNode
+            );
+
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.POST_DETAIL_GET,
+                false,
+                400,
+                "게시글 상세 조회 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 게시글 상세 조회 (구분자 처리)
+    private void handlePostDetailGet(String data) {
+        try {
+            // data 포맷: postId
+            long postId = 0;
+            if (data != null && !data.trim().isEmpty()) {
+                postId = Long.parseLong(data.trim());
+            }
+
+            PostDetailDto.Request reqDto = new PostDetailDto.Request(postId);
+            PostDetailDto.Response resDto = postService.getPostDetail(reqDto, loggedInUserId);
+
+            if (resDto.isSuccess()) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + JsonUtil.toJson(resDto.getData()));
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 상세 조회 중 오류 발생");
+        }
+    }
+
+    // 게시글 등록 (JSON 처리)
+    private void handlePostEnrollJson(String dataJson) {
+        try {
+            PostEnrollDto.Request reqDto = JsonUtil.fromJson(dataJson, PostEnrollDto.Request.class);
+            PostEnrollDto.Response resDto = postService.enrollPost(reqDto, loggedInUserId);
+
+            JsonNode dataNode = null;
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                dataNode = JsonUtil.toJsonNode(resDto.getData());
+            }
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.POST_ENROLL,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                dataNode
+            );
+
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.POST_ENROLL,
+                false,
+                400,
+                "게시글 등록 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 게시글 등록 (구분자 처리: programId;title;content)
+    private void handlePostEnroll(String data) {
+        try {
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "요청 데이터가 없습니다.");
+                return;
+            }
+
+            String[] params = data.split(ServerProtocol.MODE2);
+            long programId = params.length > 0 && !params[0].isEmpty() ? Long.parseLong(params[0]) : 0;
+            String title = params.length > 1 ? params[1] : "";
+            String content = params.length > 2 ? params[2] : "";
+
+            PostEnrollDto.Request reqDto = new PostEnrollDto.Request(programId, title, content);
+            PostEnrollDto.Response resDto = postService.enrollPost(reqDto, loggedInUserId);
+
+            if (resDto.isSuccess()) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + JsonUtil.toJson(resDto.getData()));
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 등록 중 오류 발생");
         }
     }
 
