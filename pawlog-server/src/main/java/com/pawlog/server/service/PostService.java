@@ -166,6 +166,11 @@ public class PostService {
         }
 
         try {
+            // 게시글 존재 및 활성(삭제 여부) 상태 사전 검증
+            com.pawlog.server.entity.PostEntity post = postDAO.getPostById(postId);
+            if (post == null || (post.getIsActive() != null && !post.getIsActive())) {
+                return new PostLikeDto.Response(false, 404, "존재하지 않거나 삭제된 게시글입니다.", null);
+            }
             boolean isCurrentlyLiked = postLikeDAO.isLiked(currentUserId, postId);
             boolean success;
 
