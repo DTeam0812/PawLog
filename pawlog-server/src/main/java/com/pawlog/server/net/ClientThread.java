@@ -5,6 +5,7 @@ import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
+import com.pawlog.common.dto.statistics.TodayStatisticsDto;
 import com.pawlog.common.protocol.RequestPacket;
 import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.protocol.ServerProtocol;
@@ -16,7 +17,9 @@ import com.pawlog.server.service.StatisticsService;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
+import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.server.service.PostService;
 import com.pawlog.server.service.UtilService;
 
 import java.io.BufferedReader;
@@ -37,6 +40,7 @@ public class ClientThread extends Thread {
     private UsageLogService usageLogService;
     private StatisticsService statisticsService;
     private UtilService utilService;
+    private PostService postService;
 
     // 로그인된 유저 세션 정보
     private Long loggedInUserId;
@@ -52,6 +56,7 @@ public class ClientThread extends Thread {
             this.usageLogService = new UsageLogService();
             this.statisticsService = new StatisticsService();
             this.utilService = new UtilService();
+            this.postService = new PostService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -130,8 +135,14 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
                     handleMyStatisticsJson(dataJson);
                 }
+                else if (ServerProtocol.TODAY_STATISTICS_GET.equals(command)) {
+                    handleTodayStatisticsJson(dataJson);
+                }
                 else if (ServerProtocol.PROGRAM_SEARCH.equals(command)) {
                     handleProgramSearchJson(dataJson);
+                }
+                else if (ServerProtocol.POST_LIST_GET.equals(command)) {
+                    handlePostListGetJson(dataJson);
                 }
                 return;
             } catch (Exception e) {
@@ -171,8 +182,14 @@ public class ClientThread extends Thread {
         else if (ServerProtocol.MY_STATISTICS_GET.equals(command)) {
             handleMyStatistics(data);
         }
+        else if (ServerProtocol.TODAY_STATISTICS_GET.equals(command)) {
+            handleTodayStatistics(data);
+        }
         else if (ServerProtocol.PROGRAM_SEARCH.equals(command)) {
             handleProgramSearch(data);
+        }
+        else if (ServerProtocol.POST_LIST_GET.equals(command)) {
+            handlePostListGet(data);
         }
     }
 
@@ -639,6 +656,64 @@ public class ClientThread extends Thread {
         }
     }
 
+    // 오늘 통계 조회 (JSON 처리)
+    private void handleTodayStatisticsJson(String dataJson) {
+        try {
+            TodayStatisticsDto.Request reqDto = JsonUtil.fromJson(dataJson, TodayStatisticsDto.Request.class);
+            TodayStatisticsDto.Response resDto = statisticsService.getTodayStatistics(reqDto);
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.TODAY_STATISTICS_GET,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                resDto.isSuccess() && resDto.getData() != null ? JsonUtil.toJsonNode(resDto.getData()) : null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.TODAY_STATISTICS_GET,
+                false,
+                400,
+                "오늘 통계 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 오늘 통계 조회 (구분자 방식 폴백: email;usageDate)
+    private void handleTodayStatistics(String data) {
+        try {
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "요청 데이터가 없습니다.");
+                return;
+            }
+
+            String[] params = data.split(ServerProtocol.MODE2);
+            if (params.length < 2) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "파라미터가 부족합니다 (email;usageDate).");
+                return;
+            }
+
+            String email = params[0];
+            String usageDate = params[1];
+
+            TodayStatisticsDto.Request reqDto = new TodayStatisticsDto.Request(email, usageDate);
+            TodayStatisticsDto.Response resDto = statisticsService.getTodayStatistics(reqDto);
+
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + JsonUtil.toJson(resDto.getData()));
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "오늘 통계 조회 중 오류 발생: " + e.getMessage());
+        }
+    }
+
     // 프로그램 검색 (JSON 처리)
     private void handleProgramSearchJson(String dataJson) {
         try {
@@ -695,6 +770,64 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "프로그램 검색 중 오류 발생");
+        }
+    }
+
+    // 게시글 목록 조회 (JSON 처리)
+    private void handlePostListGetJson(String dataJson) {
+        try {
+            PostListDto.Request reqDto = JsonUtil.fromJson(dataJson, PostListDto.Request.class);
+            PostListDto.Response resDto = postService.getPostList(reqDto, loggedInUserId);
+
+            JsonNode dataNode = null;
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                dataNode = JsonUtil.toJsonNode(resDto.getData());
+            }
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.POST_LIST_GET,
+                resDto.isSuccess(),
+                resDto.getCode(),
+                resDto.getMessage(),
+                dataNode
+            );
+
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                ServerProtocol.POST_LIST_GET,
+                false,
+                400,
+                "게시글 목록 조회 요청 데이터 파싱 실패: " + e.getMessage(),
+                null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 게시글 목록 조회 (구분자 처리)
+    private void handlePostListGet(String data) {
+        try {
+            // data 포맷: programId;page;pageSize;sort;keyword
+            String[] params = data.split(ServerProtocol.MODE2);
+            long programId = params.length > 0 && !params[0].isEmpty() ? Long.parseLong(params[0]) : 0;
+            int page = params.length > 1 && !params[1].isEmpty() ? Integer.parseInt(params[1]) : 0;
+            int pageSize = params.length > 2 && !params[2].isEmpty() ? Integer.parseInt(params[2]) : 9;
+            String sort = params.length > 3 ? params[3] : "LATEST";
+            String keyword = params.length > 4 ? params[4] : "";
+
+            PostListDto.Request reqDto = new PostListDto.Request(programId, page, pageSize, sort, keyword);
+            PostListDto.Response resDto = postService.getPostList(reqDto, loggedInUserId);
+
+            if (resDto.isSuccess()) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + JsonUtil.toJson(resDto.getData()));
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 목록 조회 중 오류 발생");
         }
     }
 

@@ -227,25 +227,57 @@ public class UserDAO {
     // 사용자 닉네임 반환
     public String getNicknameByUserId(long userId){
         Connection con = null;
-                PreparedStatement pstmt = null;
-                ResultSet rs = null;
-                String sql = null;
-                String nickname = "";
-                try {
-                    con = pool.getConnection();
-                    sql = "SELECT nickname FROM users WHERE user_id = ?";
-                    pstmt = con.prepareStatement(sql);
-                    pstmt.setLong(1, userId);
-                    rs = pstmt.executeQuery();
-                    if (rs.next()) {
-                        nickname = rs.getString("nickname");
-                    }
-                    return nickname;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    pool.freeConnection(con, pstmt, rs);
-                }
-                return "";
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = null;
+        String nickname = "";
+        try {
+            con = pool.getConnection();
+            sql = "SELECT nickname FROM users WHERE user_id = ?";
+            pstmt = con.prepareStatement(sql);
+            pstmt.setLong(1, userId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                nickname = rs.getString("nickname");
+            }
+            return nickname;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return "";
+    }
+
+    // email로 사용자 엔티티 조회
+    public UserEntity getUserByEmail(String email) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            con = pool.getConnection();
+            String sql = "SELECT user_id, email, password_hash, nickname, gender, birth_date, created_at FROM users WHERE email = ?";
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, email);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                UserEntity entity = new UserEntity();
+                entity.setUserId(rs.getLong("user_id"));
+                entity.setEmail(rs.getString("email"));
+                entity.setPasswordHash(rs.getString("password_hash"));
+                entity.setNickname(rs.getString("nickname"));
+                entity.setGender(rs.getString("gender"));
+                entity.setBirthDate(rs.getDate("birth_date"));
+                entity.setCreatedAt(rs.getTimestamp("created_at"));
+                return entity;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return null;
     }
 }

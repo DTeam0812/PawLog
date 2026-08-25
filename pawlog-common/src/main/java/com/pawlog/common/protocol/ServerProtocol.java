@@ -7,6 +7,7 @@ public class ServerProtocol {
     public static final String AUTH_UPDATE = "AUTH_UPDATE"; // 마이페이지 정보 수정
     public static final String POPULAR_RANKING_GET = "POPULAR_RANKING_GET"; // 인기 프로그램 순위 조회
     public static final String MY_STATISTICS_GET = "MY_STATISTICS_GET";     // 기간 지정 통계 조회
+    public static final String TODAY_STATISTICS_GET = "TODAY_STATISTICS_GET"; // 오늘 통계 조회
     public static final String USAGE_LOG_SAVE = "USAGE_LOG_SAVE";
     public static final String USAGE_LOG_GET = "USAGE_LOG_GET";
     public static final String PROGRAM_SEARCH = "PROGRAM_SEARCH";

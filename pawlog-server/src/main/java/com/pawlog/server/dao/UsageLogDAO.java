@@ -101,5 +101,42 @@ public class UsageLogDAO {
         }
     }
 
+    /**
+     * 특정 사용자의 특정 날짜 프로그램별 사용량 목록 조회 (당일 통계용, 실시간 usage_logs 기준)
+     * @return List<Object[]> -> [0]: program_name(String), [1]: total_duration_sec(Long)
+     */
+    public List<Object[]> getDailyProgramUsageByUserIdAndDate(long userId, java.sql.Date usageDate) {
+        List<Object[]> list = new ArrayList<>();
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
 
+        String sql = "SELECT COALESCE(p.process_name, p.display_name) AS program_name, "
+                + "       SUM(u.duration_sec) AS total_duration_sec "
+                + "FROM usage_logs u "
+                + "JOIN programs p ON u.program_id = p.program_id "
+                + "WHERE u.user_id = ? AND u.usage_date = ? "
+                + "GROUP BY u.program_id, p.process_name, p.display_name "
+                + "ORDER BY total_duration_sec DESC";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setLong(1, userId);
+            pstmt.setDate(2, usageDate);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                list.add(new Object[]{
+                    rs.getString("program_name"),
+                    rs.getLong("total_duration_sec")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return list;
+    }
 }
