@@ -6,6 +6,7 @@ import com.pawlog.client.network.PawLogClient;
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.common.dto.board.PostDetailDto.commentitem;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -881,7 +882,7 @@ public class ProgramBoardPanel extends JPanel {
             protected PostDetailDto.Response doInBackground() throws Exception {
                 return pawLogClient.joinPost(postId);
             }
-
+            
             @Override
             protected void done() {
                 try {
@@ -915,13 +916,16 @@ public class ProgramBoardPanel extends JPanel {
         detailLikeButton.setText((post.isLiked() ? "♥ " : "♡ ") + detailLikeCount);
 
         commentRows.removeAll();
-        if(post.getCommentCount() > 0) {
-            commentRows.add(label(
-                "댓글 " + post.getCommentCount() + "개가 있습니다. 댓글 목록 조회 API 연결이 필요합니다.",
-                Font.PLAIN,
-                12,
-                SUB_TEXT
-            ));
+        List<commentitem> comments = post.getComments();
+        System.out.println(post.getComments());
+        if(comments != null && !comments.isEmpty()) {
+            for(commentitem comment : comments) {
+                commentRows.add(createCommentRow(
+                    comment.getCommentAuthor(),
+                    comment.getCommentcontent(),
+                    comment.getCommmenttime()
+                ));
+            }
         } else {
             commentRows.add(label("아직 댓글이 없습니다. 첫 댓글을 남겨보세요.", Font.PLAIN, 12, SUB_TEXT));
         }
