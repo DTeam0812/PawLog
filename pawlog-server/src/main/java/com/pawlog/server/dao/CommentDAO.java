@@ -97,12 +97,12 @@ public class CommentDAO {
         }
     }
 
-    // 4. 댓글 삭제 (작성자 본인 확인 포함)
+    // 4. 댓글 삭제 (소프트 딜리트: is_active = FALSE, 작성자 본인 확인 포함)
     public boolean deleteComment(long commentId, long userId) {
         Connection con = null;
         PreparedStatement pstmt = null;
 
-        String sql = "DELETE FROM comments WHERE comment_id = ? AND user_id = ?";
+        String sql = "UPDATE comments SET is_active = FALSE WHERE comment_id = ? AND user_id = ?";
 
         try {
             con = pool.getConnection();
@@ -118,5 +118,49 @@ public class CommentDAO {
         } finally {
             pool.freeConnection(con, pstmt);
         }
+    }
+
+    // 5. 게시글 상세 화면용 댓글 목록 조회 (작성자 닉네임 조인, 오름차순, is_active=TRUE 필터)
+    public List<com.pawlog.common.dto.board.PostDetailDto.commentitem> getCommentItemsByPostId(long postId) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<com.pawlog.common.dto.board.PostDetailDto.commentitem> list = new ArrayList<>();
+
+        String sql = "SELECT u.nickname AS comment_author, c.content, c.created_at "
+                + "FROM comments c "
+                + "LEFT JOIN users u ON c.user_id = u.user_id "
+                + "WHERE c.post_id = ? AND (c.is_active = TRUE OR c.is_active IS NULL) "
+                + "ORDER BY c.created_at ASC";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setLong(1, postId);
+            rs = pstmt.executeQuery();
+
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
+            while (rs.next()) {
+                com.pawlog.common.dto.board.PostDetailDto.commentitem item = new com.pawlog.common.dto.board.PostDetailDto.commentitem();
+                item.setCommentAuthor(rs.getString("comment_author") != null ? rs.getString("comment_author") : "알 수 없음");
+                item.setCommentcontent(rs.getString("content") != null ? rs.getString("content") : "");
+
+                java.sql.Timestamp ts = rs.getTimestamp("created_at");
+                if (ts != null) {
+                    item.setCommmenttime(ts.toLocalDateTime().format(formatter));
+                } else {
+                    item.setCommmenttime("");
+                }
+
+                list.add(item);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+
+        return list;
     }
 }

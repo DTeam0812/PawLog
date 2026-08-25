@@ -1,22 +1,27 @@
 package com.pawlog.server.service;
 
+import java.util.Collections;
 import java.util.List;
 
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostEnrollDto;
 import com.pawlog.common.dto.board.PostListDto;
+import com.pawlog.server.dao.CommentDAO;
 import com.pawlog.server.dao.PostDAO;
 import com.pawlog.server.entity.PostEntity;
 
 public class PostService {
     private final PostDAO postDAO;
+    private final CommentDAO commentDAO;
 
     public PostService() {
         this.postDAO = new PostDAO();
+        this.commentDAO = new CommentDAO();
     }
 
-    public PostService(PostDAO postDAO) {
+    public PostService(PostDAO postDAO, CommentDAO commentDAO) {
         this.postDAO = postDAO;
+        this.commentDAO = commentDAO;
     }
 
     /**
@@ -61,7 +66,7 @@ public class PostService {
     }
 
     /**
-     * 특정 게시글의 상세 정보를 단건 조회합니다.
+     * 특정 게시글의 상세 정보를 단건 조회합니다 (댓글 목록 포함).
      *
      * @param request       게시글 상세 조회 요청 DTO
      * @param currentUserId 현재 로그인한 사용자 ID (비로그인 시 null)
@@ -77,6 +82,15 @@ public class PostService {
             if (postDetail == null) {
                 return new PostDetailDto.Response(false, 404, "존재하지 않거나 삭제된 게시글입니다.", null);
             }
+
+            // 댓글 목록 조회 및 세팅 (댓글이 없는 경우 빈 리스트 [] 반환)
+            List<PostDetailDto.commentitem> comments = commentDAO.getCommentItemsByPostId(request.getPostId());
+            if (comments == null) {
+                comments = Collections.emptyList();
+            }
+
+            postDetail.setComments(comments);
+            postDetail.setCommentCount(comments.size());
 
             return new PostDetailDto.Response(true, 200, "게시글 상세 조회 성공", postDetail);
         } catch (Exception e) {
