@@ -3,6 +3,7 @@ package com.pawlog.client.ui.dashboard;
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
 import com.pawlog.client.network.PawLogClient;
+import com.pawlog.common.dto.board.PostJoinDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 
@@ -54,7 +55,7 @@ public class ProgramBoardPanel extends JPanel {
     private static final int MAX_CONTENT_LENGTH = 500;
     private final CardLayout cardLayout = new CardLayout();
     private final PawLogClient pawLogClient = PawLogClient.getInstance();
-    private final List<PostItem> posts = new ArrayList<>();
+    private final List<PostListDto.PostItem> posts = new ArrayList<>();
     private final List<ProgramRef> recentPrograms = new ArrayList<>();
     private final JTextField programSearchField = textField("프로그램 이름을 검색하세요");
     private final JPanel programSearchResults = transparentPanel(new FlowLayout(FlowLayout.LEFT, 7, 0));
@@ -63,10 +64,8 @@ public class ProgramBoardPanel extends JPanel {
     private final JPanel postRows = transparentPanel();
     private final JPanel paginationPanel = transparentPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
     private final JTextField postTitleField = textField("제목을 입력해주세요");
-    private final JComboBox<String> postCategoryBox = combo("질문", "정보", "팁", "잡담");
     private final JTextArea postContentArea = new JTextArea();
     private final JLabel contentCountLabel = label("0 / 500", Font.PLAIN, 11, SUB_TEXT);
-    private final JLabel detailCategoryLabel = new JLabel();
     private final JLabel detailTitleLabel = label("게시글 제목", Font.BOLD, 22, TEXT);
     private final JLabel detailMetaLabel = label("작성자 · 작성 시간", Font.PLAIN, 11, SUB_TEXT);
     private final JTextArea detailContentArea = new JTextArea();
@@ -437,30 +436,24 @@ public class ProgramBoardPanel extends JPanel {
         paginationPanel.repaint();
     }
 
-    // 서버 DTO를 현재 게시글 행 화면에서 사용하는 PostItem으로 변환한다.
+    // 목록 응답 DTO를 별도의 목업 객체로 변환하지 않고 그대로 화면에 표시한다.
     private void renderPostList(PostListDto.PageData data) {
         posts.clear();
 
-        if (data != null && data.getPosts() != null) {
-            for(PostListDto.PostItem post : data.getPosts()) {
-                posts.add(new PostItem(
-                    post.getPostId(),
-                    "게시글",
-                    post.getTitle(),
-                    "",
-                    post.getAuthorNickname(),
-                    post.getCreatedAt(),
-                    post.getLikeCount(),
-                    post.getCommentCount()
-                ));
-            }
+        if(data != null && data.getPosts() != null) {
+            posts.addAll(data.getPosts());
         }
 
         currentPage = data == null ? 0 : data.getCurrentPage();
         postRows.removeAll();
 
-        for(PostItem post : posts) postRows.add(createPostRow(post));
-        if (posts.isEmpty()) postRows.add(label("등록된 게시글이 없습니다.", Font.PLAIN, 13, SUB_TEXT));
+        for(PostListDto.PostItem post : posts) {
+            postRows.add(createPostRow(post));
+        }
+
+        if(posts.isEmpty()) {
+            postRows.add(label("등록된 게시글이 없습니다.", Font.PLAIN, 13, SUB_TEXT));
+        }
 
         renderPagination(data == null ? 1 : Math.max(1, data.getTotalPages()));
         postRows.revalidate();
@@ -516,11 +509,11 @@ public class ProgramBoardPanel extends JPanel {
         postRows.setLayout(new BoxLayout(postRows, BoxLayout.Y_AXIS));
         table.add(postRows, BorderLayout.CENTER);
         table.add(paginationPanel, BorderLayout.SOUTH);
-        renderPostPage();
+        postRows.add(label("프로그램을 선택하면 게시글을 불러옵니다.", Font.PLAIN, 13, SUB_TEXT));
         return table;   
     }
     
-    private JPanel createPostRow(PostItem post) {
+    private JPanel createPostRow(PostListDto.PostItem post) {
         JPanel row = transparentPanel(new BorderLayout(10, 0));
         row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, TABLE_DIVIDER));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
@@ -529,46 +522,25 @@ public class ProgramBoardPanel extends JPanel {
 
         JPanel titleArea = transparentPanel(new BorderLayout(8, 0));
         titleArea.setBorder(BorderFactory.createEmptyBorder(11, 8, 11, 0));
-        Color tagColor = "질문".equals(post.category()) ? new Color(255, 239, 222) : new Color(238, 242, 245);
-        titleArea.add(createTagLabel(post.category(), tagColor, "질문".equals(post.category()) ? PRIMARY : SUB_TEXT), BorderLayout.WEST);
-        titleArea.add(label(post.title(), Font.PLAIN, 13, TEXT), BorderLayout.CENTER);
+        /*Color tagColor = "질문".equals(post.category()) ? new Color(255, 239, 222) : new Color(238, 242, 245);*/
+        /*titleArea.add(createTagLabel(post.category(), tagColor, "질문".equals(post.category()) ? PRIMARY : SUB_TEXT), BorderLayout.WEST);*/
+        titleArea.add(label(post.getTitle(), Font.PLAIN, 13, TEXT), BorderLayout.CENTER);
 
         JPanel infoArea = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 12, 13));
-        JLabel authorLabel = label(post.author(), Font.PLAIN, 11, SUB_TEXT);
+        JLabel authorLabel = label(post.getAuthorNickname(), Font.PLAIN, 11, SUB_TEXT);
         authorLabel.setPreferredSize(new Dimension(75, 20));
-        JLabel timeLabel = label(post.time(), Font.PLAIN, 11, MUTED_TEXT);
+        JLabel timeLabel = label(post.getCreatedAt(), Font.PLAIN, 11, MUTED_TEXT);
         timeLabel.setPreferredSize(new Dimension(60, 20));
         infoArea.add(authorLabel);
         infoArea.add(timeLabel);
-        infoArea.add(label("♡ " + post.likes(), Font.PLAIN, 11, PRIMARY));
-        infoArea.add(label("○ " + post.comments(), Font.PLAIN, 11, SUB_TEXT));
+        infoArea.add(label("♡ " + post.getLikeCount(), Font.PLAIN, 11, PRIMARY));
+        infoArea.add(label("○ " + post.getCommentCount(), Font.PLAIN, 11, SUB_TEXT));
 
         row.add(titleArea, BorderLayout.CENTER);
         row.add(infoArea, BorderLayout.EAST);
-        makeClickable(row, () -> openPostDetail(post));
+        makeClickable(row, () -> openPostDetail(post.getPostId()));
+        /////////////////////////////////////////////////////////////////////////////////////
         return row;
-    }
-
-    private void renderPostPage() {
-        postRows.removeAll();
-
-        int pageCount = Math.max(1, (posts.size() + PAGE_SIZE - 1) / PAGE_SIZE);
-        if (currentPage >= pageCount) currentPage = pageCount - 1;
-
-        int startIndex = currentPage * PAGE_SIZE;
-        int endIndex = Math.min(startIndex + PAGE_SIZE, posts.size());
-
-        for (int index = startIndex; index < endIndex; index++) {
-            postRows.add(createPostRow(posts.get(index)));
-        }
-
-        if (posts.isEmpty()) {
-            postRows.add(label("등록된 게시글이 없습니다.", Font.PLAIN, 13, SUB_TEXT));
-        }
-
-        renderPagination(pageCount);
-        postRows.revalidate();
-        postRows.repaint();
     }
 
     private void renderPagination(int pageCount) {
@@ -618,10 +590,7 @@ public class ProgramBoardPanel extends JPanel {
 
         if (selectedProgramId > 0) {
             loadPostList(selectedProgramId, page);
-            return;
         }
-
-        renderPostPage();
     }
 
     private void addPaginationButton(String text, boolean selected, boolean disabled, Runnable action) {
@@ -672,8 +641,6 @@ public class ProgramBoardPanel extends JPanel {
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
         form.add(createTextFieldGroup("제목", postTitleField));
-        form.add(Box.createVerticalStrut(13));
-        form.add(createComboFieldGroup("카테고리", postCategoryBox));
         form.add(Box.createVerticalStrut(13));
         form.add(createContentField());
         form.add(Box.createVerticalStrut(14));
@@ -749,7 +716,6 @@ public class ProgramBoardPanel extends JPanel {
     private void clearPostForm() {
         postTitleField.setText("");
         postContentArea.setText("");
-        postCategoryBox.setSelectedIndex(0);
         contentCountLabel.setText("0 / " + MAX_CONTENT_LENGTH);
     }
 
@@ -764,20 +730,6 @@ public class ProgramBoardPanel extends JPanel {
         group.add(fieldLabel);
         group.add(Box.createVerticalStrut(6));
         group.add(field);
-        return group;
-    }
-
-    private JPanel createComboFieldGroup(String title, JComboBox<String> comboBox) {
-        JPanel group = transparentPanel();
-        group.setLayout(new BoxLayout(group, BoxLayout.Y_AXIS));
-        JLabel fieldLabel = label(title, Font.BOLD, 12, TEXT);
-        fieldLabel.setAlignmentX(LEFT_ALIGNMENT);
-        comboBox.setAlignmentX(LEFT_ALIGNMENT);
-        comboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        group.setAlignmentX(LEFT_ALIGNMENT);
-        group.add(fieldLabel);
-        group.add(Box.createVerticalStrut(6));
-        group.add(comboBox);
         return group;
     }
 
@@ -812,25 +764,6 @@ public class ProgramBoardPanel extends JPanel {
         contentCountLabel.setForeground(length >= MAX_CONTENT_LENGTH ? PRIMARY : SUB_TEXT);
     }
 
-    private void publishDraftPost() {
-        String title = postTitleField.getText().trim();
-        String content = postContentArea.getText().trim();
-
-        if (title.isEmpty() || content.isEmpty()) {
-            postTitleField.setToolTipText("제목과 본문을 모두 입력해주세요.");
-            return;
-        }
-
-        String category = String.valueOf(postCategoryBox.getSelectedItem());
-        
-        posts.add(0, new PostItem(-1, category, title, content, "PawUser", "방금 전", 0, 0));
-        currentPage = 0;
-        renderPostPage();
-        postTitleField.setText("");
-        postContentArea.setText("");
-        cardLayout.show(this, BOARD);
-    }
-
     private JPanel createDetailPage() {
         JPanel page = new JPanel(new BorderLayout(0, 14));
         page.setBackground(BACKGROUND);
@@ -853,12 +786,6 @@ public class ProgramBoardPanel extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(18, 22, 16, 22));
         card.setPreferredSize(new Dimension(700, 320));
 
-        detailCategoryLabel.setFont(font(Font.BOLD, 10));
-        detailCategoryLabel.setForeground(PRIMARY);
-        detailCategoryLabel.setOpaque(true);
-        detailCategoryLabel.setBackground(new Color(255, 239, 222));
-        detailCategoryLabel.setBorder(BorderFactory.createEmptyBorder(3, 7, 3, 7));
-        detailCategoryLabel.setAlignmentX(LEFT_ALIGNMENT);
         detailTitleLabel.setAlignmentX(LEFT_ALIGNMENT);
         detailMetaLabel.setAlignmentX(LEFT_ALIGNMENT);
 
@@ -883,8 +810,6 @@ public class ProgramBoardPanel extends JPanel {
         });
         action.add(detailLikeButton);
 
-        card.add(detailCategoryLabel);
-        card.add(Box.createVerticalStrut(7));
         card.add(detailTitleLabel);
         card.add(Box.createVerticalStrut(5));
         card.add(detailMetaLabel);
@@ -934,25 +859,79 @@ public class ProgramBoardPanel extends JPanel {
         return row;
     }
 
-    private void openPostDetail(PostItem post) {
-        detailCategoryLabel.setText(post.category());
-        detailTitleLabel.setText(post.title());
-        detailMetaLabel.setText(post.author() + "  ·  " + post.time() + "  ·  댓글 " + post.comments());
-        detailContentArea.setText(post.content());
-        detailContentArea.setCaretPosition(0);
-        detailLikeCount = post.likes();
-        detailLikeButton.setText("♡ " + detailLikeCount);
-
+    // 목록에서 받은 postId로 서버에 상세 내용을 요청한다.
+    private void openPostDetail(long postId) {
+        detailTitleLabel.setText("게시글을 불러오는 중...");
+        detailMetaLabel.setText("");
+        detailContentArea.setText("");
         commentRows.removeAll();
-        if (post.comments() > 0) {
-            commentRows.add(createCommentRow("코딩하는강아지", "좋은 정보 감사합니다. 저도 적용해볼게요!", "5분 전"));
-            commentRows.add(createCommentRow("주황발바닥", "설명이 이해하기 쉽게 정리되어 있네요.", "2분 전"));
-        } else {
-            commentRows.add(label("아직 댓글이 없습니다. 첫 댓글을 남겨보세요.", Font.PLAIN, 12, SUB_TEXT));
-        }
+        commentRows.add(label("댓글을 불러오는 중...", Font.PLAIN, 12, SUB_TEXT));
         commentRows.revalidate();
         commentRows.repaint();
         cardLayout.show(this, DETAIL);
+
+        new SwingWorker<PostJoinDto.Response, Void>() {
+            @Override
+            protected PostJoinDto.Response doInBackground() throws Exception {
+                return pawLogClient.joinPost(postId);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    PostJoinDto.Response response = get();
+
+                    if(!response.isSuccess() || response.getData() == null) {
+                        showPostDetailError(response.getMessage());
+                        return;
+                    }
+
+                    renderPostDetail(response.getData());
+                } catch(Exception exception) {
+                    showPostDetailError("게시글 상세 정보를 불러오지 못했습니다.");
+                    exception.printStackTrace();
+                }
+            }
+        }.execute();
+    }
+
+    // 상세 응답 DTO의 게시글과 댓글을 상세 화면에 표시한다.
+    private void renderPostDetail(PostJoinDto.Post post) {
+        List<PostJoinDto.commentitem> comments = post.getComments();
+        int commentCount = comments == null ? 0 : comments.size();
+
+        detailTitleLabel.setText(post.getTitle());
+        detailMetaLabel.setText(post.getAuthorname() + "  ·  댓글 " + commentCount);
+        detailContentArea.setText(post.getContent());
+        detailContentArea.setCaretPosition(0);
+        detailLikeCount = post.getLike();
+        detailLikeButton.setText("♡ " + detailLikeCount);
+
+        commentRows.removeAll();
+        if(comments != null && !comments.isEmpty()) {
+            for(PostJoinDto.commentitem comment : comments) {
+                commentRows.add(createCommentRow(
+                    comment.getCommentAuthor(),
+                    comment.getCommentcontent(),
+                    comment.getCommmenttime()
+                ));
+            }
+        } else {
+            commentRows.add(label("아직 댓글이 없습니다. 첫 댓글을 남겨보세요.", Font.PLAIN, 12, SUB_TEXT));
+        }
+
+        commentRows.revalidate();
+        commentRows.repaint();
+    }
+
+    private void showPostDetailError(String message) {
+        detailTitleLabel.setText("게시글을 불러오지 못했습니다.");
+        detailMetaLabel.setText("");
+        detailContentArea.setText(message == null || message.isBlank() ? "서버 응답을 확인해주세요." : message);
+        commentRows.removeAll();
+        commentRows.add(label("댓글을 표시할 수 없습니다.", Font.PLAIN, 12, SUB_TEXT));
+        commentRows.revalidate();
+        commentRows.repaint();
     }
 
     private void addComment() {
@@ -1063,18 +1042,6 @@ public class ProgramBoardPanel extends JPanel {
         public boolean getScrollableTracksViewportHeight() {
             return false;
         }
-    }
-
-    private record PostItem(
-        long postId,
-        String category,
-        String title,
-        String content,
-        String author,
-        String time,
-        int likes,
-        int comments
-    ) {
     }
 
     // 최근 프로그램에서 표시 이름과 서버 요청용 ID를 한 쌍으로 보관한다.
