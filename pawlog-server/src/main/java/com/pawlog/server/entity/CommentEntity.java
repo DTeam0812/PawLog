@@ -18,6 +18,7 @@ public class CommentEntity {
     private long userId;
     private String content;
     private Timestamp createdAt;
+    private Boolean isActive;
 
 
 
@@ -29,6 +30,7 @@ public class CommentEntity {
                 + ", userId=" + userId
                 + ", content=" + content
                 + ", createdAt=" + createdAt
+                + ", isActive=" + isActive
                 + "]";
     }
 }

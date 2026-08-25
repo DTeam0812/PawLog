@@ -16,9 +16,11 @@ public class PostEntity {
     private long postId;
     private long userId;
     private Long programId;
+    private String postType;
     private String title;
     private String content;
     private Timestamp createdAt;
+    private Boolean isActive;
 
     @Override
     public String toString() {
@@ -26,9 +28,11 @@ public class PostEntity {
                 + "postId=" + postId
                 + ", userId=" + userId
                 + ", programId=" + programId
+                + ", postType=" + postType
                 + ", title=" + title
                 + ", content=" + content
                 + ", createdAt=" + createdAt
+                + ", isActive=" + isActive
                 + "]";
     }
 }
