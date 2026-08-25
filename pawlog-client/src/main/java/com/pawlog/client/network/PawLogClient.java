@@ -13,6 +13,7 @@ import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.common.dto.board.PostEnrollDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
@@ -68,6 +69,7 @@ public class PawLogClient {
         input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         output = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
     }
+    //======================================================================================================================//
     private synchronized ProgramSearchDto.Response sendProgramSearchJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
@@ -326,6 +328,17 @@ public class PawLogClient {
         return sendMyStatisticsJson(requestJson);
     }
     
+    public synchronized Response createPost(long programId, String title, String content) throws Exception{
+        PostEnrollDto.Request request = new PostEnrollDto.Request(programId,title,content);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_ENROLL,dataNode );
+        String requestJson = JsonUtil.toJson(requestPacket);
+        System.out.println(requestJson);
+        return sendJson(requestJson);
+
+    }//게시글 만들기 
+
+
    /*  public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
         if (data == null || data.isEmpty()) {
             return new Response(false, "저장할 사용 기록이 없습니다.");
@@ -336,7 +349,7 @@ public class PawLogClient {
             UsageKey key = entry.getKey();
             long seconds = entry.getValue();
 
-            UsageLogSaveDto.LogItem logItem = new UsageLogSaveDto.LogItem(key.hour(), key.programName(), seconds , key.usageDate().toString());
+            UsageLogSaveDto.LogItem logItem = new UsageLogSaveDto.LogItem(key.hour(), key.processName(), seconds, key.usageDate().toString());
             logs.add(logItem);
         }   
 
@@ -367,7 +380,7 @@ public class PawLogClient {
         UsageLogSaveDto.LogItem logItem =
             new UsageLogSaveDto.LogItem(
                 item.hour(),
-                item.programName(),
+                item.processName(),
                 item.durationSec(),
                 item.usageDate().toString()
             );

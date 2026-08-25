@@ -55,7 +55,7 @@ public class ProgramBoardPanel extends JPanel {
     private final CardLayout cardLayout = new CardLayout();
     private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final List<PostItem> posts = new ArrayList<>();
-    private final List<String> recentPrograms = new ArrayList<>(List.of("VS Code", "Chrome", "Discord"));
+    private final List<ProgramRef> recentPrograms = new ArrayList<>();
     private final JTextField programSearchField = textField("프로그램 이름을 검색하세요");
     private final JPanel programSearchResults = transparentPanel(new FlowLayout(FlowLayout.LEFT, 7, 0));
     private final JPanel recentProgramButtons = transparentPanel(new FlowLayout(FlowLayout.LEFT, 7, 0));
@@ -118,12 +118,12 @@ public class ProgramBoardPanel extends JPanel {
         cards.add(createHotProgramCard(3, "Discord", "커뮤니케이션", "추천 847"));
         return cards;
     }
-
+    
     private JPanel createHotProgramCard(int rank, String name, String category, String count) {
         UiComponents.RoundedPanel card = card();
         card.setLayout(new BorderLayout(0, 8));
         card.setBorder(BorderFactory.createEmptyBorder(13, 15, 12, 15));
-
+    
         JPanel titleRow = transparentPanel(new BorderLayout(8, 0));
         JLabel rankLabel = label(String.valueOf(rank), Font.BOLD, 13, CARD);
         rankLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -215,13 +215,12 @@ public class ProgramBoardPanel extends JPanel {
         return section;
     }
 
-    private JButton createProgramShortcutButton(String programName) {
-        JButton button = outlineButton(programName);
-        button.setPreferredSize(new Dimension(Math.max(76, programName.length() * 9 + 24), 28));
+    private JButton createProgramShortcutButton(ProgramRef program) {
+        JButton button = outlineButton(program.displayName());
+        button.setPreferredSize(new Dimension(Math.max(76, program.displayName().length() * 9 + 24), 28));
 
-        // 최근 프로그램과 핫 프로그램은 이름만 가지고 있다.
-        // 클릭하면 이름으로 서버를 검색해 programId를 얻은 다음 게시판을 연다.
-        button.addActionListener(event -> findProgramAndOpenBoard(programName));
+        // 최근 프로그램은 ID를 함께 저장하므로 이름으로 다시 검색하지 않는다.
+        button.addActionListener(event -> openBoard(program.programId(), program.displayName()));
         return button;
     }
 
@@ -319,7 +318,11 @@ public class ProgramBoardPanel extends JPanel {
     private void updateRecentProgramButtons() {
         recentProgramButtons.removeAll();
 
-        for(String program : recentPrograms) {
+        if (recentPrograms.isEmpty()) {
+            recentProgramButtons.add(label("최근 본 프로그램이 없습니다.", Font.PLAIN, 11, SUB_TEXT));
+        }
+
+        for(ProgramRef program : recentPrograms) {
             recentProgramButtons.add(createProgramShortcutButton(program));
         }
 
@@ -376,8 +379,8 @@ public class ProgramBoardPanel extends JPanel {
     // programName은 제목 표시용이고 programId는 서버 게시글 조회용이다.
     private void openBoard(long programId, String programName) {
         selectedProgramId = programId;
-        recentPrograms.remove(programName);
-        recentPrograms.add(0, programName);
+        recentPrograms.removeIf(program -> program.programId() == programId);
+        recentPrograms.add(0, new ProgramRef(programId, programName));
 
         while(recentPrograms.size() > 8) {
             recentPrograms.remove(recentPrograms.size() - 1);
@@ -655,7 +658,10 @@ public class ProgramBoardPanel extends JPanel {
         JPanel header = transparentPanel();
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
         JButton backButton = linkButton("← 돌아가기");
-        backButton.addActionListener(event -> cardLayout.show(this, BOARD));
+        backButton.addActionListener(event -> {
+            clearPostForm();
+            cardLayout.show(this, BOARD);
+        });
         header.add(backButton);
         header.add(Box.createVerticalStrut(10));
         JLabel title = label("새 게시글 작성", Font.BOLD, 24, TEXT);
@@ -675,10 +681,60 @@ public class ProgramBoardPanel extends JPanel {
         JPanel actions = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         JButton cancelButton = outlineButton("취소");
         cancelButton.setPreferredSize(new Dimension(75, 38));
-        cancelButton.addActionListener(event -> cardLayout.show(this, BOARD));
+        cancelButton.addActionListener(event -> {
+            clearPostForm();
+            cardLayout.show(this, BOARD);
+        });
         JButton publishButton = primaryButton("게시하기");
         publishButton.setPreferredSize(new Dimension(90, 38));
-        publishButton.addActionListener(event -> publishDraftPost());
+        publishButton.addActionListener(event -> {
+    String title1 = postTitleField.getText().trim();
+    String content = postContentArea.getText().trim();
+
+    if (selectedProgramId <= 0) {
+        return;
+    }
+
+    if (title1.isEmpty() || content.isEmpty()) {
+        return;
+    }
+
+    publishButton.setEnabled(false);
+    publishButton.setText("게시 중...");
+
+    new SwingWorker<PawLogClient.Response, Void>() {
+        @Override
+        protected PawLogClient.Response doInBackground() throws Exception {
+            return pawLogClient.createPost(
+                selectedProgramId,
+                title1,
+                content
+            );
+        }
+
+        @Override
+        protected void done() {
+            try {
+                PawLogClient.Response response = get();
+
+                if (!response.success()) {
+                    System.out.println(response.message());
+                    return;
+                }
+
+                clearPostForm();
+
+                loadPostList(selectedProgramId, 0);
+                cardLayout.show(ProgramBoardPanel.this, BOARD);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            } finally {
+                publishButton.setEnabled(true);
+                publishButton.setText("게시하기");
+            }
+        }
+    }.execute();
+});
         actions.setAlignmentX(LEFT_ALIGNMENT);
         actions.add(cancelButton);
         actions.add(publishButton);
@@ -687,6 +743,14 @@ public class ProgramBoardPanel extends JPanel {
         page.add(header, BorderLayout.NORTH);
         page.add(form, BorderLayout.CENTER);
         return page;
+    }
+
+    // 작성 화면을 벗어날 때 이전에 입력하던 내용을 남기지 않는다.
+    private void clearPostForm() {
+        postTitleField.setText("");
+        postContentArea.setText("");
+        postCategoryBox.setSelectedIndex(0);
+        contentCountLabel.setText("0 / " + MAX_CONTENT_LENGTH);
     }
 
     private JPanel createTextFieldGroup(String title, JTextField field) {
@@ -1010,6 +1074,13 @@ public class ProgramBoardPanel extends JPanel {
         String time,
         int likes,
         int comments
+    ) {
+    }
+
+    // 최근 프로그램에서 표시 이름과 서버 요청용 ID를 한 쌍으로 보관한다.
+    private record ProgramRef(
+        long programId,
+        String displayName
     ) {
     }
 }

@@ -11,6 +11,7 @@ public class ServerProtocol {
     public static final String USAGE_LOG_GET = "USAGE_LOG_GET";
     public static final String PROGRAM_SEARCH = "PROGRAM_SEARCH";
     public static final String POST_LIST_GET = "POST_LIST_GET";
+    public static final String POST_ENROLL = "POST_ENROLL";
     // 서버 푸시 커맨드 (Server → Client)
     public static final String SESSION_FORCE_LOGOUT = "SESSION_FORCE_LOGOUT"; // 중복 로그인 감지 시 기존 세션에 강제 로그아웃 푸시
 

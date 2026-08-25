@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.pawlog.client.Storage.SQLiteInitializer;
 import com.pawlog.client.Storage.UsageAutoSaveScheduler;
+import com.sun.jna.Native;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.ptr.IntByReference;
@@ -26,7 +27,7 @@ public class ProgramTracker {
     private static final Map<UsageKey, Long> hourlyUsageMap = new HashMap<>();//시간별 통계
     private static ScheduledExecutorService scheduler;//기본 단위 갱신 스레드
     private static LocalDate trackingDate = LocalDate.now();
-    private static String previousProgram;
+    private static String previousProcessName;
 
     private static volatile String currentProgram = "확인 중...";
     private static volatile String currentWindowTitle = "활성 창을 확인하고 있습니다.";
@@ -62,7 +63,7 @@ public class ProgramTracker {
         hourlyUsageMap.clear();
         pendingUsageMap.clear();
         trackingDate = LocalDate.now();
-        previousProgram = null;
+        previousProcessName = null;
         currentProgram = "확인 중...";
         currentWindowTitle = "활성 창을 확인하고 있습니다.";
         usageSeconds = 0;
@@ -76,6 +77,10 @@ public class ProgramTracker {
             if (window == null) {
                 return;
             }
+
+            char[] titleBuffer = new char[512];
+            User32.INSTANCE.GetWindowText(window, titleBuffer, titleBuffer.length);
+            String windowTitle = Native.toString(titleBuffer);
 
             IntByReference processId = new IntByReference();
             User32.INSTANCE.GetWindowThreadProcessId(window, processId);
@@ -93,10 +98,10 @@ public class ProgramTracker {
                 return;
             }
 
-            String programName = Path.of(command.get()).getFileName().toString();
-            String displayName = programName.replaceFirst("(?i)\\.exe$", "");
+            String processName = Path.of(command.get()).getFileName().toString();
+            String displayName = formatProcessNameForDisplay(processName);
 
-            if (EXCLUDED.contains(programName)) {
+            if (EXCLUDED.contains(processName)) {
                 return;
             }
 
@@ -109,8 +114,8 @@ public class ProgramTracker {
                 totalSeconds = 0;
             }
 
-            if (!programName.equals(previousProgram)) {
-                previousProgram = programName;
+            if (!processName.equals(previousProcessName)) {
+                previousProcessName = processName;
                 usageSeconds = 1;
             } else {
                 usageSeconds++;
@@ -121,20 +126,20 @@ public class ProgramTracker {
             UsageKey usageKey = new UsageKey(
                 today,
                 currentHour,
-                programName
+                processName
             );
 
-            addUsage(programName, usageKey);
+            addUsage(processName, usageKey);
 
             currentProgram = displayName;
-            currentWindowTitle = programName;
+            currentWindowTitle = windowTitle;
         } catch (Exception exception) {
             exception.printStackTrace();
         }
 
     }
-    private static synchronized void addUsage( String programName, UsageKey usageKey ){//이함수로 통계 병합 , 관리
-        usageMap.merge(programName, 1L, Long::sum);
+    private static synchronized void addUsage(String processName, UsageKey usageKey) {//이함수로 통계 병합 , 관리
+        usageMap.merge(processName, 1L, Long::sum);
         hourlyUsageMap.merge(usageKey, 1L, Long::sum);
         pendingUsageMap.merge(usageKey, 1L, Long::sum);
     }
@@ -200,7 +205,15 @@ public class ProgramTracker {
             return "기록 없음";
         }
 
-        return rankList.get(0).getKey();
+        return formatProcessNameForDisplay(rankList.get(0).getKey());
+    }
+
+    public static String formatProcessNameForDisplay(String processName) {
+        if (processName == null || processName.isBlank()) {
+            return "알 수 없음";
+        }
+
+        return processName.replaceFirst("(?i)\\.exe$", "");
     }
 
     public static long amount() {

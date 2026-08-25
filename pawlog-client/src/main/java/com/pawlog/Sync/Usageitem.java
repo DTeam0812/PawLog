@@ -5,7 +5,7 @@ import java.time.LocalDate;
 public record Usageitem(
     LocalDate usageDate,
     int hour,
-    String programName,
+    String processName,
     long durationSec
 ) {
 }

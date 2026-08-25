@@ -298,7 +298,8 @@ public class HomePanel extends JPanel {
     for(int i = 0; i < count; i++) {
         Map.Entry<String, Long> entry = topPrograms.get(i);
 
-        String programName = entry.getKey();
+        String processName = entry.getKey();
+        String displayName = ProgramTracker.formatProcessNameForDisplay(processName);
         long seconds = entry.getValue();
         String usageTime = formatSessionTime(seconds);
 
@@ -308,7 +309,7 @@ public class HomePanel extends JPanel {
             percent = (int)(seconds * 100 / totalSeconds);
         }
 
-        recentProgramsListPanel.add(createProgramUsageRow(programName, "", usageTime, percent));
+        recentProgramsListPanel.add(createProgramUsageRow(displayName, "", usageTime, percent));
     }
 
     if(topPrograms.isEmpty()) {

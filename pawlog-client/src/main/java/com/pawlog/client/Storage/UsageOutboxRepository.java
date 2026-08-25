@@ -66,7 +66,7 @@ public class UsageOutboxRepository {
                 statement.setString(1, batch.batchId());
                 statement.setString(2, item.usageDate().toString());
                 statement.setInt(3, item.hour());
-                statement.setString(4, item.programName());
+                statement.setString(4, item.processName());
                 statement.setLong(5, item.durationSec());
                 statement.addBatch();
             }

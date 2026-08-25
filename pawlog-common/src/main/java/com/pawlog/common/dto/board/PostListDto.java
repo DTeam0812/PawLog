@@ -11,37 +11,36 @@ public class PostListDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Request {
-        private long programId;
-        private int page;
-        private int pageSize;
-        private String sort;
-        private String keyword;
+        private long programId;//조회할 프로그램 id
+        private int page;//조회할 페이지번호
+        private int pageSize;//조회할 페이지 크기
+        private String sort;//정렬 방식
+        private String keyword;//게시글 검색어
     }
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
     public static class PostItem {
-        private long postId;
-        private long userId;
-        private long programId;
-        private String authorNickname;
-        private String title;
-        
+        private long postId;//포스트
+        private long userId;//유저아이디
+        private long programId;//프로그램 id(키워드)
+        private String authorNickname;//저자
+        private String title;//제목
         private String createdAt;
-        private int likeCount;
-        private int commentCount;
-        private boolean liked;
+        private int likeCount;//좋아요 갯수
+        private int commentCount;//댓글수
+        private boolean liked;//추천 여부
     }
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
     public static class PageData {
-        private List<PostItem> posts;
-        private int currentPage;
-        private int totalPages;
-        private long totalCount;
+        private List<PostItem> posts;//현재 페이지에 표시할글
+        private int currentPage;//현재페이지
+        private int totalPages;//총 페이지
+        private long totalCount;//조건에맞는 게시글수
     }
 
     @Data

@@ -23,7 +23,7 @@ public class UsagebatchFactory {
             UsageKey key = entry.getKey();
             Long value = entry.getValue();
 
-            Usageitem item = new Usageitem(key.usageDate() ,key.hour(), key.programName(), value);
+            Usageitem item = new Usageitem(key.usageDate(), key.hour(), key.processName(), value);
             items.add(item);
         }
         System.out.println(items);
