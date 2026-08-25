@@ -98,6 +98,7 @@ erDiagram
         VARCHAR(255) title
         TEXT content
         DATETIME created_at
+        BOOLEAN is_active
     }
 
     comments {
@@ -106,6 +107,7 @@ erDiagram
         BIGINT user_id FK
         TEXT content
         DATETIME created_at
+        BOOLEAN is_active
     }
 
     post_likes {
