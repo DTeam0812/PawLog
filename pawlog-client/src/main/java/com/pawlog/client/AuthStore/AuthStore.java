@@ -26,6 +26,7 @@ public class AuthStore {
     }
     public long getUserId() { return userId; }
     public String getNickname() { return nickname; }
+    public void setNickname(String nickname) {this.nickname = nickname;}
     public void logout(){//로갓
         email = null;
         nickname = null;
