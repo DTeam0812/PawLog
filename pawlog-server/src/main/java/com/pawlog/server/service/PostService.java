@@ -5,23 +5,29 @@ import java.util.List;
 
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostEnrollDto;
+import com.pawlog.common.dto.board.PostLikeDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.server.dao.CommentDAO;
 import com.pawlog.server.dao.PostDAO;
+import com.pawlog.server.dao.PostLikeDAO;
 import com.pawlog.server.entity.PostEntity;
+import com.pawlog.server.entity.PostLikeEntity;
 
 public class PostService {
     private final PostDAO postDAO;
     private final CommentDAO commentDAO;
+    private final PostLikeDAO postLikeDAO;
 
     public PostService() {
         this.postDAO = new PostDAO();
         this.commentDAO = new CommentDAO();
+        this.postLikeDAO = new PostLikeDAO();
     }
 
-    public PostService(PostDAO postDAO, CommentDAO commentDAO) {
+    public PostService(PostDAO postDAO, CommentDAO commentDAO, PostLikeDAO postLikeDAO) {
         this.postDAO = postDAO;
         this.commentDAO = commentDAO;
+        this.postLikeDAO = postLikeDAO;
     }
 
     /**
@@ -140,6 +146,54 @@ public class PostService {
         } catch (Exception e) {
             e.printStackTrace();
             return new PostEnrollDto.Response(false, 500, "게시글 등록 중 오류 발생: " + e.getMessage(), null);
+        }
+    }
+
+    /**
+     * 게시글 좋아요 토글 (등록 <-> 취소)
+     *
+     * @param postId        대상 게시글 ID
+     * @param currentUserId 현재 로그인한 사용자 ID
+     * @return 좋아요 토글 결과 응답 DTO
+     */
+    public PostLikeDto.Response togglePostLike(long postId, Long currentUserId) {
+        if (currentUserId == null || currentUserId <= 0) {
+            return new PostLikeDto.Response(false, 401, "로그인이 필요한 서비스입니다.");
+        }
+
+        if (postId <= 0) {
+            return new PostLikeDto.Response(false, 400, "유효하지 않은 게시글 ID입니다.");
+        }
+
+        try {
+            boolean isCurrentlyLiked = postLikeDAO.isLiked(currentUserId, postId);
+            boolean success;
+
+            if (isCurrentlyLiked) {
+                // 이미 좋아요를 누른 상태 -> 취소
+                success = postLikeDAO.deleteLike(currentUserId, postId);
+            } else {
+                // 좋아요를 누르지 않은 상태 -> 등록
+                success = postLikeDAO.insertLike(new PostLikeEntity(currentUserId, postId));
+            }
+
+            if (!success) {
+                return new PostLikeDto.Response(false, 500, "좋아요 처리에 실패했습니다.");
+            }
+
+            boolean finalLikedState = !isCurrentlyLiked;
+            int totalLikeCount = postLikeDAO.getLikeCountByPostId(postId);
+
+            return new PostLikeDto.Response(
+                    true,
+                    200,
+                    finalLikedState ? "게시글을 추천했습니다." : "게시글 추천을 취소했습니다.",
+                    finalLikedState,
+                    totalLikeCount
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new PostLikeDto.Response(false, 500, "게시글 좋아요 처리 중 오류 발생: " + e.getMessage());
         }
     }
 

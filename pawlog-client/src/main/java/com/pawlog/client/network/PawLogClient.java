@@ -1,4 +1,5 @@
 package com.pawlog.client.network;
+import com.pawlog.common.dto.board.*;
 import com.pawlog.common.protocol.RequestPacket;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -12,10 +13,6 @@ import java.util.List;
 import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
-import com.pawlog.common.dto.board.ProgramSearchDto;
-import com.pawlog.common.dto.board.PostDetailDto;
-import com.pawlog.common.dto.board.PostEnrollDto;
-import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.usage.MyInfoDto;
@@ -342,7 +339,39 @@ public class PawLogClient {
         System.out.println(requestJson);
         return sendJson(requestJson);
 
-    }//게시글 만들기 
+    }//게시글 만들기
+    
+
+    private synchronized PostLikeDto.Response sendPostLikeToggleJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
+
+        if (responseJson == null) {
+            disconnect();
+            return new PostLikeDto.Response(false, 500, "서버 연결이 종료되었습니다.");
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        JsonNode dataNode = root.path("data");
+
+        if (!success || dataNode.isMissingNode() || dataNode.isNull()) {
+            return new PostLikeDto.Response(false, code, message);
+        }
+
+        return JsonUtil.fromJson(dataNode.toString(), PostLikeDto.Response.class);
+    }
+
+    public synchronized PostLikeDto.Response togglePostLike(long postId) throws Exception {
+        PostLikeDto.Request request = new PostLikeDto.Request(postId);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_LIKE_TOGGLE, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendPostLikeToggleJson(requestJson);
+    }
 
     public synchronized PostDetailDto.Response sendJoinPost(String requestJson) throws Exception{
         connect();

@@ -20,7 +20,7 @@ public class ProgramLikeDAO {
         Connection con = null;
         PreparedStatement pstmt = null;
 
-        String sql = "INSERT INTO programs_likes (program_id, user_id) VALUES (?, ?)";
+        String sql = "INSERT INTO program_likes (program_id, user_id) VALUES (?, ?)";
 
         try {
             con = pool.getConnection();
@@ -43,7 +43,7 @@ public class ProgramLikeDAO {
         Connection con = null;
         PreparedStatement pstmt = null;
 
-        String sql = "DELETE FROM programs_likes WHERE program_id = ? AND user_id = ?";
+        String sql = "DELETE FROM program_likes WHERE program_id = ? AND user_id = ?";
 
         try {
             con = pool.getConnection();
@@ -68,7 +68,7 @@ public class ProgramLikeDAO {
         ResultSet rs = null;
         boolean liked = false;
 
-        String sql = "SELECT COUNT(*) FROM programs_likes WHERE program_id = ? AND user_id = ?";
+        String sql = "SELECT COUNT(*) FROM program_likes WHERE program_id = ? AND user_id = ?";
 
         try {
             con = pool.getConnection();
@@ -95,7 +95,7 @@ public class ProgramLikeDAO {
         ResultSet rs = null;
         int count = 0;
 
-        String sql = "SELECT COUNT(*) FROM programs_likes WHERE program_id = ?";
+        String sql = "SELECT COUNT(*) FROM program_likes WHERE program_id = ?";
 
         try {
             con = pool.getConnection();
