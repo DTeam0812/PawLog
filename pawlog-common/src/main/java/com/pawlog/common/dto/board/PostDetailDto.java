@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 public class PostDetailDto {
 
     @Data
@@ -11,6 +13,15 @@ public class PostDetailDto {
     @NoArgsConstructor
     public static class Request {
         private long postId;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class commentitem{
+        String commentAuthor;//댓글 단사람 닉네임
+        String commmenttime;//작성 시간
+        String commentcontent;//내용
     }
 
     @Data
@@ -26,6 +37,7 @@ public class PostDetailDto {
         private String createdAt;
         private int likeCount;
         private int commentCount;
+        List<commentitem> comments;
         private boolean liked;
     }
 
