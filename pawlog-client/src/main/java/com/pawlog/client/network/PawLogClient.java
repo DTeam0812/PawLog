@@ -1,4 +1,5 @@
 package com.pawlog.client.network;
+import com.pawlog.common.dto.board.*;
 import com.pawlog.common.protocol.RequestPacket;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -343,7 +344,40 @@ public class PawLogClient {
         System.out.println(requestJson);
         return sendJson(requestJson);
 
-    }//게시글 만들기 
+    }//게시글 만들기
+
+
+    private synchronized PostLikeDto.Response sendPostLikeToggleJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
+
+        if (responseJson == null) {
+            disconnect();
+            return new PostLikeDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        JsonNode dataNode = root.path("data");
+
+        PostLikeDto.LikeData likeData = null;
+        if (success && dataNode != null && !dataNode.isMissingNode() && !dataNode.isNull()) {
+            likeData = JsonUtil.fromJson(dataNode.toString(), PostLikeDto.LikeData.class);
+        }
+
+        return new PostLikeDto.Response(success, code, message, likeData);
+    }
+
+    public synchronized PostLikeDto.Response togglePostLike(long postId) throws Exception {
+        PostLikeDto.Request request = new PostLikeDto.Request(postId);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_LIKE_TOGGLE, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendPostLikeToggleJson(requestJson);
+    }
 
     public synchronized PostDetailDto.Response sendJoinPost(String requestJson) throws Exception{
         connect();

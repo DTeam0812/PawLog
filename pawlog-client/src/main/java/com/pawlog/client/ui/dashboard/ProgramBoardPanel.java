@@ -6,6 +6,7 @@ import com.pawlog.client.network.PawLogClient;
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.common.dto.board.PostLikeDto;
 import com.pawlog.common.dto.board.PostDetailDto.commentitem;
 
 import java.awt.BorderLayout;
@@ -76,7 +77,8 @@ public class ProgramBoardPanel extends JPanel {
     private int currentPage;
     private int detailLikeCount;
     private long selectedProgramId = -1;
-
+    private long currentDetailPostId = -1; // 상세 조회 중인 게시글 ID
+    private boolean isCurrentPostLiked = false; // 좋아요 상태
     public ProgramBoardPanel() {
         configureContentLimit();
         configureProgramSearch();
@@ -812,8 +814,32 @@ public class ProgramBoardPanel extends JPanel {
         action.setAlignmentX(LEFT_ALIGNMENT);
         detailLikeButton.setPreferredSize(new Dimension(85, 34));
         detailLikeButton.addActionListener(event -> {
-            detailLikeCount++;
-            detailLikeButton.setText("♡ " + detailLikeCount);
+            if (currentDetailPostId <= 0) return;
+
+            detailLikeButton.setEnabled(false);
+
+            new SwingWorker<PostLikeDto.Response, Void>() {
+                @Override
+                protected PostLikeDto.Response doInBackground() throws Exception {
+                    return pawLogClient.togglePostLike(currentDetailPostId);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        PostLikeDto.Response res = get();
+                        if (res.isSuccess() && res.getData() != null) {
+                            isCurrentPostLiked = res.getData().isLiked();
+                            detailLikeCount = res.getData().getLikeCount();
+                            detailLikeButton.setText((isCurrentPostLiked ? "♥ " : "♡ ") + detailLikeCount);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    } finally {
+                        detailLikeButton.setEnabled(true);
+                    }
+                }
+            }.execute();
         });
         action.add(detailLikeButton);
 
@@ -868,6 +894,8 @@ public class ProgramBoardPanel extends JPanel {
 
     // 목록에서 받은 postId로 서버에 상세 내용을 요청한다.
     private void openPostDetail(long postId) {
+        this.currentDetailPostId = postId;//현재 게시글 ID 저장
+
         detailTitleLabel.setText("게시글을 불러오는 중...");
         detailMetaLabel.setText("");
         detailContentArea.setText("");
@@ -912,8 +940,11 @@ public class ProgramBoardPanel extends JPanel {
         );
         detailContentArea.setText(post.getContent());
         detailContentArea.setCaretPosition(0);
-        detailLikeCount = post.getLikeCount();
-        detailLikeButton.setText((post.isLiked() ? "♥ " : "♡ ") + detailLikeCount);
+
+        // 좋아요 상태 및 카운트 동기화
+        this.isCurrentPostLiked = post.isLiked();
+        this.detailLikeCount = post.getLikeCount();
+        detailLikeButton.setText((isCurrentPostLiked ? "♥ " : "♡ ") + detailLikeCount);
 
         commentRows.removeAll();
         List<commentitem> comments = post.getComments();

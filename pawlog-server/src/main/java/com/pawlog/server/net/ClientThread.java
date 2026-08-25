@@ -3,6 +3,7 @@ package com.pawlog.server.net;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
+import com.pawlog.common.dto.board.*;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.statistics.TodayStatisticsDto;
@@ -17,10 +18,6 @@ import com.pawlog.server.service.StatisticsService;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.server.service.UsageLogService;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
-import com.pawlog.common.dto.board.PostDetailDto;
-import com.pawlog.common.dto.board.PostEnrollDto;
-import com.pawlog.common.dto.board.PostListDto;
-import com.pawlog.common.dto.board.ProgramSearchDto;
 import com.pawlog.server.service.PostService;
 import com.pawlog.server.service.UtilService;
 
@@ -146,6 +143,9 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.POST_LIST_GET.equals(command)) {
                     handlePostListGetJson(dataJson);
                 }
+                else if (ServerProtocol.POST_LIKE_TOGGLE.equals(command)) {
+                    handlePostLikeToggleJson(dataJson);
+                }
                 else if (ServerProtocol.POST_DETAIL_GET.equals(command)) {
                     handlePostDetailGetJson(dataJson);
                 }
@@ -198,6 +198,9 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.POST_LIST_GET.equals(command)) {
             handlePostListGet(data);
+        }
+        else if (ServerProtocol.POST_LIKE_TOGGLE.equals(command)) {
+            handlePostLikeToggle(data);
         }
         else if (ServerProtocol.POST_DETAIL_GET.equals(command)) {
             handlePostDetailGet(data);
@@ -842,6 +845,95 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 목록 조회 중 오류 발생");
+        }
+    }
+
+    // 게시글 좋아요 토글 (JSON 처리)
+    private void handlePostLikeToggleJson(String dataJson) {
+        try {
+            // 1. 비로그인 세션 차단 (401 방어)
+            if (!isLoggedIn()) {
+                ResponsePacket errorPacket = new ResponsePacket(
+                        ServerProtocol.POST_LIKE_TOGGLE,
+                        false,
+                        401,
+                        "로그인이 필요한 서비스입니다.",
+                        null
+                );
+                sendMessage(JsonUtil.toJson(errorPacket));
+                return;
+            }
+
+            // 2. DTO 파싱 및 Service 호출
+            PostLikeDto.Request reqDto = JsonUtil.fromJson(dataJson, PostLikeDto.Request.class);
+            PostLikeDto.Response resDto = postService.togglePostLike(reqDto.getPostId(), getLoggedInUserId());
+
+            // 3. 응답 패킷 전송
+            JsonNode dataNode = (resDto.isSuccess() && resDto.getData() != null)
+                    ? JsonUtil.toJsonNode(resDto.getData())
+                    : null;
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.POST_LIKE_TOGGLE,
+                    resDto.isSuccess(),
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    dataNode
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket errorPacket = new ResponsePacket(
+                    ServerProtocol.POST_LIKE_TOGGLE,
+                    false,
+                    400,
+                    "게시글 좋아요 요청 파싱 실패: " + e.getMessage(),
+                    null
+            );
+            sendMessage(JsonUtil.toJson(errorPacket));
+        }
+    }
+
+    // 게시글 좋아요 토글 (구분자 방식 폴백: data는 postId)
+    private void handlePostLikeToggle(String data) {
+        try {
+            // 1. 비로그인 세션 차단 (401 방어)
+            if (!isLoggedIn()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "로그인이 필요한 서비스입니다.");
+                return;
+            }
+
+            // 2. 파라미터 유효성 검증
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 ID가 필요합니다.");
+                return;
+            }
+
+            long postId;
+            try {
+                postId = Long.parseLong(data.trim());
+            } catch (NumberFormatException e) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "유효하지 않은 게시글 ID 형식입니다.");
+                return;
+            }
+
+            // 3. Service 호출
+            PostLikeDto.Response resDto = postService.togglePostLike(postId, getLoggedInUserId());
+
+            // 4. 응답 전송 (포맷: SUCCESS:메시지;liked;likeCount)
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                String responseData = ServerProtocol.SUCCESS + ServerProtocol.MODE1 + resDto.getMessage()
+                        + ServerProtocol.MODE2 + resDto.getData().isLiked()
+                        + ServerProtocol.MODE2 + resDto.getData().getLikeCount();
+                sendMessage(responseData);
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 좋아요 처리 중 오류 발생: " + e.getMessage());
         }
     }
 
