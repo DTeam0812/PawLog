@@ -148,7 +148,28 @@ public class ProgramTracker {
     }
 
     public static String getCurrentWindowTitle() {
-        return currentWindowTitle;
+        return formatWindowTitleForDisplay(currentWindowTitle);
+    }
+
+    private static String formatWindowTitleForDisplay(String windowTitle) {
+        if(windowTitle == null || windowTitle.isBlank()) {
+            return "";
+        }
+
+        String title = windowTitle.trim();
+        String[] titleParts = title.split("\\s+[-–—]\\s+");
+
+        if(titleParts.length > 1) {
+            title = titleParts[titleParts.length - 1].trim();
+        }
+
+        String[] pathParts = title.split("[\\\\/₩¥]");
+
+        if(pathParts.length > 1) {
+            title = pathParts[pathParts.length - 1].trim();
+        }
+
+        return title.replaceFirst("\\s+\\d+(?:\\.\\d+)+$", "").trim();
     }
 
     public static long getUsageSeconds() {

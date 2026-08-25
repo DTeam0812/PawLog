@@ -13,7 +13,10 @@ import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
+import com.pawlog.common.dto.board.PostJoinDto.Post;
+import com.pawlog.common.dto.board.PostJoinDto.commentitem;
 import com.pawlog.common.dto.board.PostEnrollDto;
+import com.pawlog.common.dto.board.PostJoinDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
@@ -337,6 +340,49 @@ public class PawLogClient {
         return sendJson(requestJson);
 
     }//게시글 만들기 
+
+    public synchronized PostJoinDto.Response sendjoinPost(String requestJson) throws Exception{
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
+        if (responseJson == null) {
+            disconnect();
+            return new PostJoinDto.Response(false, 400, "서버 연결이 종료되었습니다." , null);
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt();
+        String message = root.path("message").asText("");
+        JsonNode dataNode = root.path("data");
+    PostJoinDto.Post data = null;
+
+    if(!dataNode.isMissingNode() && !dataNode.isNull()) {
+        data = JsonUtil.fromJson(
+            dataNode.toString(),
+            PostJoinDto.Post.class
+        );
+    }
+
+    return new PostJoinDto.Response(
+        success,
+        code,
+        message,
+        data
+    );
+
+
+    }
+
+
+
+    public synchronized PostJoinDto.Response joinPost(long postid)throws Exception{
+        PostJoinDto.Request request = new PostJoinDto.Request(postid);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_DETAIL_GET , dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendjoinPost(requestJson);
+    }
 
 
    /*  public Response saveUsage(Map<UsageKey, Long> data) throws Exception {

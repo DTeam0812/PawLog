@@ -238,7 +238,6 @@ public class HomePanel extends JPanel {
         activeProgramNameLabel.setForeground(TEXT);
 
         activeWindowTitleLabel = new JLabel("활성 창을 확인하고 있습니다.");
-
         activeWindowTitleLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
         activeWindowTitleLabel.setForeground(SOFT_TEXT);
 
