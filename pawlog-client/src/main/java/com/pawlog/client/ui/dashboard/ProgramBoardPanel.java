@@ -779,7 +779,13 @@ public class ProgramBoardPanel extends JPanel {
         page.setBorder(BorderFactory.createEmptyBorder(20, 24, 24, 24));
 
         JButton backButton = linkButton("← 목록으로");
-        backButton.addActionListener(event -> cardLayout.show(this, BOARD));
+        backButton.addActionListener(event -> {
+            if (selectedProgramId > 0) {
+                loadPostList(selectedProgramId, currentPage); //
+            } else {
+                cardLayout.show(this, BOARD); //
+            }
+        });
         page.add(backButton, BorderLayout.NORTH);
 
         JPanel content = transparentPanel(new BorderLayout(0, 12));
