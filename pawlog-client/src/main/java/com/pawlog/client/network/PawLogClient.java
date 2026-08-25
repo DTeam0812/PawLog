@@ -13,10 +13,8 @@ import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
-import com.pawlog.common.dto.board.PostJoinDto.Post;
-import com.pawlog.common.dto.board.PostJoinDto.commentitem;
+import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostEnrollDto;
-import com.pawlog.common.dto.board.PostJoinDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
@@ -122,35 +120,40 @@ public class PawLogClient {
 
     // 서버가 반환한 게시글 목록 응답 JSON을 PostListDto.Response으로 변환한다.
     private synchronized PostListDto.Response sendPostListJson(String requestJson) throws Exception {
-        connect();
-        output.println(requestJson);
-        String responseJson = input.readLine();
+        try {
+            connect();
+            output.println(requestJson);
+            String responseJson = input.readLine();
 
-        if (responseJson == null) {
+            if(responseJson == null) {
+                disconnect();
+                return new PostListDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+            }
+
+            JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+            boolean success = root.path("success").asBoolean();
+            int code = root.path("code").asInt(success ? 200 : 400);
+            String message = root.path("message").asText("");
+
+            if(!success) {
+                return new PostListDto.Response(false, code, message, null);
+            }
+
+            JsonNode dataNode = root.path("data");
+            if(dataNode.isMissingNode() || dataNode.isNull()) {
+                return new PostListDto.Response(true, code, message, null);
+            }
+
+            PostListDto.PageData pageData = JsonUtil.fromJson(
+                dataNode.toString(),
+                PostListDto.PageData.class
+            );
+
+            return new PostListDto.Response(true, code, message, pageData);
+        } catch(Exception exception) {
             disconnect();
-            return new PostListDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+            throw exception;
         }
-
-        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
-        boolean success = root.path("success").asBoolean();
-        int code = root.path("code").asInt(success ? 200 : 400);
-        String message = root.path("message").asText("");
-
-        if (!success) {
-            return new PostListDto.Response(false, code, message, null);
-        }
-
-        JsonNode dataNode = root.path("data");
-        if (dataNode.isMissingNode() || dataNode.isNull()) {
-            return new PostListDto.Response(true, code, message, null);
-        }
-
-        PostListDto.PageData pageData = JsonUtil.fromJson(
-            dataNode.toString(),
-            PostListDto.PageData.class
-        );
-
-        return new PostListDto.Response(true, code, message, pageData);
     }
 
     // 프로그램 ID와 페이지 정보를 묶어 게시글 목록을 서버에 요청한다.
@@ -341,47 +344,38 @@ public class PawLogClient {
 
     }//게시글 만들기 
 
-    public synchronized PostJoinDto.Response sendjoinPost(String requestJson) throws Exception{
+    public synchronized PostDetailDto.Response sendJoinPost(String requestJson) throws Exception{
         connect();
         output.println(requestJson);
         String responseJson = input.readLine();
         if (responseJson == null) {
             disconnect();
-            return new PostJoinDto.Response(false, 400, "서버 연결이 종료되었습니다." , null);
+            return new PostDetailDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
         }
 
         JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
         boolean success = root.path("success").asBoolean();
-        int code = root.path("code").asInt();
+        int code = root.path("code").asInt(success ? 200 : 400);
         String message = root.path("message").asText("");
         JsonNode dataNode = root.path("data");
-    PostJoinDto.Post data = null;
+        PostDetailDto.PostDetailData data = null;
 
-    if(!dataNode.isMissingNode() && !dataNode.isNull()) {
-        data = JsonUtil.fromJson(
-            dataNode.toString(),
-            PostJoinDto.Post.class
-        );
+        if(!dataNode.isMissingNode() && !dataNode.isNull()) {
+            data = JsonUtil.fromJson(
+                dataNode.toString(),
+                PostDetailDto.PostDetailData.class
+            );
+        }
+
+        return new PostDetailDto.Response(success, code, message, data);
     }
 
-    return new PostJoinDto.Response(
-        success,
-        code,
-        message,
-        data
-    );
-
-
-    }
-
-
-
-    public synchronized PostJoinDto.Response joinPost(long postid)throws Exception{
-        PostJoinDto.Request request = new PostJoinDto.Request(postid);
+    public synchronized PostDetailDto.Response joinPost(long postId) throws Exception{
+        PostDetailDto.Request request = new PostDetailDto.Request(postId);
         JsonNode dataNode = JsonUtil.toJsonNode(request);
-        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_DETAIL_GET , dataNode);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_DETAIL_GET, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
-        return sendjoinPost(requestJson);
+        return sendJoinPost(requestJson);
     }
 
 

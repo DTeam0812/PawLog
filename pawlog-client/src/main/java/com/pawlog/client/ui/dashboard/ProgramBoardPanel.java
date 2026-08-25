@@ -3,7 +3,7 @@ package com.pawlog.client.ui.dashboard;
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
 import com.pawlog.client.network.PawLogClient;
-import com.pawlog.common.dto.board.PostJoinDto;
+import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 
@@ -419,7 +419,13 @@ public class ProgramBoardPanel extends JPanel {
 
                     renderPostList(response.getData());
                 } catch (Exception exception) {
-                    showPostListMessage("게시글 목록을 불러오지 못했습니다.");
+                    Throwable cause = exception.getCause() == null ? exception : exception.getCause();
+                    String causeMessage = cause.getMessage();
+                    String message = causeMessage == null || causeMessage.isBlank()
+                        ? "게시글 목록을 불러오지 못했습니다."
+                        : "게시글 조회 실패: " + causeMessage;
+
+                    showPostListMessage(message);
                     exception.printStackTrace();
                 }
             }
@@ -870,16 +876,16 @@ public class ProgramBoardPanel extends JPanel {
         commentRows.repaint();
         cardLayout.show(this, DETAIL);
 
-        new SwingWorker<PostJoinDto.Response, Void>() {
+        new SwingWorker<PostDetailDto.Response, Void>() {
             @Override
-            protected PostJoinDto.Response doInBackground() throws Exception {
+            protected PostDetailDto.Response doInBackground() throws Exception {
                 return pawLogClient.joinPost(postId);
             }
 
             @Override
             protected void done() {
                 try {
-                    PostJoinDto.Response response = get();
+                    PostDetailDto.Response response = get();
 
                     if(!response.isSuccess() || response.getData() == null) {
                         showPostDetailError(response.getMessage());
@@ -896,26 +902,26 @@ public class ProgramBoardPanel extends JPanel {
     }
 
     // 상세 응답 DTO의 게시글과 댓글을 상세 화면에 표시한다.
-    private void renderPostDetail(PostJoinDto.Post post) {
-        List<PostJoinDto.commentitem> comments = post.getComments();
-        int commentCount = comments == null ? 0 : comments.size();
-
+    private void renderPostDetail(PostDetailDto.PostDetailData post) {
         detailTitleLabel.setText(post.getTitle());
-        detailMetaLabel.setText(post.getAuthorname() + "  ·  댓글 " + commentCount);
+        detailMetaLabel.setText(
+            post.getAuthorNickname()
+                + "  ·  " + post.getCreatedAt()
+                + "  ·  댓글 " + post.getCommentCount()
+        );
         detailContentArea.setText(post.getContent());
         detailContentArea.setCaretPosition(0);
-        detailLikeCount = post.getLike();
-        detailLikeButton.setText("♡ " + detailLikeCount);
+        detailLikeCount = post.getLikeCount();
+        detailLikeButton.setText((post.isLiked() ? "♥ " : "♡ ") + detailLikeCount);
 
         commentRows.removeAll();
-        if(comments != null && !comments.isEmpty()) {
-            for(PostJoinDto.commentitem comment : comments) {
-                commentRows.add(createCommentRow(
-                    comment.getCommentAuthor(),
-                    comment.getCommentcontent(),
-                    comment.getCommmenttime()
-                ));
-            }
+        if(post.getCommentCount() > 0) {
+            commentRows.add(label(
+                "댓글 " + post.getCommentCount() + "개가 있습니다. 댓글 목록 조회 API 연결이 필요합니다.",
+                Font.PLAIN,
+                12,
+                SUB_TEXT
+            ));
         } else {
             commentRows.add(label("아직 댓글이 없습니다. 첫 댓글을 남겨보세요.", Font.PLAIN, 12, SUB_TEXT));
         }
