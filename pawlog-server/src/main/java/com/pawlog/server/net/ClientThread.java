@@ -868,13 +868,17 @@ public class ClientThread extends Thread {
             PostLikeDto.Request reqDto = JsonUtil.fromJson(dataJson, PostLikeDto.Request.class);
             PostLikeDto.Response resDto = postService.togglePostLike(reqDto.getPostId(), getLoggedInUserId());
 
-            // 3. 결과 응답 패킷 전송
+            // 3. 응답 패킷 전송
+            JsonNode dataNode = (resDto.isSuccess() && resDto.getData() != null)
+                    ? JsonUtil.toJsonNode(resDto.getData())
+                    : null;
+
             ResponsePacket responsePacket = new ResponsePacket(
                     ServerProtocol.POST_LIKE_TOGGLE,
                     resDto.isSuccess(),
                     resDto.getCode(),
                     resDto.getMessage(),
-                    resDto.isSuccess() ? JsonUtil.toJsonNode(resDto) : null
+                    dataNode
             );
             sendMessage(JsonUtil.toJson(responsePacket));
 
@@ -918,10 +922,10 @@ public class ClientThread extends Thread {
             PostLikeDto.Response resDto = postService.togglePostLike(postId, getLoggedInUserId());
 
             // 4. 응답 전송 (포맷: SUCCESS:메시지;liked;likeCount)
-            if (resDto.isSuccess()) {
+            if (resDto.isSuccess() && resDto.getData() != null) {
                 String responseData = ServerProtocol.SUCCESS + ServerProtocol.MODE1 + resDto.getMessage()
-                        + ServerProtocol.MODE2 + resDto.isLiked()
-                        + ServerProtocol.MODE2 + resDto.getLikeCount();
+                        + ServerProtocol.MODE2 + resDto.getData().isLiked()
+                        + ServerProtocol.MODE2 + resDto.getData().getLikeCount();
                 sendMessage(responseData);
             } else {
                 sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());

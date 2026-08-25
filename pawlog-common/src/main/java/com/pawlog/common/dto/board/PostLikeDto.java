@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 public class PostLikeDto {
 
-    // 게시글 좋아요 토글 요청 DTO
+    // 1. 요청 DTO
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -14,7 +14,16 @@ public class PostLikeDto {
         private long postId;
     }
 
-    // 게시글 좋아요 토글 응답 DTO
+    // 2. 실제 데이터 페이로드 (data 필드에 들어갈 순수 데이터)
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LikeData {
+        private boolean liked;
+        private int likeCount;
+    }
+
+    // 3. 통신 응답 DTO
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -22,11 +31,10 @@ public class PostLikeDto {
         private boolean success;
         private int code;
         private String message;
-        private boolean liked;       // 본인의 변경된 좋아요 상태 (true: 추천됨, false: 취소됨)
-        private int likeCount;       // 변경 후 최신 총 좋아요 수 (COUNT(*) 결과)
+        private LikeData data;
 
         public Response(boolean success, int code, String message) {
-            this(success, code, message, false, 0);
+            this(success, code, message, null);
         }
     }
 }

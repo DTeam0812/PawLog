@@ -184,12 +184,13 @@ public class PostService {
             boolean finalLikedState = !isCurrentlyLiked;
             int totalLikeCount = postLikeDAO.getLikeCountByPostId(postId);
 
+            PostLikeDto.LikeData likeData = new PostLikeDto.LikeData(finalLikedState, totalLikeCount);
+
             return new PostLikeDto.Response(
                     true,
                     200,
                     finalLikedState ? "게시글을 추천했습니다." : "게시글 추천을 취소했습니다.",
-                    finalLikedState,
-                    totalLikeCount
+                    likeData
             );
         } catch (Exception e) {
             e.printStackTrace();

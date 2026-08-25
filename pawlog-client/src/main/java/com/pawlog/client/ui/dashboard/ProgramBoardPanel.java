@@ -828,9 +828,9 @@ public class ProgramBoardPanel extends JPanel {
                 protected void done() {
                     try {
                         PostLikeDto.Response res = get();
-                        if (res.isSuccess()) {
-                            isCurrentPostLiked = res.isLiked();
-                            detailLikeCount = res.getLikeCount();
+                        if (res.isSuccess() && res.getData() != null) {
+                            isCurrentPostLiked = res.getData().isLiked();
+                            detailLikeCount = res.getData().getLikeCount();
                             detailLikeButton.setText((isCurrentPostLiked ? "♥ " : "♡ ") + detailLikeCount);
                         }
                     } catch (Exception ex) {

@@ -340,7 +340,7 @@ public class PawLogClient {
         return sendJson(requestJson);
 
     }//게시글 만들기
-    
+
 
     private synchronized PostLikeDto.Response sendPostLikeToggleJson(String requestJson) throws Exception {
         connect();
@@ -349,7 +349,7 @@ public class PawLogClient {
 
         if (responseJson == null) {
             disconnect();
-            return new PostLikeDto.Response(false, 500, "서버 연결이 종료되었습니다.");
+            return new PostLikeDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
         }
 
         JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
@@ -358,11 +358,12 @@ public class PawLogClient {
         String message = root.path("message").asText("");
         JsonNode dataNode = root.path("data");
 
-        if (!success || dataNode.isMissingNode() || dataNode.isNull()) {
-            return new PostLikeDto.Response(false, code, message);
+        PostLikeDto.LikeData likeData = null;
+        if (success && dataNode != null && !dataNode.isMissingNode() && !dataNode.isNull()) {
+            likeData = JsonUtil.fromJson(dataNode.toString(), PostLikeDto.LikeData.class);
         }
 
-        return JsonUtil.fromJson(dataNode.toString(), PostLikeDto.Response.class);
+        return new PostLikeDto.Response(success, code, message, likeData);
     }
 
     public synchronized PostLikeDto.Response togglePostLike(long postId) throws Exception {
