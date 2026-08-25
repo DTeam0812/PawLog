@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
+import com.pawlog.common.dto.auth.AuthUpdateDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostEnrollDto;
@@ -378,7 +379,37 @@ public class PawLogClient {
         return sendJoinPost(requestJson);
     }
 
+     private synchronized AuthUpdateDto.Response sendAuthUpdateJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
 
+        if (responseJson == null) {
+            disconnect();
+            return new AuthUpdateDto.Response(false, 500, "서버 연결이 종료되었습니다.");
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        JsonNode dataNode = root.path("data");
+
+        if (!success || dataNode.isMissingNode() || dataNode.isNull()) {
+            return new AuthUpdateDto.Response(false, code, message);
+        }
+
+        AuthUpdateDto.Response res = JsonUtil.fromJson(dataNode.toString(), AuthUpdateDto.Response.class);
+        return new AuthUpdateDto.Response(true, code, message, res.getUpdatedNickname());
+    }
+
+    public AuthUpdateDto.Response updateAuth(String nickname, String currentPassword, String newPassword) throws Exception {
+        AuthUpdateDto.Request request = new AuthUpdateDto.Request(nickname, currentPassword, newPassword);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.AUTH_UPDATE, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendAuthUpdateJson(requestJson);
+    }
    /*  public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
         if (data == null || data.isEmpty()) {
             return new Response(false, "저장할 사용 기록이 없습니다.");
