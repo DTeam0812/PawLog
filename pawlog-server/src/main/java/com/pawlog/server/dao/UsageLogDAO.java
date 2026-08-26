@@ -139,4 +139,63 @@ public class UsageLogDAO {
         }
         return list;
     }
+
+    public static class RealtimeRankRawData {
+        public long programId;
+        public String programName;
+        public String categoryName;
+        public long totalDurationSec;
+        public int userCount;
+    }
+
+    /**
+     * 특정 2개 시간대의 사용 로그를 합산하여 총 사용 시간 기준 실시간 인기 Top 5 프로그램을 조회
+     */
+    public List<RealtimeRankRawData> getTop5RealtimePrograms(java.time.LocalDate date1, int hour1, java.time.LocalDate date2, int hour2) {
+        List<RealtimeRankRawData> list = new ArrayList<>();
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        String sql = "SELECT u.program_id, "
+                + "       COALESCE(p.display_name, p.process_name) AS program_name, "
+                + "       c.name AS category_name, "
+                + "       SUM(u.duration_sec) AS total_duration_sec, "
+                + "       COUNT(DISTINCT u.user_id) AS user_count "
+                + "FROM usage_logs u "
+                + "JOIN programs p ON u.program_id = p.program_id "
+                + "LEFT JOIN categories c ON p.category_id = c.category_id "
+                + "WHERE (u.usage_date = ? AND u.usage_hour = ?) "
+                + "   OR (u.usage_date = ? AND u.usage_hour = ?) "
+                + "GROUP BY u.program_id, p.display_name, p.process_name, c.name "
+                + "HAVING SUM(u.duration_sec) > 0 "
+                + "ORDER BY total_duration_sec DESC "
+                + "LIMIT 5";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setDate(1, java.sql.Date.valueOf(date1));
+            pstmt.setInt(2, hour1);
+            pstmt.setDate(3, java.sql.Date.valueOf(date2));
+            pstmt.setInt(4, hour2);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                RealtimeRankRawData data = new RealtimeRankRawData();
+                data.programId = rs.getLong("program_id");
+                data.programName = rs.getString("program_name");
+                data.categoryName = rs.getString("category_name");
+                data.totalDurationSec = rs.getLong("total_duration_sec");
+                data.userCount = rs.getInt("user_count");
+                list.add(data);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+
+        return list;
+    }
 }

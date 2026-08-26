@@ -2,13 +2,77 @@ package com.pawlog.server.service;
 
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.server.dao.ProgramUsageStatDAO;
+import com.pawlog.server.dao.UsageLogDAO;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PopularRankingService {
 
     private final ProgramUsageStatDAO statsDAO = new ProgramUsageStatDAO();
+    private final UsageLogDAO usageLogDAO = new UsageLogDAO();
+
+    /**
+     * 현 시점 기준 직전 2개 시간대(예: 13:01 -> 11시, 12시)의 실시간 인기 프로그램 상위 5개 조회
+     *
+     * @param baseTime 기준 시각 (null인 경우 현재 시각 LocalDateTime.now() 기준)
+     * @return 실시간 Top 5 랭킹 응답 DTO
+     */
+    public PopularRankingDto.Response getRealtimeTop5Rankings(LocalDateTime baseTime) {
+        LocalDateTime now = (baseTime != null) ? baseTime : LocalDateTime.now();
+
+        LocalDateTime dt1 = now.minusHours(2);
+        LocalDateTime dt2 = now.minusHours(1);
+
+        LocalDate date1 = dt1.toLocalDate();
+        int hour1 = dt1.getHour();
+
+        LocalDate date2 = dt2.toLocalDate();
+        int hour2 = dt2.getHour();
+
+        try {
+            List<UsageLogDAO.RealtimeRankRawData> rawList = usageLogDAO.getTop5RealtimePrograms(
+                    date1, hour1, date2, hour2
+            );
+
+            if (rawList.isEmpty()) {
+                return new PopularRankingDto.Response(true, 200, "실시간 사용 데이터가 없습니다.", new ArrayList<>());
+            }
+
+            List<PopularRankingDto.RankingItem> rankingItems = new ArrayList<>();
+            List<Double> rawDurations = new ArrayList<>();
+            double totalDuration = 0.0;
+            int rank = 1;
+
+            for (UsageLogDAO.RealtimeRankRawData raw : rawList) {
+                PopularRankingDto.RankingItem item = new PopularRankingDto.RankingItem();
+                item.setRank(rank++);
+                item.setProgramName(raw.programName);
+                item.setCategoryName(raw.categoryName != null ? raw.categoryName : "기타");
+                item.setAvgUsageFormatted(formatDuration(raw.totalDurationSec));
+
+                double duration = (double) raw.totalDurationSec;
+                rawDurations.add(duration);
+                totalDuration += duration;
+                rankingItems.add(item);
+            }
+
+            // 100% 정수 비율 보정
+            if (totalDuration > 0 && !rankingItems.isEmpty()) {
+                applyExact100Percentage(rankingItems, rawDurations, totalDuration);
+            }
+
+            String msg = String.format("실시간 인기 순위 조회 성공 (%s %d시, %s %d시 기준)",
+                    date1, hour1, date2, hour2);
+            return new PopularRankingDto.Response(true, 200, msg, rankingItems);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new PopularRankingDto.Response(false, 500, "실시간 순위 조회 중 오류 발생: " + e.getMessage());
+        }
+    }
 
     public PopularRankingDto.Response getPopularRankings(PopularRankingDto.Request request) {
         // 요청 파라미터 검증

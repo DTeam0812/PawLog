@@ -37,7 +37,7 @@ import java.util.Vector;
 public class DBConnectionMgr {
     private Vector connections = new Vector(10);
     private String _driver = "com.mysql.cj.jdbc.Driver",
-    _url = "jdbc:mysql://cdn.ditanet.duckdns.org:8306/PawLog?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8",
+    _url = "jdbc:mysql://cdn.ditanet.duckdns.org:8306/PawLog?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8",
     _user = "root",
     _password = "dita2414";
     

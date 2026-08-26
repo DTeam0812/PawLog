@@ -85,6 +85,196 @@ public class ProgramUsageStatDAO {
         return list;
     }
 
+    // 특정 날짜에 이미 집계된 통계 데이터가 있는지 확인
+    public boolean hasStatsForDate(LocalDate date) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        String sql = "SELECT COUNT(*) FROM program_usage_stats WHERE stat_date = ?";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setDate(1, Date.valueOf(date));
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+
+        return false;
+    }
+
+    // daily_usage_summary + users 기반으로 특정 날짜의 통계를 자동 집계하여 program_usage_stats에 저장
+    public int aggregateAndSaveDailyStats(LocalDate targetDate) {
+        Connection con = null;
+        PreparedStatement deletePstmt = null;
+        PreparedStatement insertPstmt = null;
+        Date sqlTargetDate = Date.valueOf(targetDate);
+
+        String deleteSql = "DELETE FROM program_usage_stats WHERE stat_date = ?";
+
+        String insertSql = "INSERT INTO program_usage_stats "
+                + "(program_id, stat_date, avg_duration_sec, total_users, gender, age_group) "
+                + "SELECT program_id, stat_date, avg_duration_sec, total_users, gender, age_group "
+                + "FROM ( "
+                // 1. 전체 통계 (gender = NULL, age_group = NULL)
+                + "    SELECT d.program_id, ? AS stat_date, "
+                + "           AVG(d.total_duration_sec) AS avg_duration_sec, "
+                + "           COUNT(DISTINCT d.user_id) AS total_users, "
+                + "           NULL AS gender, "
+                + "           NULL AS age_group "
+                + "    FROM daily_usage_summary d "
+                + "    JOIN users u ON d.user_id = u.user_id "
+                + "    WHERE d.summary_date = ? "
+                + "    GROUP BY d.program_id "
+                + "    UNION ALL "
+                // 2. 성별별 통계 (gender = M/F, age_group = NULL)
+                + "    SELECT d.program_id, ? AS stat_date, "
+                + "           AVG(d.total_duration_sec) AS avg_duration_sec, "
+                + "           COUNT(DISTINCT d.user_id) AS total_users, "
+                + "           u.gender AS gender, "
+                + "           NULL AS age_group "
+                + "    FROM daily_usage_summary d "
+                + "    JOIN users u ON d.user_id = u.user_id "
+                + "    WHERE d.summary_date = ? "
+                + "    GROUP BY d.program_id, u.gender "
+                + "    UNION ALL "
+                // 3. 연령대별 통계 (gender = NULL, age_group = 10s...)
+                + "    SELECT d.program_id, ? AS stat_date, "
+                + "           AVG(d.total_duration_sec) AS avg_duration_sec, "
+                + "           COUNT(DISTINCT d.user_id) AS total_users, "
+                + "           NULL AS gender, "
+                + "           CASE "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) < 10 THEN 'under_10' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 10 AND 19 THEN '10s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 20 AND 29 THEN '20s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 30 AND 39 THEN '30s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 40 AND 49 THEN '40s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 50 AND 59 THEN '50s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 60 AND 69 THEN '60s' "
+                + "               ELSE '70s_over' "
+                + "           END AS age_group "
+                + "    FROM daily_usage_summary d "
+                + "    JOIN users u ON d.user_id = u.user_id "
+                + "    WHERE d.summary_date = ? "
+                + "    GROUP BY d.program_id, "
+                + "             CASE "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) < 10 THEN 'under_10' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 10 AND 19 THEN '10s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 20 AND 29 THEN '20s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 30 AND 39 THEN '30s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 40 AND 49 THEN '40s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 50 AND 59 THEN '50s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 60 AND 69 THEN '60s' "
+                + "                 ELSE '70s_over' "
+                + "             END "
+                + "    UNION ALL "
+                // 4. 성별 + 연령대별 통계 (gender = M/F, age_group = 10s...)
+                + "    SELECT d.program_id, ? AS stat_date, "
+                + "           AVG(d.total_duration_sec) AS avg_duration_sec, "
+                + "           COUNT(DISTINCT d.user_id) AS total_users, "
+                + "           u.gender AS gender, "
+                + "           CASE "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) < 10 THEN 'under_10' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 10 AND 19 THEN '10s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 20 AND 29 THEN '20s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 30 AND 39 THEN '30s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 40 AND 49 THEN '40s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 50 AND 59 THEN '50s' "
+                + "               WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 60 AND 69 THEN '60s' "
+                + "               ELSE '70s_over' "
+                + "           END AS age_group "
+                + "    FROM daily_usage_summary d "
+                + "    JOIN users u ON d.user_id = u.user_id "
+                + "    WHERE d.summary_date = ? "
+                + "    GROUP BY d.program_id, u.gender, "
+                + "             CASE "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) < 10 THEN 'under_10' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 10 AND 19 THEN '10s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 20 AND 29 THEN '20s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 30 AND 39 THEN '30s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 40 AND 49 THEN '40s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 50 AND 59 THEN '50s' "
+                + "                 WHEN TIMESTAMPDIFF(YEAR, u.birth_date, ?) BETWEEN 60 AND 69 THEN '60s' "
+                + "                 ELSE '70s_over' "
+                + "             END "
+                + ") AS aggregated";
+
+        try {
+            con = pool.getConnection();
+            con.setAutoCommit(false);
+
+            // 기존 데이터 정리
+            deletePstmt = con.prepareStatement(deleteSql);
+            deletePstmt.setDate(1, sqlTargetDate);
+            deletePstmt.executeUpdate();
+
+            // 신규 통계 집계 적재
+            insertPstmt = con.prepareStatement(insertSql);
+            int idx = 1;
+            // 1. 전체
+            insertPstmt.setDate(idx++, sqlTargetDate);
+            insertPstmt.setDate(idx++, sqlTargetDate);
+            // 2. 성별별
+            insertPstmt.setDate(idx++, sqlTargetDate);
+            insertPstmt.setDate(idx++, sqlTargetDate);
+            // 3. 연령대별
+            insertPstmt.setDate(idx++, sqlTargetDate);
+            for (int i = 0; i < 7; i++) { // CASE when conditions (under_10, 10s..60s)
+                insertPstmt.setDate(idx++, sqlTargetDate);
+            }
+            insertPstmt.setDate(idx++, sqlTargetDate); // WHERE d.summary_date = ?
+            for (int i = 0; i < 7; i++) { // GROUP BY CASE when conditions
+                insertPstmt.setDate(idx++, sqlTargetDate);
+            }
+            // 4. 성별 + 연령대별
+            insertPstmt.setDate(idx++, sqlTargetDate);
+            for (int i = 0; i < 7; i++) { // CASE when conditions
+                insertPstmt.setDate(idx++, sqlTargetDate);
+            }
+            insertPstmt.setDate(idx++, sqlTargetDate); // WHERE d.summary_date = ?
+            for (int i = 0; i < 7; i++) { // GROUP BY CASE when conditions
+                insertPstmt.setDate(idx++, sqlTargetDate);
+            }
+
+            int insertedRows = insertPstmt.executeUpdate();
+            con.commit();
+            return insertedRows;
+
+        } catch (Exception e) {
+            if (con != null) {
+                try {
+                    con.rollback();
+                } catch (Exception rollbackEx) {
+                    rollbackEx.printStackTrace();
+                }
+            }
+            e.printStackTrace();
+            return -1;
+        } finally {
+            if (con != null) {
+                try {
+                    con.setAutoCommit(true);
+                } catch (Exception autoCommitEx) {
+                    autoCommitEx.printStackTrace();
+                }
+            }
+            if (deletePstmt != null) {
+                try {
+                    deletePstmt.close();
+                } catch (Exception ignored) {}
+            }
+            pool.freeConnection(con, insertPstmt);
+        }
+    }
+
     // 평균 사용률 통계 일괄 등록 (배치 작업용)
     public boolean insertBatchStats(List<ProgramUsageStatEntity> list) {
         Connection con = null;
@@ -117,113 +307,4 @@ public class ProgramUsageStatDAO {
             pool.freeConnection(con, pstmt);
         }
     }
-
-
-
-
-    //    // 2. 특정 조건의 통계 데이터 삭제 (배치 재계산 전 초기화용)
-//    public boolean deleteStats(String periodType, Date statDate) {
-//        Connection con = null;
-//        PreparedStatement pstmt = null;
-//
-//        String sql = "DELETE FROM program_usage_stats WHERE period_type = ? AND stat_date = ?";
-//
-//        try {
-//            con = pool.getConnection();
-//            pstmt = con.prepareStatement(sql);
-//            pstmt.setString(1, periodType);
-//            pstmt.setDate(2, statDate);
-//
-//            int result = pstmt.executeUpdate();
-//            return result > 0;
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return false;
-//        } finally {
-//            pool.freeConnection(con, pstmt);
-//        }
-//    }
-//    // 4. 연령대별 평균 사용량 비교 목록 조회 (성별 NULL, 연령대별 차트용)
-//    public List<ProgramUsageStatEntity> getAgeGroupStatsByProgram(long programId, String periodType, Date statDate) {
-//        Connection con = null;
-//        PreparedStatement pstmt = null;
-//        ResultSet rs = null;
-//        List<ProgramUsageStatEntity> list = new ArrayList<>();
-//
-//        String sql = "SELECT stat_id, program_id, period_type, stat_date, "
-//                + "avg_duration_sec, total_users, gender, age_group "
-//                + "FROM program_usage_stats "
-//                + "WHERE program_id = ? AND period_type = ? AND stat_date = ? "
-//                + "AND gender IS NULL AND age_group IS NOT NULL "
-//                + "ORDER BY age_group ASC";
-//
-//        try {
-//            con = pool.getConnection();
-//            pstmt = con.prepareStatement(sql);
-//            pstmt.setLong(1, programId);
-//            pstmt.setString(2, periodType);
-//            pstmt.setDate(3, statDate);
-//            rs = pstmt.executeQuery();
-//
-//            while (rs.next()) {
-//                ProgramUsageStatEntity entity = new ProgramUsageStatEntity();
-//                entity.setStatId(rs.getLong("stat_id"));
-//                entity.setProgramId(rs.getLong("program_id"));
-//                entity.setPeriodType(rs.getString("period_type"));
-//                entity.setStatDate(rs.getDate("stat_date"));
-//                entity.setAvgDurationSec(rs.getFloat("avg_duration_sec"));
-//                entity.setTotalUsers(rs.getInt("total_users"));
-//                entity.setGender(rs.getString("gender"));
-//                entity.setAgeGroup(rs.getString("age_group"));
-//                list.add(entity);
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            pool.freeConnection(con, pstmt, rs);
-//        }
-//        return list;
-//    }
-//
-//    // 5. 성별 평균 사용량 비교 목록 조회 (연령대 NULL, 성별 차트용)
-//    public List<ProgramUsageStatEntity> getGenderStatsByProgram(long programId, String periodType, Date statDate) {
-//        Connection con = null;
-//        PreparedStatement pstmt = null;
-//        ResultSet rs = null;
-//        List<ProgramUsageStatEntity> list = new ArrayList<>();
-//
-//        String sql = "SELECT stat_id, program_id, period_type, stat_date, "
-//                + "avg_duration_sec, total_users, gender, age_group "
-//                + "FROM program_usage_stats "
-//                + "WHERE program_id = ? AND period_type = ? AND stat_date = ? "
-//                + "AND age_group IS NULL AND gender IS NOT NULL "
-//                + "ORDER BY gender ASC";
-//
-//        try {
-//            con = pool.getConnection();
-//            pstmt = con.prepareStatement(sql);
-//            pstmt.setLong(1, programId);
-//            pstmt.setString(2, periodType);
-//            pstmt.setDate(3, statDate);
-//            rs = pstmt.executeQuery();
-//
-//            while (rs.next()) {
-//                ProgramUsageStatEntity entity = new ProgramUsageStatEntity();
-//                entity.setStatId(rs.getLong("stat_id"));
-//                entity.setProgramId(rs.getLong("program_id"));
-//                entity.setPeriodType(rs.getString("period_type"));
-//                entity.setStatDate(rs.getDate("stat_date"));
-//                entity.setAvgDurationSec(rs.getFloat("avg_duration_sec"));
-//                entity.setTotalUsers(rs.getInt("total_users"));
-//                entity.setGender(rs.getString("gender"));
-//                entity.setAgeGroup(rs.getString("age_group"));
-//                list.add(entity);
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            pool.freeConnection(con, pstmt, rs);
-//        }
-//        return list;
-//    }
 }

@@ -7,7 +7,7 @@ import java.sql.Statement;
 
 public class DatabaseConfig {
 
-    private static final String DB_URL = "jdbc:mysql://cdn.ditanet.duckdns.org:8306/PawLog?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8";
+    private static final String DB_URL = "jdbc:mysql://cdn.ditanet.duckdns.org:8306/PawLog?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "dita2414";
 

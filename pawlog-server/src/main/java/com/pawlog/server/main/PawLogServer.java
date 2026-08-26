@@ -1,6 +1,7 @@
 package com.pawlog.server.main;
 
 import com.pawlog.server.net.ClientThread;
+import com.pawlog.server.net.DailyStatsScheduler;
 import com.pawlog.server.net.SummaryScheduler;
 
 import java.net.ServerSocket;
@@ -12,6 +13,8 @@ public class PawLogServer {
     public PawLogServer() {
         // daily_usage_summary 5분 주기 스케줄러
         SummaryScheduler.getInstance().start();
+        // program_usage_stats 매일 자정 배치 스케줄러
+        DailyStatsScheduler.getInstance().start();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("==========================================");
