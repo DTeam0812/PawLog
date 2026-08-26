@@ -19,7 +19,7 @@ public class PostJoinDto {
     @NoArgsConstructor
     public static class commentitem{
         String commentAuthor;//댓글 단사람 닉네임
-        String commmenttime;//작성 시간
+        String commenttime;//작성 시간
         String commentcontent;//내용
     }
     @Data

@@ -1,6 +1,7 @@
 package com.pawlog.server.net;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.pawlog.common.dto.analytics.ProgramAnalyticsDto;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.board.*;
@@ -15,6 +16,8 @@ import com.pawlog.server.entity.UserEntity;
 import com.pawlog.server.service.*;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
+import com.pawlog.common.dto.analytics.ProgramAnalyticsDto;
+import com.pawlog.server.service.ProgramAnalyticsService;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -36,6 +39,7 @@ public class ClientThread extends Thread {
     private UtilService utilService;
     private PostService postService;
     private CommentService commentService;
+    private ProgramAnalyticsService programAnalyticsService;
     // 로그인된 유저 세션 정보
     private Long loggedInUserId;
     private UserEntity currentUser;
@@ -52,6 +56,7 @@ public class ClientThread extends Thread {
             this.utilService = new UtilService();
             this.postService = new PostService();
             this.commentService = new CommentService();
+            this.programAnalyticsService = new ProgramAnalyticsService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -151,6 +156,9 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.COMMENT_CREATE.equals(command)) {
                     handleCommentCreateJson(dataJson);
                 }
+                else if (ServerProtocol.PROGRAM_ANALYTICS_GET.equals(command)) {
+                    handleProgramAnalyticsJson(dataJson);
+                }
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -209,6 +217,9 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.COMMENT_CREATE.equals(command)) {
             handleCommentCreate(data);
+        }
+        else if (ServerProtocol.PROGRAM_ANALYTICS_GET.equals(command)) {
+            handleProgramAnalytics(data);
         }
     }
 
@@ -1144,6 +1155,62 @@ public class ClientThread extends Thread {
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "댓글 작성 중 오류 발생: " + e.getMessage());
         }
     }
+
+    // 프로그램 분석 상세 조회 (JSON 처리)
+    private void handleProgramAnalyticsJson(String dataJson) {
+        try {
+            ProgramAnalyticsDto.Request reqDto = JsonUtil.fromJson(dataJson, ProgramAnalyticsDto.Request.class);
+            ProgramAnalyticsDto.Response resDto = programAnalyticsService.getProgramAnalytics(reqDto);
+
+            JsonNode dataNode = (resDto.isSuccess() && resDto.getData() != null)
+                    ? JsonUtil.toJsonNode(resDto.getData())
+                    : null;
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.PROGRAM_ANALYTICS_GET,
+                    resDto.isSuccess(),
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    dataNode
+            );
+
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.PROGRAM_ANALYTICS_GET,
+                    false,
+                    400,
+                    "프로그램 분석 요청 데이터 파싱 실패: " + e.getMessage(),
+                    null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        }
+    }
+
+    // 프로그램 분석 상세 조회 (구분자 처리: data는 programId)
+    private void handleProgramAnalytics(String data) {
+        try {
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "프로그램 ID가 필요합니다.");
+                return;
+            }
+
+            long programId = Long.parseLong(data.trim());
+            ProgramAnalyticsDto.Request reqDto = new ProgramAnalyticsDto.Request(programId);
+            ProgramAnalyticsDto.Response resDto = programAnalyticsService.getProgramAnalytics(reqDto);
+
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + JsonUtil.toJson(resDto.getData()));
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "프로그램 분석 조회 중 오류 발생: " + e.getMessage());
+        }
+    }
+
 
     /**
      * 중복 로그인 감지 시 기존 세션(클라이언트)에 강제 로그아웃을 푸시한다.

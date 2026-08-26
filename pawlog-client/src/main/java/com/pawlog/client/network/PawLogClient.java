@@ -28,8 +28,11 @@ import com.pawlog.Sync.Usagebatch;
 import com.pawlog.Sync.Usageitem;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.UsageKey;
+import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.util.JsonUtil;
 import com.pawlog.common.protocol.ServerProtocol;
+import com.pawlog.common.dto.analytics.ProgramAnalyticsDto;
+
 public class PawLogClient {
     private static final int CliVersion = 1; //클라이언트 버전관리
     private static final String DEFAULT_HOST = "127.0.0.1";//서버주소
@@ -335,6 +338,53 @@ public class PawLogClient {
         String requestJson = JsonUtil.toJson(requestPacket);
 
         return sendMyStatisticsJson(requestJson);
+    }
+
+    // 프로그램 상세 분석 데이터 조회
+    private synchronized ProgramAnalyticsDto.Response sendProgramAnalyticsJson(String requestJson) throws Exception {
+        try {
+            connect();
+            output.println(requestJson);
+            String responseJson = input.readLine();
+
+            if (responseJson == null) {
+                disconnect();
+                return new ProgramAnalyticsDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+            }
+
+            JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+            boolean success = root.path("success").asBoolean();
+            int code = root.path("code").asInt(success ? 200 : 400);
+            String message = root.path("message").asText("");
+
+            if (!success) {
+                return new ProgramAnalyticsDto.Response(false, code, message, null);
+            }
+
+            JsonNode dataNode = root.path("data");
+            if (dataNode.isMissingNode() || dataNode.isNull()) {
+                return new ProgramAnalyticsDto.Response(true, code, message, null);
+            }
+
+            ProgramAnalyticsDto.AnalyticsData data = JsonUtil.fromJson(
+                    dataNode.toString(),
+                    ProgramAnalyticsDto.AnalyticsData.class
+            );
+
+            return new ProgramAnalyticsDto.Response(true, code, message, data);
+        } catch (Exception exception) {
+            disconnect();
+            throw exception;
+        }
+    }
+
+    // 프로그램 ID를 묶어 프로그램 상세 분석 데이터를 서버에 요청
+    public synchronized ProgramAnalyticsDto.Response getProgramAnalytics(long programId) throws Exception {
+        ProgramAnalyticsDto.Request request = new ProgramAnalyticsDto.Request(programId);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.PROGRAM_ANALYTICS_GET, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendProgramAnalyticsJson(requestJson);
     }
     
     public synchronized Response createPost(long programId, String title, String content) throws Exception{

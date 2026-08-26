@@ -198,4 +198,41 @@ public class UsageLogDAO {
 
         return list;
     }
+
+    // 프로그램 분석에 사용할 기능
+    // D-7 ~ D-1 기간 동안의 4시간 단위(0~3, 4~7, 8~11, 12~15, 16~19, 20~23) 일평균 사용 시간(초) 조회
+    public int[] getHourlyUsageSlots(long programId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        int[] slots = new int[6];
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        String sql = "SELECT (usage_hour DIV 4) AS slot_idx, "
+                + "       ROUND(SUM(duration_sec) / 7.0) AS avg_slot_duration "
+                + "FROM usage_logs "
+                + "WHERE program_id = ? AND usage_date BETWEEN ? AND ? "
+                + "GROUP BY (usage_hour DIV 4)";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setLong(1, programId);
+            pstmt.setDate(2, java.sql.Date.valueOf(startDate));
+            pstmt.setDate(3, java.sql.Date.valueOf(endDate));
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int slotIdx = rs.getInt("slot_idx");
+                int duration = rs.getInt("avg_slot_duration");
+                if (slotIdx >= 0 && slotIdx < 6) {
+                    slots[slotIdx] = duration;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return slots;
+    }
 }
