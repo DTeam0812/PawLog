@@ -12,14 +12,9 @@ import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.protocol.ServerProtocol;
 import com.pawlog.common.util.JsonUtil;
 import com.pawlog.server.entity.UserEntity;
-import com.pawlog.server.service.AuthService;
-import com.pawlog.server.service.PopularRankingService;
-import com.pawlog.server.service.StatisticsService;
+import com.pawlog.server.service.*;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
-import com.pawlog.server.service.UsageLogService;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
-import com.pawlog.server.service.PostService;
-import com.pawlog.server.service.UtilService;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -40,7 +35,7 @@ public class ClientThread extends Thread {
     private StatisticsService statisticsService;
     private UtilService utilService;
     private PostService postService;
-
+    private CommentService commentService;
     // 로그인된 유저 세션 정보
     private Long loggedInUserId;
     private UserEntity currentUser;
@@ -56,6 +51,7 @@ public class ClientThread extends Thread {
             this.statisticsService = new StatisticsService();
             this.utilService = new UtilService();
             this.postService = new PostService();
+            this.commentService = new CommentService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -152,6 +148,9 @@ public class ClientThread extends Thread {
                 else if (ServerProtocol.POST_ENROLL.equals(command)) {
                     handlePostEnrollJson(dataJson);
                 }
+                else if (ServerProtocol.COMMENT_CREATE.equals(command)) {
+                    handleCommentCreateJson(dataJson);
+                }
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -207,6 +206,9 @@ public class ClientThread extends Thread {
         }
         else if (ServerProtocol.POST_ENROLL.equals(command)) {
             handlePostEnroll(data);
+        }
+        else if (ServerProtocol.COMMENT_CREATE.equals(command)) {
+            handleCommentCreate(data);
         }
     }
 
@@ -1050,6 +1052,96 @@ public class ClientThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
             sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "게시글 등록 중 오류 발생");
+        }
+    }
+
+    // 댓글 작성 (JSON 처리)
+    private void handleCommentCreateJson(String dataJson) {
+        try {
+            // 1. 비로그인 세션 차단 (401 방어)
+            if (!isLoggedIn()) {
+                ResponsePacket errorPacket = new ResponsePacket(
+                        ServerProtocol.COMMENT_CREATE,
+                        false,
+                        401,
+                        "로그인이 필요한 서비스입니다.",
+                        null
+                );
+                sendMessage(JsonUtil.toJson(errorPacket));
+                return;
+            }
+
+            // 2. DTO 파싱 및 Service 호출
+            CommentDto.Request reqDto = JsonUtil.fromJson(dataJson, CommentDto.Request.class);
+            CommentDto.Response resDto = commentService.writeComment(reqDto, getLoggedInUserId());
+
+            // 3. 응답 패킷 생성 및 전송
+            JsonNode dataNode = (resDto.isSuccess() && resDto.getData() != null)
+                    ? JsonUtil.toJsonNode(resDto.getData())
+                    : null;
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.COMMENT_CREATE,
+                    resDto.isSuccess(),
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    dataNode
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ResponsePacket errorPacket = new ResponsePacket(
+                    ServerProtocol.COMMENT_CREATE,
+                    false,
+                    400,
+                    "댓글 작성 요청 데이터 파싱 실패: " + e.getMessage(),
+                    null
+            );
+            sendMessage(JsonUtil.toJson(errorPacket));
+        }
+    }
+
+    // 댓글 작성 (구분자 처리: postId;content)
+    private void handleCommentCreate(String data) {
+        try {
+            // 1. 비로그인 세션 차단
+            if (!isLoggedIn()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "로그인이 필요한 서비스입니다.");
+                return;
+            }
+
+            if (data == null || data.trim().isEmpty()) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "요청 데이터가 없습니다.");
+                return;
+            }
+
+            // 2. 파라미터 파싱 (postId, content)
+            String[] params = data.split(ServerProtocol.MODE2, 2);
+            long postId;
+            try {
+                postId = Long.parseLong(params[0].trim());
+            } catch (NumberFormatException e) {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "유효하지 않은 게시글 번호입니다.");
+                return;
+            }
+
+            String content = params.length > 1 ? params[1] : "";
+
+            // 3. Request DTO 조립 및 Service 호출
+            CommentDto.Request reqDto = new CommentDto.Request(postId, content);
+            CommentDto.Response resDto = commentService.writeComment(reqDto, getLoggedInUserId());
+
+            // 4. 응답 전송
+            if (resDto.isSuccess() && resDto.getData() != null) {
+                sendMessage(ServerProtocol.SUCCESS + ServerProtocol.MODE1 + JsonUtil.toJson(resDto.getData()));
+            } else {
+                sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + resDto.getMessage());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(ServerProtocol.FAIL + ServerProtocol.MODE1 + "댓글 작성 중 오류 발생: " + e.getMessage());
         }
     }
 

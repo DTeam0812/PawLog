@@ -8,6 +8,7 @@ import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 import com.pawlog.common.dto.board.PostLikeDto;
 import com.pawlog.common.dto.board.PostDetailDto.commentitem;
+import com.pawlog.common.dto.board.CommentDto;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -877,7 +878,10 @@ public class ProgramBoardPanel extends JPanel {
         JPanel inputRow = transparentPanel(new BorderLayout(8, 0));
         JButton commentButton = primaryButton("댓글 등록");
         commentButton.setPreferredSize(new Dimension(90, 38));
-        commentButton.addActionListener(event -> addComment());
+
+        commentButton.addActionListener(event -> addComment(commentButton));
+        commentField.addActionListener(event -> addComment(commentButton)); // 엔터 키 입력 지원
+
         inputRow.add(commentField, BorderLayout.CENTER);
         inputRow.add(commentButton, BorderLayout.EAST);
         card.add(inputRow, BorderLayout.SOUTH);
@@ -960,7 +964,7 @@ public class ProgramBoardPanel extends JPanel {
                 commentRows.add(createCommentRow(
                     comment.getCommentAuthor(),
                     comment.getCommentcontent(),
-                    comment.getCommmenttime()
+                    comment.getCommenttime()
                 ));
             }
         } else {
@@ -981,17 +985,52 @@ public class ProgramBoardPanel extends JPanel {
         commentRows.repaint();
     }
 
-    private void addComment() {
+    private void addComment(JButton commentButton) {
         String content = commentField.getText().trim();
-        if (content.isEmpty()) return;
+        if (content.isEmpty() || currentDetailPostId <= 0) return;
 
-        if (commentRows.getComponentCount() == 1 && commentRows.getComponent(0) instanceof JLabel) {
-            commentRows.removeAll();
-        }
-        commentRows.add(createCommentRow("PawUser", content, "방금 전"), 0);
-        commentField.setText("");
-        commentRows.revalidate();
-        commentRows.repaint();
+        commentButton.setEnabled(false);
+        commentButton.setText("등록 중...");
+
+        new SwingWorker<CommentDto.Response, Void>() {
+            @Override
+            protected CommentDto.Response doInBackground() throws Exception {
+                return pawLogClient.writeComment(currentDetailPostId, content);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    CommentDto.Response res = get();
+                    if (res.isSuccess() && res.getData() != null) {
+                        CommentDto.CommentData data = res.getData();
+                        // '아직 댓글이 없습니다' 라벨이 있다면 제거
+                        if (commentRows.getComponentCount() == 1 && commentRows.getComponent(0) instanceof JLabel) {
+                            commentRows.removeAll();
+                        }
+
+                        // 작성된 댓글을 맨 아래(또는 맨 위)에 추가
+                        commentRows.add(createCommentRow(data.getAuthorNickname(), data.getContent(), data.getCreatedAt()));
+                        commentField.setText("");
+
+                        // 상세 화면 메타 정보(댓글 수) 즉시 갱신
+                        detailMetaLabel.setText(
+                                detailMetaLabel.getText().replaceAll("댓글 \\d+", "댓글 " + data.getTotalCommentCount())
+                        );
+
+                        commentRows.revalidate();
+                        commentRows.repaint();
+                    } else {
+                        System.err.println("댓글 작성 실패: " + res.getMessage());
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                } finally {
+                    commentButton.setEnabled(true);
+                    commentButton.setText("댓글 등록");
+                }
+            }
+        }.execute();
     }
 
     private void makeClickable(Component component, Runnable action) {

@@ -22,6 +22,7 @@ import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.usage.MyInfoDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
+import com.pawlog.common.dto.board.CommentDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.Sync.Usagebatch;
 import com.pawlog.Sync.Usageitem;
@@ -377,6 +378,40 @@ public class PawLogClient {
         RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_LIKE_TOGGLE, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendPostLikeToggleJson(requestJson);
+    }
+
+    // 서버가 반환한 댓글 작성 응답 JSON을 CommentDto.Response로 변환
+    private synchronized CommentDto.Response sendCommentCreateJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
+
+        if (responseJson == null) {
+            disconnect();
+            return new CommentDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        JsonNode dataNode = root.path("data");
+
+        CommentDto.CommentData commentData = null;
+        if (success && dataNode != null && !dataNode.isMissingNode() && !dataNode.isNull()) {
+            commentData = JsonUtil.fromJson(dataNode.toString(), CommentDto.CommentData.class);
+        }
+
+        return new CommentDto.Response(success, code, message, commentData);
+    }
+
+    // 게시글 ID와 댓글 내용을 묶어 서버에 댓글 작성을 요청
+    public synchronized CommentDto.Response writeComment(long postId, String content) throws Exception {
+        CommentDto.Request request = new CommentDto.Request(postId, content);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.COMMENT_CREATE, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendCommentCreateJson(requestJson);
     }
 
     public synchronized PostDetailDto.Response sendJoinPost(String requestJson) throws Exception{

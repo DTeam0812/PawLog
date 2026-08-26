@@ -15,6 +15,7 @@ public class ServerProtocol {
     public static final String POST_DETAIL_GET = "POST_DETAIL_GET";
     public static final String POST_ENROLL = "POST_ENROLL";
     public static final String POST_LIKE_TOGGLE = "POST_LIKE_TOGGLE";
+    public static final String COMMENT_CREATE = "COMMENT_CREATE";
     public static final String COMMENT_LIST_GET = "COMMENT_LIST_GET";
     // 서버 푸시 커맨드 (Server → Client)
     public static final String SESSION_FORCE_LOGOUT = "SESSION_FORCE_LOGOUT"; // 중복 로그인 감지 시 기존 세션에 강제 로그아웃 푸시

@@ -286,7 +286,7 @@ public class PostDAO {
         sql.append("  p.title, ");
         sql.append("  p.created_at, ");
         sql.append("  (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.post_id) AS like_count, ");
-        sql.append("  (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comment_count, ");
+        sql.append("  (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id AND (c.is_active = TRUE OR c.is_active IS NULL)) AS comment_count, ");
         if (currentUserId != null) {
             sql.append("  (SELECT COUNT(*) FROM post_likes pl2 WHERE pl2.post_id = p.post_id AND pl2.user_id = ?) AS user_liked ");
         } else {
