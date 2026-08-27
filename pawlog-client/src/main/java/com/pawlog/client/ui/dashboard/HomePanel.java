@@ -8,6 +8,7 @@ import com.pawlog.client.Storage.UsageServerSyncService;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.common.dto.board.PostRecommendationDto;
+import com.pawlog.common.dto.usage.MyInfoDto;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -23,6 +24,7 @@ import java.awt.Rectangle;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -55,6 +57,12 @@ public class HomePanel extends JPanel {
     private JPanel recentProgramsListPanel;
     private Timer recommendationRefreshTimer;
     private boolean recommendationLoading;
+    private long serverTotalUsageSeconds;
+    private String serverMostUsedProgram = "기록 없음";
+    private int serverProgramCount;
+    private final Map<String, Long> serverUsageMap = new HashMap<>();
+    private boolean todayInfoLoading;
+    private boolean todayInfoLoaded;
 
     public HomePanel() {
         setLayout(new BorderLayout());
@@ -221,6 +229,97 @@ public class HomePanel extends JPanel {
         greetingLabel.setText("안녕하세요, " + email + "님");
     }
 
+    public void loadTodayInfo() {
+        String email = authStore.getEmail();
+
+        if(email == null || email.isBlank()) {
+            resetTodayInfo();
+            return;
+        }
+
+        if(todayInfoLoading || todayInfoLoaded) {
+            return;
+        }
+
+        todayInfoLoading = true;
+
+        new SwingWorker<MyInfoDto.Response, Void>() {
+            @Override
+            protected MyInfoDto.Response doInBackground() throws Exception {
+                return PawLogClient.getInstance().getTodayInfo(email, LocalDate.now());
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    MyInfoDto.Response response = get();
+
+                    if(response.isSuccess()) {
+                        setTodayInfo(response.getData());
+                        todayInfoLoaded = true;
+                    } else {
+                        setTodayInfo(null);
+                        System.out.println("오늘 기록 조회 실패: " + response.getMessage());
+                    }
+                } catch(Exception exception) {
+                    setTodayInfo(null);
+                    System.out.println("오늘 기록을 불러오지 못했습니다.");
+                    exception.printStackTrace();
+                } finally {
+                    todayInfoLoading = false;
+                }
+            }
+        }.execute();
+    }
+
+    public void resetTodayInfo() {
+        todayInfoLoaded = false;
+        todayInfoLoading = false;
+        setTodayInfo(null);
+    }
+
+    public void setTodayInfo(MyInfoDto.TodayInfo todayInfo) {
+        serverTotalUsageSeconds = 0;
+        serverMostUsedProgram = "기록 없음";
+        serverProgramCount = 0;
+        serverUsageMap.clear();
+
+        if(todayInfo != null) {
+            serverTotalUsageSeconds = todayInfo.getTotalUsageSeconds();
+            serverMostUsedProgram = todayInfo.getMostUsedProgram();
+            serverProgramCount = todayInfo.getProgramCount();
+
+            if(todayInfo.getPrograms() != null) {
+                for(MyInfoDto.ProgramStatistics program : todayInfo.getPrograms()) {
+                    if(program.getProgramName() == null || program.getProgramName().isBlank()) {
+                        continue;
+                    }
+
+                    serverUsageMap.merge(
+                        program.getProgramName(),
+                        program.getUsageSeconds(),
+                        Long::sum
+                    );
+                }
+            }
+        }
+
+        updateTotalProgram();
+        updateMostProgram();
+        updateTotlaAllowPr();
+        updateRecentPrograms();
+    }
+
+    private Map<String, Long> getCombinedUsageMap() {
+        Map<String, Long> combinedUsageMap = new HashMap<>(serverUsageMap);
+
+        for(Map.Entry<String, Long> entry : ProgramTracker.getUsageMap().entrySet()) {
+            combinedUsageMap.merge(entry.getKey(), entry.getValue(), Long::sum);
+        }
+
+        return combinedUsageMap;
+    }
+
     private JPanel createActiveProgramPanel() {
         JPanel card = createCardPanel();
 
@@ -303,9 +402,11 @@ public class HomePanel extends JPanel {
     private void updateRecentPrograms() {
     recentProgramsListPanel.removeAll();
 
-    List<Map.Entry<String, Long>> topPrograms = ProgramTracker.getTopPrograms();
+    List<Map.Entry<String, Long>> topPrograms = getCombinedUsageMap().entrySet().stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+        .toList();
     int count = Math.min(5, topPrograms.size());
-    long totalSeconds = ProgramTracker.getTotalSeconds();
+    long totalSeconds = serverTotalUsageSeconds + ProgramTracker.getTotalSeconds();
 
     for(int i = 0; i < count; i++) {
         Map.Entry<String, Long> entry = topPrograms.get(i);
@@ -337,7 +438,8 @@ public class HomePanel extends JPanel {
         activeSessionTimeLabel.setText(formatSessionTime(ProgramTracker.getUsageSeconds()));
     }
     private void updateTotalProgram() {
-        totalSecondLabel.setText(formatSessionTime(ProgramTracker.getTotalSeconds()));
+        long totalSeconds = serverTotalUsageSeconds + ProgramTracker.getTotalSeconds();
+        totalSecondLabel.setText(formatSessionTime(totalSeconds));
     }
     private String formatSessionTime(long totalSeconds) {
         long hours = totalSeconds / 3600;
@@ -352,10 +454,25 @@ public class HomePanel extends JPanel {
         return seconds + "초";
     }
     private void updateMostProgram() {
-    mostProgramLabel.setText(ProgramTracker.getMostProgram());
+    List<Map.Entry<String, Long>> topPrograms = getCombinedUsageMap().entrySet().stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+        .toList();
+
+    if(topPrograms.isEmpty()) {
+        mostProgramLabel.setText(serverMostUsedProgram == null ? "기록 없음" : serverMostUsedProgram);
+        return;
+    }
+
+    mostProgramLabel.setText(ProgramTracker.formatProcessNameForDisplay(topPrograms.get(0).getKey()));
     }
     private void updateTotlaAllowPr(){
-    TotalAllowPr.setText(String.valueOf(ProgramTracker.amount()));
+    int programCount = getCombinedUsageMap().size();
+
+    if(programCount == 0) {
+        programCount = serverProgramCount;
+    }
+
+    TotalAllowPr.setText(programCount + "개");
     }
     private JPanel createSummaryRowPanel() {
         JPanel rowPanel = new JPanel(new GridLayout(1, 3, 15, 0));

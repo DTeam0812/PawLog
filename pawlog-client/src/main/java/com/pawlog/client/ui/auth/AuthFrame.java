@@ -35,6 +35,16 @@ public class AuthFrame extends JFrame {
         this(true);
     }
 
+    private void openDashboard() {
+        serverSyncScheduler.start();
+        autoSaveScheduler.start();
+        ProgramTracker.startTracking();
+
+        loggedIn = true;
+        setVisible(false);
+        dashboardFrame.open();
+    }
+
     public AuthFrame(boolean showImmediately) {
         dashboardFrame = new DashboardFrame(this::showLoginAfterLogout);
         setSize(590, 750);
@@ -43,14 +53,7 @@ public class AuthFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        Login loginPanel = new Login(() -> showPage("REGISTER"), () -> {
-            serverSyncScheduler.start();
-            autoSaveScheduler.start();
-            ProgramTracker.startTracking();
-            loggedIn = true;
-            setVisible(false);
-            dashboardFrame.open();
-        });
+        Login loginPanel = new Login(() -> showPage("REGISTER"), this::openDashboard);
         Register registerPanel = new Register(() -> showPage("LOGIN"));
 
         cardPanel.add(loginPanel, "LOGIN");

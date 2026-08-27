@@ -215,6 +215,7 @@ public class DashboardFrame extends JFrame {
 
     public void open() {
         homePanel.refreshUserInfo();
+        homePanel.loadTodayInfo();
         cardLayout.show(contentPanel, HOME);
         setState(JFrame.NORMAL);
         setVisible(true);
@@ -223,6 +224,7 @@ public class DashboardFrame extends JFrame {
     }
 
     public void resetUserData() {
+        homePanel.resetTodayInfo();
         statisticsPanel.resetUserData();
         cardLayout.show(contentPanel, HOME);
     }
