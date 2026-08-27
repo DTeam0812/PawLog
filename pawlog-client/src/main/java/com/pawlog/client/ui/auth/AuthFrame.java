@@ -50,7 +50,7 @@ public class AuthFrame extends JFrame {
         PawLogClient.getInstance().setForceLogoutListener(message -> {
             SwingUtilities.invokeLater(() -> handleForcedLogout(message));
         });
-        setSize(590, 750);
+        setSize(680, 760);
         setUndecorated(true);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

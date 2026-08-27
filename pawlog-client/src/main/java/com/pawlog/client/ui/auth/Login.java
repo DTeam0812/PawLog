@@ -3,20 +3,13 @@ package com.pawlog.client.ui.auth;
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
 import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.net.URL;
-import java.time.Year;
 
 import javax.swing.*;
 
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
-import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.common.dto.auth.AuthLoginDto;
-
-import org.w3c.dom.Text;
 
 
 
@@ -32,41 +25,33 @@ public class Login extends JPanel{
     private JPanel loginPanel(Runnable showRegister , Runnable loginsuccess){
         JPanel loginform = new JPanel();
         loginform.setLayout(new BoxLayout(loginform, BoxLayout.Y_AXIS));
-        loginform.setBackground(BACKGROUND);
-        loginform.setBorder(
-            BorderFactory.createEmptyBorder(70, 38, 30, 38)
-        );
-        JLabel nickname = new JLabel("닉네임");
-        JTextField nicknamefield = new JTextField();
-    
+        loginform.setOpaque(false);
+        loginform.setPreferredSize(new Dimension(460, 525));
         JLabel idLabel = new JLabel("아이디");
-        JTextField idField = new JTextField();
+        JTextField idField = textField("아이디를 입력하세요");
 
         JLabel passwordLabel = new JLabel("비밀번호");
-        JPasswordField passwordField = new JPasswordField();
-        nickname.setAlignmentX(Component.LEFT_ALIGNMENT);
-        nicknamefield.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JPasswordField passwordField = passwordField("비밀번호를 입력하세요");
         idLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         idField.setAlignmentX(Component.LEFT_ALIGNMENT);
         passwordLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        nicknamefield.setPreferredSize(new Dimension(500, 44));
-        nicknamefield.setMaximumSize(
-            new Dimension(Integer.MAX_VALUE, 44)
-        );
-        
 
-        idField.setPreferredSize(new Dimension(500, 44));
+        idField.setPreferredSize(new Dimension(460, 46));
         idField.setMaximumSize(
             new Dimension(Integer.MAX_VALUE, 44)
         );
 
-        passwordField.setPreferredSize(new Dimension(500, 44));
+        passwordField.setPreferredSize(new Dimension(460, 46));
         passwordField.setMaximumSize(
             new Dimension(Integer.MAX_VALUE, 44)
         );
-        JLabel warn = new JLabel("");
-        JButton loginButton = new JButton("로그인");
+        JLabel warn = new JLabel(" ");
+        warn.setFont(font(Font.PLAIN, 12));
+        warn.setForeground(RED);
+        warn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        warn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+        JButton loginButton = primaryButton("로그인");
 
         loginButton.addActionListener(event -> {
             String id = idField.getText().trim();
@@ -88,7 +73,7 @@ public class Login extends JPanel{
             }
 
             if (response.isSuccess() && response.getUser() != null) {
-                warn.setText("");
+                warn.setText(" ");
                 authStore.login(
                     response.getUser().getUserId(),
                     response.getUser().getId(),
@@ -101,34 +86,20 @@ public class Login extends JPanel{
             }
         });
 
-
-        loginButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        loginButton.setForeground(CARD);
-        loginButton.setBackground(PRIMARY);
-        loginButton.setFocusPainted(false);
-        loginButton.setBorderPainted(false);
+        loginButton.setFont(font(Font.BOLD, 15));
         loginButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        loginButton.setPreferredSize(new Dimension(460, 50));
+        loginButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
-        loginButton.setPreferredSize(new Dimension(500, 49));
-        loginButton.setMaximumSize(
-            new Dimension(Integer.MAX_VALUE, 49)
-        );
-        JButton register = new JButton("회원가입");
+        JButton register = outlineButton("회원가입");
         register.addActionListener(event -> {
             showRegister.run();
         });
 
         register.setAlignmentX(Component.LEFT_ALIGNMENT);
-        register.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        register.setForeground(CARD);
-        register.setBackground(PRIMARY);
-        register.setFocusPainted(false);
-        register.setBorderPainted(false);
-        register.setAlignmentX(Component.LEFT_ALIGNMENT);
-        register.setPreferredSize(new Dimension(500, 49));
-        register.setMaximumSize(
-            new Dimension(Integer.MAX_VALUE, 49)
-        );
+        register.setFont(font(Font.BOLD, 15));
+        register.setPreferredSize(new Dimension(460, 50));
+        register.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
 //----------------원본-----------------------
 //        JLabel title = new JLabel("🐾 Pawlog");
@@ -171,6 +142,15 @@ public class Login extends JPanel{
         titlePanel.add(title);
 //---------------------------------------
 
+        JLabel subtitle = new JLabel("프로그램 사용 시간을 기록하고 더 나은 습관을 만들어보세요");
+        subtitle.setFont(font(Font.PLAIN, 13));
+        subtitle.setForeground(SUB_TEXT);
+        JPanel subtitlePanel = new JPanel(new GridBagLayout());
+        subtitlePanel.setOpaque(false);
+        subtitlePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        subtitlePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        subtitlePanel.add(subtitle);
+
         Font labelFont = new Font("맑은 고딕", Font.BOLD, 14);
 
         idLabel.setFont(labelFont);
@@ -180,8 +160,9 @@ public class Login extends JPanel{
       
         
         loginform.add(titlePanel);
-        
-        loginform.add(Box.createVerticalStrut(28));
+        loginform.add(Box.createVerticalStrut(10));
+        loginform.add(subtitlePanel);
+        loginform.add(Box.createVerticalStrut(34));
         loginform.add(idLabel);
         loginform.add(Box.createVerticalStrut(7));
         loginform.add(idField);
@@ -193,12 +174,15 @@ public class Login extends JPanel{
         loginform.add(passwordField);
         loginform.add(Box.createVerticalStrut(7));
         loginform.add(warn);
-        loginform.add(Box.createVerticalStrut(50));
+        loginform.add(Box.createVerticalStrut(26));
         loginform.add(loginButton);
-        loginform.add(Box.createVerticalStrut(30));
+        loginform.add(Box.createVerticalStrut(14));
         loginform.add(register);
       
-        return loginform;
+        JPanel page = new JPanel(new GridBagLayout());
+        page.setBackground(BACKGROUND);
+        page.add(loginform);
+        return page;
     }
 
     
