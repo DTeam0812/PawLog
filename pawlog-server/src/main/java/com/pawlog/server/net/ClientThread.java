@@ -156,7 +156,7 @@ public class ClientThread extends Thread {
             else if (ServerProtocol.PROGRAM_ANALYTICS_GET.equals(command)) {
                 handleProgramAnalyticsJson(dataJson);
             }
-            else if (ServerProtocol.RECOMMEND_PROGRAM_GET.equals(command)) {
+            else if (ServerProtocol.RECENT_POPULAR_PROGRAM_GET.equals(command)) {
                 handleRecommendProgramJson(dataJson);
             }
             else {
