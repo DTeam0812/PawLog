@@ -12,7 +12,7 @@ public class PopularRankingDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Request {
-        private String ageGroup;   // "ALL", "10s", "20s", ... , "60s"
+        private String ageGroup;   // "ALL", "under_10", "10s", "20s", ... , "60s", "70s_over"
         private String gender;     // "ALL", "M", "F"
         private LocalDate startDate;
         private LocalDate endDate;

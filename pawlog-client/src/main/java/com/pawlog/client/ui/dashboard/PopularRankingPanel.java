@@ -24,7 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 public class PopularRankingPanel extends JPanel {
-    private final JComboBox<String> ageBox = combo("전체 연령", "10대", "20대", "30대", "40대", "50대", "60대 이상");
+    private final JComboBox<String> ageBox = combo("전체 연령", "10대 미만", "10대", "20대", "30대", "40대", "50대", "60대", "70대 이상");
     private final JComboBox<String> genderBox = combo("전체 성별", "남성", "여성");
     private final JButton searchButton = primaryButton("필터 적용");
     private final JLabel statusLabel = label("기간을 선택하고 조회해주세요.", Font.PLAIN, 12, SUB_TEXT);
@@ -160,12 +160,14 @@ public class PopularRankingPanel extends JPanel {
 
     private String getSelectedAgeGroup() {
         String selected = String.valueOf(ageBox.getSelectedItem());
+        if ("10대 미만".equals(selected)) return "under_10";
         if ("10대".equals(selected)) return "10s";
         if ("20대".equals(selected)) return "20s";
         if ("30대".equals(selected)) return "30s";
         if ("40대".equals(selected)) return "40s";
         if ("50대".equals(selected)) return "50s";
-        if ("60대 이상".equals(selected)) return "60s";
+        if ("60대".equals(selected)) return "60s";
+        if ("70대 이상".equals(selected)) return "70s_over";
         return "ALL";
     }
 
