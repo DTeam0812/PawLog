@@ -79,10 +79,12 @@ public class PopularRankingPanel extends JPanel {
             header.add(titlePanel("인기 프로그램 순위", "전체 사용자 데이터를 기준으로 가장 많이 사용한 프로그램을 확인하세요."), BorderLayout.WEST);
         }
 
-        JPanel filters = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 8, 3));
-        ageBox.setPreferredSize(new Dimension(115, 36));
-        genderBox.setPreferredSize(new Dimension(105, 36));
-        searchButton.setPreferredSize(new Dimension(90, 36));
+        JPanel filters = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 9, 3));
+        ageBox.setPreferredSize(new Dimension(150, 42));
+        genderBox.setPreferredSize(new Dimension(140, 42));
+        ageBox.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 8));
+        genderBox.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 8));
+        searchButton.setPreferredSize(new Dimension(105, 40));
         searchButton.addActionListener(event -> {
             if (lastStartDate == null || lastEndDate == null) {
                 statusLabel.setText("먼저 기간을 선택하고 조회해주세요.");
@@ -90,6 +92,7 @@ public class PopularRankingPanel extends JPanel {
             }
             loadRankings(lastStartDate, lastEndDate);
         });
+        filters.add(label("누가 많이 쓸까요?", Font.BOLD, 12, SUB_TEXT));
         filters.add(ageBox);
         filters.add(genderBox);
         filters.add(searchButton);

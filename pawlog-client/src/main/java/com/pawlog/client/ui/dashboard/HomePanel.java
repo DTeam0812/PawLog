@@ -85,6 +85,7 @@ public class HomePanel extends JPanel {
         bodyPanel.add(createBottomRowPanel());
 
         JScrollPane scrollPane = new JScrollPane(bodyPanel);
+        styleScrollPane(scrollPane);
 
         scrollPane.setBorder(null);
         scrollPane.setBackground(BACKGROUND);

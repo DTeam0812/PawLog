@@ -2,6 +2,7 @@ package com.pawlog.client.ui.dashboard;
 
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostListDto;
@@ -78,6 +79,9 @@ public class ProgramBoardPanel extends JPanel {
     private final JPanel commentRows = new ViewportWidthPanel();
     private final JTextField commentField = textField("댓글을 입력해주세요");
     private final JButton detailLikeButton = outlineButton("♡ 0");
+    private final JButton deleteButton =
+    outlineButton("삭제");
+
     private int currentPage;
     private int detailLikeCount;
     private long selectedProgramId = -1;
@@ -807,6 +811,7 @@ public class ProgramBoardPanel extends JPanel {
         postContentArea.setWrapStyleWord(true);
         postContentArea.setBorder(BorderFactory.createEmptyBorder(10, 11, 10, 11));
         JScrollPane scroll = new JScrollPane(postContentArea);
+        styleScrollPane(scroll);
         scroll.setBorder(BorderFactory.createLineBorder(BORDER));
         scroll.setPreferredSize(new Dimension(600, 230));
         group.add(scroll, BorderLayout.CENTER);
@@ -840,6 +845,7 @@ public class ProgramBoardPanel extends JPanel {
         page.add(backButton, BorderLayout.NORTH);
 
         JPanel content = transparentPanel(new BorderLayout(0, 12));
+
         content.add(createDetailPostCard(), BorderLayout.NORTH);
         content.add(createCommentCard(), BorderLayout.CENTER);
         page.add(content, BorderLayout.CENTER);
@@ -898,6 +904,14 @@ public class ProgramBoardPanel extends JPanel {
                 }
             }.execute();
         });
+        deleteButton.setPreferredSize(
+            new Dimension(70, 34)
+        );
+
+        deleteButton.setVisible(false);
+
+        action.add(deleteButton);
+        action.add(Box.createHorizontalStrut(8));
         action.add(detailLikeButton);
 
         card.add(detailTitleLabel);
@@ -917,6 +931,7 @@ public class ProgramBoardPanel extends JPanel {
 
         commentRows.setLayout(new BoxLayout(commentRows, BoxLayout.Y_AXIS));
         JScrollPane commentScroll = new JScrollPane(commentRows);
+        styleScrollPane(commentScroll);
         commentScroll.setBorder(null);
         commentScroll.setOpaque(false);
         commentScroll.getViewport().setOpaque(false);
@@ -955,7 +970,7 @@ public class ProgramBoardPanel extends JPanel {
     // 목록에서 받은 postId로 서버에 상세 내용을 요청한다.
     private void openPostDetail(long postId) {
         this.currentDetailPostId = postId;//현재 게시글 ID 저장
-
+        deleteButton.setVisible(false);
         detailTitleLabel.setText("게시글을 불러오는 중...");
         detailMetaLabel.setText("");
         detailContentArea.setText("");
@@ -997,7 +1012,11 @@ public class ProgramBoardPanel extends JPanel {
             post.getAuthorNickname()
                 + "  ·  " + post.getCreatedAt()
                 + "  ·  댓글 " + post.getCommentCount()
+                
         );
+        boolean myPost =
+        AuthStore.getInstance().getUserId() == post.getUserId();
+        deleteButton.setVisible(myPost);
         detailContentArea.setText(post.getContent());
         detailContentArea.setCaretPosition(0);
 
@@ -1026,6 +1045,7 @@ public class ProgramBoardPanel extends JPanel {
     }
 
     private void showPostDetailError(String message) {
+        deleteButton.setVisible(false);
         detailTitleLabel.setText("게시글을 불러오지 못했습니다.");
         detailMetaLabel.setText("");
         detailContentArea.setText(message == null || message.isBlank() ? "서버 응답을 확인해주세요." : message);

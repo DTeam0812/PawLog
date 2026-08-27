@@ -84,6 +84,7 @@ public class Widget {
     ProgramTracker.startTracking();
     window = new JWindow();
     AUTH = new AuthFrame(false);
+    AUTH.setWidgetVisibilityHandler(window::setVisible);
     
     JLabel dogLabel = createDogLabel();
 

@@ -28,13 +28,13 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 
 import com.pawlog.client.network.PawLogClient;
+import com.pawlog.client.ui.common.PawLogDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
-import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import java.time.Year;
 import javax.swing.JComboBox;
@@ -183,30 +183,17 @@ public class Register extends JPanel{
             String checkPassword = new String(ChpasswordField.getPassword());
 
             if (nickname.isEmpty() || id.isEmpty() || password.isEmpty() || checkPassword.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "모든 항목을 입력해 주세요.",
-                    "입력 확인",
-                    JOptionPane.WARNING_MESSAGE
-                );
+                PawLogDialog.warning(this, "입력 확인", "모든 항목을 입력해 주세요.");
                 return;
             }
 
-            if (!id.matches("[A-Za-z0-9_]{4,20}")) { JOptionPane.showMessageDialog(
-                    this,
-                    "아이디는 영문, 숫자, 밑줄을 사용하여 4~20자로 입력해 주세요.",
-                    "입력 확인",
-                    JOptionPane.WARNING_MESSAGE
-                );
+            if (!id.matches("[A-Za-z0-9_]{4,20}")) {
+                PawLogDialog.warning(this, "입력 확인", "아이디는 영문, 숫자, 밑줄을 사용하여 4~20자로 입력해 주세요.");
                 return;
             }
 
-            if (!password.equals(checkPassword)) { JOptionPane.showMessageDialog(
-                    this,
-                    "비밀번호가 서로 일치하지 않습니다.",
-                    "입력 확인",
-                    JOptionPane.WARNING_MESSAGE
-                );
+            if (!password.equals(checkPassword)) {
+                PawLogDialog.warning(this, "입력 확인", "비밀번호가 서로 일치하지 않습니다.");
                 return;
             }
 
@@ -226,37 +213,17 @@ public class Register extends JPanel{
                 );
 
                 if (!response.success()) {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        response.message(),
-                        "회원가입 실패",
-                        JOptionPane.WARNING_MESSAGE
-                    );
+                    PawLogDialog.warning(this, "회원가입 실패", response.message());
                     return;
                 }
 
-                JOptionPane.showMessageDialog(
-                    this,
-                    "회원가입이 완료되었습니다.",
-                    "회원가입 성공",
-                    JOptionPane.INFORMATION_MESSAGE
-                );
+                PawLogDialog.info(this, "회원가입 성공", "회원가입이 완료되었습니다.");
                 showLogin.run();
             } catch (DateTimeException exception) {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "올바른 생년월일을 선택해 주세요.",
-                    "입력 확인",
-                    JOptionPane.WARNING_MESSAGE
-                );
+                PawLogDialog.warning(this, "입력 확인", "올바른 생년월일을 선택해 주세요.");
             } catch (Exception exception) {
                 exception.printStackTrace();
-                JOptionPane.showMessageDialog(
-                    this,
-                    "서버 오류: " + exception.getMessage(),
-                    "회원가입 실패",
-                    JOptionPane.ERROR_MESSAGE
-                );
+                PawLogDialog.error(this, "회원가입 실패", "서버 오류: " + exception.getMessage());
             }
         });
         JButton backButton = new JButton("로그인으로 돌아가기");

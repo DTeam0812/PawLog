@@ -131,6 +131,7 @@ public class RecommendationPanel extends JPanel {
         list.add(createHeaderRow());
         for(String[] data : rankingData) list.add(createRankingRow(data));
         JScrollPane scroll = new JScrollPane(list);
+        styleScrollPane(scroll);
         scroll.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);

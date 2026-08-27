@@ -9,16 +9,28 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Rectangle;
 import java.util.prefs.Preferences;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
+import javax.swing.plaf.basic.BasicComboBoxUI;
+import javax.swing.plaf.basic.BasicScrollBarUI;
 
 public final class UiComponents {
     private static final Preferences THEME_PREFERENCES = Preferences.userNodeForPackage(UiComponents.class);
@@ -139,15 +151,118 @@ public final class UiComponents {
     }
 
     public static JComboBox<String> combo(String... values) {
-        JComboBox<String> combo = new JComboBox<>(values);
+        JComboBox<String> combo = new RoundedComboBox(values);
         combo.setFont(font(Font.PLAIN, 13));
         combo.setBackground(CARD);
-        combo.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER),
-            BorderFactory.createEmptyBorder(0, 8, 0, 8)
-        ));
+        combo.setForeground(TEXT);
+        combo.setBorder(BorderFactory.createEmptyBorder(0, 11, 0, 8));
         combo.setPreferredSize(new Dimension(160, 40));
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                JList<?> list,
+                Object value,
+                int index,
+                boolean selected,
+                boolean focused
+            ) {
+                JLabel cell = (JLabel)super.getListCellRendererComponent(list, value, index, selected, focused);
+                cell.setFont(font(Font.PLAIN, 13));
+                cell.setForeground(selected ? TEXT : SUB_TEXT);
+                cell.setBackground(selected ? PRIMARY_SOFT : CARD);
+                cell.setOpaque(index >= 0);
+                cell.setBorder(index < 0
+                    ? BorderFactory.createEmptyBorder(0, 3, 0, 3)
+                    : BorderFactory.createEmptyBorder(7, 10, 7, 10));
+                return cell;
+            }
+        });
+        combo.setUI(new BasicComboBoxUI() {
+            @Override
+            public void paintCurrentValueBackground(
+                Graphics graphics,
+                Rectangle bounds,
+                boolean focused
+            ) {
+                // PawLog의 흰색 둥근 배경을 유지하기 위해 기본 회색 선택 배경을 그리지 않는다.
+            }
+
+            @Override
+            protected JButton createArrowButton() {
+                JButton button = new JButton("v");
+                button.setFont(font(Font.BOLD, 11));
+                button.setForeground(PRIMARY);
+                button.setContentAreaFilled(false);
+                button.setFocusPainted(false);
+                button.setBorder(BorderFactory.createEmptyBorder(0, 4, 2, 4));
+                button.setPreferredSize(new Dimension(25, 0));
+                return button;
+            }
+        });
+        combo.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent event) {
+                SwingUtilities.invokeLater(() -> styleComboPopup(combo));
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent event) {}
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent event) {}
+        });
         return combo;
+    }
+
+    public static void styleScrollPane(JScrollPane scrollPane) {
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.getViewport().setBackground(CARD);
+
+        JScrollBar vertical = scrollPane.getVerticalScrollBar();
+        vertical.setOpaque(false);
+        vertical.setBackground(TRANSPARENT);
+        vertical.setPreferredSize(new Dimension(12, 0));
+        vertical.setUnitIncrement(14);
+        vertical.setUI(new SoftScrollBarUI());
+
+        JScrollBar horizontal = scrollPane.getHorizontalScrollBar();
+        horizontal.setOpaque(false);
+        horizontal.setBackground(TRANSPARENT);
+        horizontal.setPreferredSize(new Dimension(0, 12));
+        horizontal.setUnitIncrement(14);
+        horizontal.setUI(new SoftScrollBarUI());
+    }
+
+    private static void styleComboPopup(JComboBox<String> combo) {
+        Object child = combo.getAccessibleContext().getAccessibleChild(0);
+        if (!(child instanceof JPopupMenu popup)) {
+            return;
+        }
+
+        popup.setBackground(CARD);
+        popup.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SOFT_BORDER),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        stylePopupChildren(popup);
+    }
+
+    private static void stylePopupChildren(Component component) {
+        if (component instanceof JScrollPane scrollPane) {
+            scrollPane.setBorder(null);
+            scrollPane.getViewport().setBackground(CARD);
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            vertical.setPreferredSize(new Dimension(10, 0));
+            vertical.setUI(new SoftScrollBarUI());
+        }
+
+        if (component instanceof java.awt.Container container) {
+            for (Component child : container.getComponents()) {
+                stylePopupChildren(child);
+            }
+        }
     }
 
     public static class RoundedPanel extends JPanel {
@@ -235,6 +350,76 @@ public final class UiComponents {
         protected void paintComponent(Graphics graphics) {
             paintFieldBackground(graphics, this, hasFocus());
             super.paintComponent(graphics);
+        }
+    }
+
+    private static class RoundedComboBox extends JComboBox<String> {
+        RoundedComboBox(String[] values) {
+            super(values);
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(CARD);
+            g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 18, 18);
+            g2.dispose();
+
+            super.paintComponent(graphics);
+
+            g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(isFocusOwner() ? PRIMARY : BORDER);
+            g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 18, 18);
+            g2.dispose();
+        }
+    }
+
+    private static class SoftScrollBarUI extends BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            trackColor = PRIMARY_SOFT;
+            thumbColor = PRIMARY;
+        }
+
+        @Override
+        protected JButton createDecreaseButton(int orientation) {
+            return emptyScrollButton();
+        }
+
+        @Override
+        protected JButton createIncreaseButton(int orientation) {
+            return emptyScrollButton();
+        }
+
+        private JButton emptyScrollButton() {
+            JButton button = new JButton();
+            button.setPreferredSize(new Dimension(0, 0));
+            button.setMinimumSize(new Dimension(0, 0));
+            button.setMaximumSize(new Dimension(0, 0));
+            return button;
+        }
+
+        @Override
+        protected void paintTrack(Graphics graphics, JComponent component, Rectangle bounds) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setColor(PRIMARY_SOFT);
+            g2.fillRoundRect(bounds.x + 2, bounds.y, bounds.width - 4, bounds.height, 8, 8);
+            g2.dispose();
+        }
+
+        @Override
+        protected void paintThumb(Graphics graphics, JComponent component, Rectangle bounds) {
+            if (bounds.isEmpty() || !scrollbar.isEnabled()) {
+                return;
+            }
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(PRIMARY);
+            g2.fillRoundRect(bounds.x + 2, bounds.y + 2, bounds.width - 4, bounds.height - 4, 8, 8);
+            g2.dispose();
         }
     }
 

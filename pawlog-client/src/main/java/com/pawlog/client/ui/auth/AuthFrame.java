@@ -7,6 +7,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URL;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.swing.*;
 
@@ -17,6 +18,7 @@ import com.pawlog.client.Storage.UsageLocalSaveService;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.tracker.UsageKey;
+import com.pawlog.client.ui.common.PawLogDialog;
 import com.pawlog.client.ui.dashboard.DashboardFrame;
 
 public class AuthFrame extends JFrame {
@@ -29,6 +31,7 @@ public class AuthFrame extends JFrame {
     private final ServerSyncScheduler serverSyncScheduler = new ServerSyncScheduler();
     private final UsageLocalSaveService localSaveService = new UsageLocalSaveService();
     private static AuthStore authStore = AuthStore.getInstance();
+    private Consumer<Boolean> widgetVisibilityHandler = visible -> {};
     String id = authStore.getId();
     
     public AuthFrame() {
@@ -41,6 +44,7 @@ public class AuthFrame extends JFrame {
         ProgramTracker.startTracking();
 
         loggedIn = true;
+        widgetVisibilityHandler.accept(true);
         setVisible(false);
         dashboardFrame.open();
     }
@@ -80,17 +84,14 @@ public class AuthFrame extends JFrame {
             return;
         }
 
+        widgetVisibilityHandler.accept(false);
         showLoginAfterLogout();
 
-        JOptionPane.showMessageDialog(
-            this,
-            message,
-            "로그아웃 안내",
-            JOptionPane.WARNING_MESSAGE
-        );
+        PawLogDialog.warning(this, "로그아웃 안내", message);
     }
 
     private void showLoginAfterLogout() {
+        dashboardFrame.setVisible(false);
         ProgramTracker.stopTracking();
         autoSaveScheduler.stop();
         serverSyncScheduler.stop();
@@ -112,6 +113,14 @@ public class AuthFrame extends JFrame {
         setVisible(true);
         toFront();
         requestFocus();
+    }
+
+    public void setWidgetVisibilityHandler(
+        Consumer<Boolean> widgetVisibilityHandler
+    ) {
+        this.widgetVisibilityHandler = widgetVisibilityHandler == null
+            ? visible -> {}
+            : widgetVisibilityHandler;
     }
 
     private JPanel topPanel() {
