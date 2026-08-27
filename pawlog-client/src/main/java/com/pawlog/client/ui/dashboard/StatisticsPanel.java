@@ -340,7 +340,11 @@ public class StatisticsPanel extends JPanel {
                     }
 
                     updatePersonalStatistics(response.getData());
-                    warnlabel.setText("");
+                    if (!endDate.isBefore(LocalDate.now())) {
+                        warnlabel.setText("오늘 저장한 기록은 통계에 최대 5분 후 반영됩니다.");
+                    } else {
+                        warnlabel.setText("");
+                    }
                 } catch (Exception exception) {
                     warnlabel.setText("서버 연결에 실패했습니다.");
                     exception.printStackTrace();

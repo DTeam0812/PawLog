@@ -79,6 +79,7 @@ public class ProgramBoardPanel extends JPanel {
     private final JPanel commentRows = new ViewportWidthPanel();
     private final JTextField commentField = textField("댓글을 입력해주세요");
     private final JButton detailLikeButton = outlineButton("♡ 0");
+    private final JButton Likebutton = outlineButton("♡ 추천하기");
     private final JButton deleteButton =
     outlineButton("삭제");
 
@@ -543,6 +544,10 @@ public class ProgramBoardPanel extends JPanel {
 
         JPanel titleRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titleRow.add(boardTitle);
+        Likebutton.setFont(font(Font.BOLD, 12));
+        Likebutton.setPreferredSize(new Dimension(104, 34));
+        Likebutton.setToolTipText("이 프로그램을 다른 사용자에게 추천해요");
+        titleRow.add(Likebutton);
         titleRow.setAlignmentX(LEFT_ALIGNMENT);
         header.add(titleRow);
         header.add(Box.createVerticalStrut(15));
@@ -552,9 +557,9 @@ public class ProgramBoardPanel extends JPanel {
         searchField.setPreferredSize(new Dimension(230, 36));
         JPanel rightActions = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         JComboBox<String> sortBox = combo("최신순", "추천순", "댓글순");
-        sortBox.setPreferredSize(new Dimension(90, 36));
-        JButton writeButton = primaryButton("✎ 글쓰기");
-        writeButton.setPreferredSize(new Dimension(95, 36));
+        sortBox.setPreferredSize(new Dimension(112, 36));
+        JButton writeButton = primaryButton("+ 글쓰기");
+        writeButton.setPreferredSize(new Dimension(104, 36));
         writeButton.addActionListener(event -> cardLayout.show(this, WRITE));
         rightActions.add(sortBox);
         rightActions.add(writeButton);

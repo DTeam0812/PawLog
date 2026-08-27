@@ -57,8 +57,12 @@ public class PopularRankingPanel extends JPanel {
             try {
                 PopularRankingDto.Response response = pawLogClient.getPopularRankings(startDate, endDate, gender, ageGroup);
                 SwingUtilities.invokeLater(() -> {
-                    statusLabel.setText(response.getMessage());
-                    if (response.isSuccess()) updateRankingList(response.getRankings());
+                    if (response.isSuccess()) {
+                        updateRankingList(response.getRankings());
+                        updateSuccessStatus(response, endDate);
+                    } else {
+                        statusLabel.setText(response.getMessage());
+                    }
                     searchButton.setEnabled(true);
                 });
             } catch (Exception exception) {
@@ -114,14 +118,23 @@ public class PopularRankingPanel extends JPanel {
     }
 
     private JPanel createTableHeader() {
-        JPanel row = transparentPanel(new GridLayout(1, 5));
+        JPanel row = transparentPanel(new GridLayout(1, 4));
         row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER), BorderFactory.createEmptyBorder(0, 10, 10, 10)));
         row.add(headerLabel("순위"));
         row.add(headerLabel("프로그램"));
-        row.add(headerLabel("카테고리"));
         row.add(headerLabel("평균 사용 시간"));
         row.add(headerLabel("사용 비율"));
         return row;
+    }
+
+    private void updateSuccessStatus(PopularRankingDto.Response response, LocalDate endDate) {
+        boolean empty = response.getRankings() == null || response.getRankings().isEmpty();
+
+        if (empty && !endDate.isBefore(LocalDate.now())) {
+            statusLabel.setText("오늘 인기 순위는 자정 집계 후 반영됩니다. 어제까지의 기간으로 조회해보세요.");
+            return;
+        }
+        statusLabel.setText(response.getMessage());
     }
 
     private void updateRankingList(List<PopularRankingDto.RankingItem> rankings) {
@@ -138,7 +151,7 @@ public class PopularRankingPanel extends JPanel {
     }
 
     private JPanel createRankingRow(PopularRankingDto.RankingItem item) {
-        JPanel row = transparentPanel(new GridLayout(1, 5));
+        JPanel row = transparentPanel(new GridLayout(1, 4));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         row.setPreferredSize(new Dimension(0, 42));
         row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, TABLE_DIVIDER));
@@ -148,7 +161,6 @@ public class PopularRankingPanel extends JPanel {
         JLabel nameLabel = label(item.getProgramName(), Font.BOLD, 13, TEXT);
         row.add(cell(rankLabel));
         row.add(cell(nameLabel));
-        /*row.add(cell(label(item.getCategoryName(), Font.PLAIN, 12, SUB_TEXT)));*/
         row.add(cell(label(item.getAvgUsageFormatted(), Font.PLAIN, 12, TEXT)));
         row.add(cell(label(item.getUsagePercentage() + "%", Font.BOLD, 12, PRIMARY)));
         return row;

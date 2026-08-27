@@ -16,19 +16,26 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.RoundRectangle2D;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.pawlog.client.ui.widget.WidgetSettings;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.JToggleButton;
 
 public class DashboardFrame extends JFrame {
     private final Runnable showLogin;
@@ -60,6 +67,13 @@ public class DashboardFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setLayout(new BorderLayout());
+        updateWindowShape();
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent event) {
+                updateWindowShape();
+            }
+        });
 
         add(createHeader(), BorderLayout.NORTH);
         add(createSidebar(), BorderLayout.WEST);
@@ -77,14 +91,8 @@ public class DashboardFrame extends JFrame {
         titleLabel.setForeground(CARD);
         titleLabel.setVerticalAlignment(SwingConstants.CENTER);
 
-        closeButton = new JButton("×");
-        closeButton.setFont(font(Font.BOLD, 20));
-        closeButton.setForeground(CARD);
-        closeButton.setBackground(PRIMARY_HOVER);
-        closeButton.setFocusPainted(false);
-        closeButton.setBorderPainted(false);
-        closeButton.setPreferredSize(new Dimension(36, 36));
-        closeButton.setMargin(new Insets(0, 0, 2, 0));
+        closeButton = new HeaderCloseButton();
+        closeButton.setPreferredSize(new Dimension(38, 38));
         closeButton.addActionListener(event -> setVisible(false));
 
        
@@ -101,6 +109,11 @@ public class DashboardFrame extends JFrame {
         addHeaderDrag(titleLabel);
 
         return headerPanel;
+    }
+
+    private void updateWindowShape() {
+        if (getWidth() <= 0 || getHeight() <= 0) return;
+        setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 30, 30));
     }
 
     private void addHeaderDrag(Component component) {
@@ -138,7 +151,7 @@ public class DashboardFrame extends JFrame {
     private JPanel createSidebar() {
         JPanel sidebarPanel = new JPanel();
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
-        sidebarPanel.setPreferredSize(new Dimension(210, 0));
+        sidebarPanel.setPreferredSize(new Dimension(220, 0));
         sidebarPanel.setBackground(SIDEBAR);
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(22, 12, 18, 12));
 
@@ -178,7 +191,7 @@ public class DashboardFrame extends JFrame {
 
     private JButton createMenuButton(String text, String cardName) {
         JButton button = new SidebarButton(text, cardName);
-        button.setFont(font(Font.BOLD, 16));
+        button.setFont(font(Font.BOLD, 18));
         button.setForeground(new Color(225, 230, 232));
         button.setBackground(SIDEBAR);
         button.setFocusPainted(false);
@@ -187,9 +200,11 @@ public class DashboardFrame extends JFrame {
         button.setOpaque(false);
         button.setHorizontalAlignment(SwingConstants.LEFT);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setPreferredSize(new Dimension(196, 48));
+        button.setMinimumSize(new Dimension(196, 48));
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createEmptyBorder(0, 18, 0, 12));
+        button.setBorder(BorderFactory.createEmptyBorder(0, 30, 0, 12));
 
         menuButtons.put(cardName, button);
 
@@ -251,11 +266,20 @@ public class DashboardFrame extends JFrame {
 
             if (selected) {
                 g2.setColor(new Color(45, 29, 23, 28));
-                g2.fillRoundRect(2, 4, getWidth() - 4, getHeight() - 5, 22, 22);
+                g2.fillRoundRect(4, 6, getWidth() - 8, getHeight() - 7, 28, 28);
             }
 
             g2.setColor(fill);
-            g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 4, 22, 22);
+            g2.fillRoundRect(3, 3, getWidth() - 6, getHeight() - 7, 28, 28);
+
+            if (selected) {
+                g2.setColor(CARD);
+                int pawY = getHeight() / 2;
+                g2.fillOval(14, pawY, 7, 6);
+                g2.fillOval(13, pawY - 6, 3, 4);
+                g2.fillOval(17, pawY - 8, 3, 4);
+                g2.fillOval(21, pawY - 6, 3, 4);
+            }
             g2.dispose();
             super.paintComponent(graphics);
         }
@@ -296,7 +320,7 @@ public class DashboardFrame extends JFrame {
         page.setBackground(BACKGROUND);
         page.setBorder(BorderFactory.createEmptyBorder(34, 38, 34, 38));
 
-        JPanel heading = titlePanel("설정", "PawLog를 나에게 어울리는 색으로 꾸며보세요.");
+        JPanel heading = titlePanel("설정", "테마와 위젯 움직임을 내 취향에 맞게 바꿔보세요.");
         heading.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         RoundedPanel themeCard = card();
@@ -323,9 +347,39 @@ public class DashboardFrame extends JFrame {
         themeCard.add(themeTitle, BorderLayout.NORTH);
         themeCard.add(choices, BorderLayout.CENTER);
 
+        RoundedPanel motionCard = card();
+        motionCard.setLayout(new BorderLayout(0, 18));
+        motionCard.setBorder(BorderFactory.createEmptyBorder(24, 26, 26, 26));
+        motionCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        motionCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
+
+        JPanel motionTitle = transparentPanel();
+        motionTitle.setLayout(new BoxLayout(motionTitle, BoxLayout.Y_AXIS));
+        motionTitle.add(label("위젯 움직임", Font.BOLD, 18, TEXT));
+        motionTitle.add(Box.createVerticalStrut(5));
+        motionTitle.add(label("강아지가 언제 움직일지 선택할 수 있어요.", Font.PLAIN, 13, SUB_TEXT));
+
+        JPanel motionChoices = transparentPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        MovementModeButton hoverOnlyButton = new MovementModeButton("마우스를 올릴 때만", false);
+        MovementModeButton alwaysButton = new MovementModeButton("항상 움직이기", true);
+        ButtonGroup movementGroup = new ButtonGroup();
+        movementGroup.add(hoverOnlyButton);
+        movementGroup.add(alwaysButton);
+
+        boolean alwaysAnimated = WidgetSettings.isAlwaysAnimated();
+        hoverOnlyButton.setSelected(!alwaysAnimated);
+        alwaysButton.setSelected(alwaysAnimated);
+        motionChoices.add(hoverOnlyButton);
+        motionChoices.add(alwaysButton);
+
+        motionCard.add(motionTitle, BorderLayout.NORTH);
+        motionCard.add(motionChoices, BorderLayout.CENTER);
+
         page.add(heading);
         page.add(Box.createVerticalStrut(24));
         page.add(themeCard);
+        page.add(Box.createVerticalStrut(16));
+        page.add(motionCard);
         page.add(Box.createVerticalGlue());
         return page;
     }
@@ -338,7 +392,6 @@ public class DashboardFrame extends JFrame {
         UiComponents.applyAccent(accent);
         replaceThemeColors(this, previousPrimary, previousHover, previousSoft);
         headerPanel.setBackground(PRIMARY);
-        closeButton.setBackground(PRIMARY_HOVER);
         selectMenu(selectedCardName);
         revalidate();
         repaint();
@@ -395,6 +448,73 @@ public class DashboardFrame extends JFrame {
             g2.setColor(fill);
             g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 3, 22, 22);
             g2.dispose();
+            super.paintComponent(graphics);
+        }
+    }
+
+    private class HeaderCloseButton extends JButton {
+        HeaderCloseButton() {
+            super("×");
+            setFont(font(Font.BOLD, 22));
+            setForeground(RED);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setMargin(new Insets(0, 0, 2, 0));
+            setBorder(BorderFactory.createEmptyBorder());
+            setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            boolean hovered = getModel().isRollover();
+            boolean pressed = getModel().isPressed();
+            Color fill = pressed ? RED.darker() : hovered ? RED : new Color(255, 235, 232);
+
+            g2.setColor(new Color(94, 48, 42, 24));
+            g2.fillRoundRect(2, 4, getWidth() - 4, getHeight() - 5, 24, 24);
+            g2.setColor(fill);
+            g2.fillRoundRect(1, 1, getWidth() - 3, getHeight() - 4, 24, 24);
+            g2.dispose();
+
+            setForeground(hovered || pressed ? CARD : RED);
+            super.paintComponent(graphics);
+        }
+    }
+
+    private class MovementModeButton extends JToggleButton {
+        private final boolean alwaysAnimated;
+
+        MovementModeButton(String text, boolean alwaysAnimated) {
+            super(text);
+            this.alwaysAnimated = alwaysAnimated;
+            setFont(font(Font.BOLD, 13));
+            setForeground(TEXT);
+            setPreferredSize(new Dimension(170, 42));
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+            addActionListener(event -> {
+                WidgetSettings.setAlwaysAnimated(this.alwaysAnimated);
+                repaint();
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(isSelected() ? PRIMARY_SOFT : CARD);
+            g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 3, 22, 22);
+            g2.setColor(isSelected() ? PRIMARY : BORDER);
+            g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 4, 22, 22);
+            g2.dispose();
+            setForeground(isSelected() ? PRIMARY : TEXT);
             super.paintComponent(graphics);
         }
     }

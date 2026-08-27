@@ -5,6 +5,9 @@ import static com.pawlog.client.ui.dashboard.UiComponents.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.geom.RoundRectangle2D;
 import java.net.URL;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -59,6 +62,13 @@ public class AuthFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        updateWindowShape();
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent event) {
+                updateWindowShape();
+            }
+        });
 
         Login loginPanel = new Login(() -> showPage("REGISTER"), this::openDashboard);
         Register registerPanel = new Register(() -> showPage("LOGIN"));
@@ -152,14 +162,8 @@ public class AuthFrame extends JFrame {
         titleLabel.setForeground(CARD);
         titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 22));
 
-        JButton closeButton = new JButton("×");
-        closeButton.setFont(new Font("맑은 고딕", Font.BOLD, 22));
-        closeButton.setForeground(CARD);
-        closeButton.setBackground(RED);
-        closeButton.setFocusPainted(false);
-        closeButton.setBorderPainted(false);
+        JButton closeButton = new AuthCloseButton();
         closeButton.setPreferredSize(new Dimension(38, 38));
-        closeButton.setMargin(new Insets(0, 0, 2, 0));
         closeButton.addActionListener(event -> setVisible(false));
 
         JPanel closeButtonPanel = new JPanel(new GridBagLayout());
@@ -173,6 +177,38 @@ public class AuthFrame extends JFrame {
         addHeaderDrag(titleLabel);
 
         return headerPanel;
+    }
+
+    private void updateWindowShape() {
+        if (getWidth() <= 0 || getHeight() <= 0) return;
+        setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 30, 30));
+    }
+
+    private class AuthCloseButton extends JButton {
+        AuthCloseButton() {
+            super("×");
+            setFont(font(Font.BOLD, 22));
+            setForeground(RED);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setMargin(new Insets(0, 0, 2, 0));
+            setBorder(BorderFactory.createEmptyBorder());
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            boolean active = getModel().isRollover() || getModel().isPressed();
+            g2.setColor(active ? RED : new Color(255, 235, 232));
+            g2.fillRoundRect(1, 1, getWidth() - 3, getHeight() - 4, 24, 24);
+            g2.dispose();
+            setForeground(active ? CARD : RED);
+            super.paintComponent(graphics);
+        }
     }
 
     private void addHeaderDrag(Component component) {

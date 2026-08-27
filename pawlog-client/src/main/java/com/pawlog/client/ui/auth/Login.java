@@ -23,10 +23,10 @@ public class Login extends JPanel{
     }
 
     private JPanel loginPanel(Runnable showRegister , Runnable loginsuccess){
-        JPanel loginform = new JPanel();
+        JPanel loginform = card();
         loginform.setLayout(new BoxLayout(loginform, BoxLayout.Y_AXIS));
-        loginform.setOpaque(false);
-        loginform.setPreferredSize(new Dimension(460, 525));
+        loginform.setBorder(BorderFactory.createEmptyBorder(38, 42, 38, 42));
+        loginform.setPreferredSize(new Dimension(540, 610));
         JLabel idLabel = new JLabel("아이디");
         JTextField idField = textField("아이디를 입력하세요");
 
