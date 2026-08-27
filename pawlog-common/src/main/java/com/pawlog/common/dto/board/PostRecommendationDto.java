@@ -22,9 +22,9 @@ public class PostRecommendationDto {
     @NoArgsConstructor
     public static class RecommendProgram{
         String program;
-        int recommend;
+        int usercount;
     }
-
+    
 
     @Data
     @AllArgsConstructor

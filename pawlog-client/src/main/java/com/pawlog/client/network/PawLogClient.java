@@ -157,7 +157,55 @@ public class PawLogClient {
             throw exception;
         }
     }
+   private synchronized RecentPopularProgramDto.Response sendHotProgram(String requestJson) throws Exception{
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
 
+        if(responseJson == null){
+            disconnect();
+            return new RecentPopularProgramDto.Response(false, "서버연결실패", 500, List.of());
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        JsonNode datanode = root.path("data");
+
+        if(!success) {
+            return new RecentPopularProgramDto.Response(false, message, code, List.of());
+        }
+
+        if(datanode.isMissingNode() || datanode.isNull()) {
+            return new RecentPopularProgramDto.Response(true, message, code, List.of());
+        }
+
+        if(!datanode.isArray()) {
+            return new RecentPopularProgramDto.Response(false, "핫 프로그램 응답 형식이 올바르지 않습니다.", 500, List.of());
+        }
+
+        List<RecentPopularProgramDto.Hotprogram> list = new ArrayList<>();
+
+        for(JsonNode itemNode : datanode) {
+            RecentPopularProgramDto.Hotprogram item = JsonUtil.fromJson(
+                itemNode.toString(),
+                RecentPopularProgramDto.Hotprogram.class
+            );
+
+            list.add(item);
+        }
+
+        return new RecentPopularProgramDto.Response(true, message, code, list);  
+    }
+
+    public synchronized RecentPopularProgramDto.Response getHotProgram(int count) throws Exception{
+        RecentPopularProgramDto.Request request = new RecentPopularProgramDto.Request(count);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.RECOMMEND_PROGRAM_GET, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendHotProgram(requestJson);
+    }
     // 프로그램 ID와 페이지 정보를 묶어 게시글 목록을 서버에 요청한다.
     public PostListDto.Response getPostList(long programId, int page, int pageSize) throws Exception {
         PostListDto.Request request = new PostListDto.Request(
@@ -207,7 +255,7 @@ public class PawLogClient {
     public synchronized PostRecommendationDto.Response getRecommendTop(int count) throws Exception{
         PostRecommendationDto.Request request = new PostRecommendationDto.Request(count);
         JsonNode dataNode = JsonUtil.toJsonNode(request);
-        RequestPacket requestPacket = new RequestPacket(ServerProtocol.RECOMMEND_PROGRAM_GET, dataNode);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.RECENT_POPULAR_PROGRAM_GET, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendRcommendTopJson(requestJson);
     }

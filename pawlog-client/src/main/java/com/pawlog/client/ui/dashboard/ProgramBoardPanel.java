@@ -5,6 +5,8 @@ import static com.pawlog.client.ui.dashboard.UiComponents.*;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostListDto;
+import com.pawlog.common.dto.board.PostRecommendationDto;
+import com.pawlog.common.dto.board.RecentPopularProgramDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 import com.pawlog.common.dto.board.PostLikeDto;
 import com.pawlog.common.dto.board.PostDetailDto.commentitem;
@@ -68,6 +70,7 @@ public class ProgramBoardPanel extends JPanel {
     private final JPanel paginationPanel = transparentPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
     private final JTextField postTitleField = textField("제목을 입력해주세요");
     private final JTextArea postContentArea = new JTextArea();
+    private JPanel cards = transparentPanel(new GridLayout(1, 3, 13, 0));
     private final JLabel contentCountLabel = label("0 / 500", Font.PLAIN, 11, SUB_TEXT);
     private final JLabel detailTitleLabel = label("게시글 제목", Font.BOLD, 22, TEXT);
     private final JLabel detailMetaLabel = label("작성자 · 작성 시간", Font.PLAIN, 11, SUB_TEXT);
@@ -112,17 +115,64 @@ public class ProgramBoardPanel extends JPanel {
     }
 
     private JPanel createHotProgramCards() {
-        JPanel cards = transparentPanel(new GridLayout(1, 3, 13, 0));
+        
         cards.setAlignmentX(LEFT_ALIGNMENT);
         cards.setMaximumSize(new Dimension(Integer.MAX_VALUE, 145));
         cards.setPreferredSize(new Dimension(700, 145));
-        cards.add(createHotProgramCard(1, "VS Code", "개발 도구", "추천 1,284"));
-        cards.add(createHotProgramCard(2, "Chrome", "브라우저", "추천 1,052"));
-        cards.add(createHotProgramCard(3, "Discord", "커뮤니케이션", "추천 847"));
+        loadHotPrograms();
+        
+        
         return cards;
     }
-    
-    private JPanel createHotProgramCard(int rank, String name, String category, String count) {
+    private void loadHotPrograms(){
+        new SwingWorker<RecentPopularProgramDto.Response, Void>() {
+            @Override
+            protected RecentPopularProgramDto.Response doInBackground() throws Exception {
+                return pawLogClient.getHotProgram(3);
+            }
+
+            @Override
+            protected void done() {
+                cards.removeAll();
+
+                try {
+                    RecentPopularProgramDto.Response response = get();
+
+                    if (!response.isSuccess()) {
+                        cards.add(label(response.getMessage(), Font.PLAIN, 12, SUB_TEXT));
+                        return;
+                    }
+
+                    List<RecentPopularProgramDto.Hotprogram> programs =
+                    response.getData();
+
+                    if(programs == null || programs.isEmpty()){
+                        cards.add(label("핫 프로그램이 없습니다.", Font.PLAIN, 12, SUB_TEXT));
+                        return;
+                    }
+
+                    int count = Math.min(3, programs.size());
+
+                    for(int i = 0; i < count; i++){
+                        RecentPopularProgramDto.Hotprogram program = programs.get(i);
+
+                        cards.add(createHotProgramCard(
+                            i + 1,
+                            program.getProgramname(),
+                            program.getRecommmendcount()
+                        ));
+                    }
+                } catch(Exception exception) {
+                    cards.add(label("핫 프로그램 조회에 실패했습니다.", Font.PLAIN, 12, SUB_TEXT));
+                    exception.printStackTrace();
+                } finally {
+                    cards.revalidate();
+                    cards.repaint();
+                }
+            }
+        }.execute();
+    }
+    private JPanel createHotProgramCard(int rank, String name,  int count) {
         UiComponents.RoundedPanel card = card();
         card.setLayout(new BorderLayout(0, 8));
         card.setBorder(BorderFactory.createEmptyBorder(13, 15, 12, 15));
@@ -137,12 +187,12 @@ public class ProgramBoardPanel extends JPanel {
         JPanel names = transparentPanel();
         names.setLayout(new BoxLayout(names, BoxLayout.Y_AXIS));
         names.add(label(name, Font.BOLD, 14, TEXT));
-        names.add(label(category, Font.PLAIN, 10, SUB_TEXT));
+        
         titleRow.add(rankLabel, BorderLayout.WEST);
         titleRow.add(names, BorderLayout.CENTER);
 
         JPanel footer = transparentPanel(new BorderLayout());
-        footer.add(label(count, Font.BOLD, 11, PRIMARY), BorderLayout.WEST);
+        footer.add(label("추천 " + count, Font.BOLD, 11, PRIMARY), BorderLayout.WEST);
         JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         JButton recommendButton = outlineButton("추천하기");
         recommendButton.setPreferredSize(new Dimension(80, 28));

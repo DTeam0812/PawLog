@@ -536,7 +536,7 @@ public class HomePanel extends JPanel {
                     );
                     return;
                 }
-
+                
                 List<PostRecommendationDto.RecommendProgram> programs =
                     response.getData();
 
@@ -556,7 +556,7 @@ public class HomePanel extends JPanel {
                     recommendationRankingPanel.add(createRankingRow(
                         i + 1,
                         program.getProgram(),
-                        "추천 " + program.getRecommend()
+                        "최근 두시간 이용자수 " + program.getUsercount()
                     ));
 
                     if(i < count - 1) {
