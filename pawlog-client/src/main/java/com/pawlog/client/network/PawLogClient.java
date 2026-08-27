@@ -1,5 +1,6 @@
 package com.pawlog.client.network;
 import com.pawlog.common.dto.board.*;
+import com.pawlog.common.dto.board.PostRecommendationDto.RecommendProgram;
 import com.pawlog.common.protocol.RequestPacket;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -14,15 +15,10 @@ import java.util.Map;
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
-import com.pawlog.common.dto.board.ProgramSearchDto;
-import com.pawlog.common.dto.board.PostDetailDto;
-import com.pawlog.common.dto.board.PostEnrollDto;
-import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
 import com.pawlog.common.dto.usage.MyInfoDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
-import com.pawlog.common.dto.board.CommentDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.pawlog.Sync.Usagebatch;
 import com.pawlog.Sync.Usageitem;
@@ -176,7 +172,46 @@ public class PawLogClient {
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendPostListJson(requestJson);
     }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private synchronized PostRecommendationDto.Response sendRcommendTopJson(String requestJson) throws Exception{
+        connect();
+        output.println(requestJson);
+        String responseJson = input.readLine();
 
+        if(responseJson == null){
+            disconnect();
+            return new PostRecommendationDto.Response(false , 500 , "서버연결실패" , null);
+        }
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt();
+        String message = root.path("message").asText();
+        JsonNode datanode = root.path("data");
+        if(datanode.isMissingNode() || datanode.isNull()) {
+                return new PostRecommendationDto.Response(true, code, message, List.of());
+            }
+            List<RecommendProgram> list = new ArrayList<>();
+            
+
+        for(JsonNode itemNode : datanode) {
+            PostRecommendationDto.RecommendProgram item = JsonUtil.fromJson(
+                itemNode.toString(),
+                PostRecommendationDto.RecommendProgram.class
+            );
+
+            list.add(item);
+        }
+          return new PostRecommendationDto.Response(success,code,message,list);  
+    
+    }
+    public synchronized PostRecommendationDto.Response getRecommendTop(int count) throws Exception{
+        PostRecommendationDto.Request request = new PostRecommendationDto.Request(count);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.RECOMMEND_PROGRAM_GET, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendRcommendTopJson(requestJson);
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private synchronized AuthLoginDto.Response sendLoginJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);

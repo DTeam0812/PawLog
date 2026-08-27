@@ -5,7 +5,9 @@ import static com.pawlog.client.ui.dashboard.UiComponents.*;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.Storage.UsageLocalSaveService;
 import com.pawlog.client.Storage.UsageServerSyncService;
+import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.tracker.ProgramTracker;
+import com.pawlog.common.dto.board.PostRecommendationDto;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -42,7 +44,7 @@ public class HomePanel extends JPanel {
     private final AuthStore authStore = AuthStore.getInstance();
     private final UsageLocalSaveService localSaveService = new UsageLocalSaveService();
     private final UsageServerSyncService serverSyncService = new UsageServerSyncService();
-
+    private  JPanel recommendationRankingPanel ;
     private JLabel mostProgramLabel;
     private JLabel activeProgramNameLabel;
     private JLabel activeWindowTitleLabel;
@@ -51,6 +53,7 @@ public class HomePanel extends JPanel {
     private JLabel TotalAllowPr;
     private JLabel greetingLabel;
     private JPanel recentProgramsListPanel;
+
     public HomePanel() {
         setLayout(new BorderLayout());
         setBackground(BACKGROUND);
@@ -513,7 +516,69 @@ public class HomePanel extends JPanel {
 
         return row;
     }
+    private void loadRecommendTop5() {
+    new SwingWorker<PostRecommendationDto.Response, Void>() {
+        @Override
+        protected PostRecommendationDto.Response doInBackground() throws Exception {
+            return PawLogClient.getInstance().getRecommendTop(  5 );
+        }
 
+        @Override
+        protected void done() {
+            try {
+                PostRecommendationDto.Response response = get();
+
+                recommendationRankingPanel.removeAll();
+
+                if(!response.isSuccess()) {
+                    recommendationRankingPanel.add(
+                        new JLabel(response.getMessage())
+                    );
+                    return;
+                }
+
+                List<PostRecommendationDto.RecommendProgram> programs =
+                    response.getData();
+
+                if(programs == null || programs.isEmpty()) {
+                    recommendationRankingPanel.add(
+                        new JLabel("추천 프로그램이 없습니다.")
+                    );
+                    return;
+                }
+
+               
+                int count = Math.min(5, programs.size());
+                for(int i = 0; i < count ; i++) {
+                    PostRecommendationDto.RecommendProgram program =
+                        programs.get(i);
+
+                    recommendationRankingPanel.add(createRankingRow(
+                        i + 1,
+                        program.getProgram(),
+                        "추천 " + program.getRecommend()
+                    ));
+
+                    if(i < count - 1) {
+                        recommendationRankingPanel.add(
+                            Box.createVerticalStrut(12)
+                        );
+                    }
+                }
+            } catch(Exception exception) {
+                recommendationRankingPanel.removeAll();
+                recommendationRankingPanel.add(
+                    new JLabel("추천 프로그램 조회에 실패했습니다.")
+                );
+
+                exception.printStackTrace();
+            } finally {
+                recommendationRankingPanel.revalidate();
+                recommendationRankingPanel.repaint();
+            }
+        }
+    }.execute();
+}
     private JPanel createRecommendationPanel() {
         JPanel card = createCardPanel();
 
@@ -525,17 +590,20 @@ public class HomePanel extends JPanel {
         title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
         title.setForeground(TEXT);
 
-        JPanel rankingPanel = new JPanel();
-        rankingPanel.setOpaque(false);
-        rankingPanel.setLayout(new BoxLayout(rankingPanel, BoxLayout.Y_AXIS));
+        recommendationRankingPanel = new JPanel();
+        recommendationRankingPanel.setOpaque(false);
+        recommendationRankingPanel.setLayout(
+            new BoxLayout(recommendationRankingPanel, BoxLayout.Y_AXIS)
+        );
 
-        rankingPanel.add(createRankingRow(1, "Notion", "추천 128"));
-        rankingPanel.add(Box.createVerticalStrut(12));
+        recommendationRankingPanel.add(new JLabel("추천 프로그램을 불러오는 중..."));
 
-        rankingPanel.add(createRankingRow(2, "Figma", "추천 95"));
-        rankingPanel.add(Box.createVerticalStrut(12));
-
-        rankingPanel.add(createRankingRow(3, "Obsidian", "추천 73"));
+        loadRecommendTop5();
+        
+        
+        
+        
+       
 
         JLabel link = new JLabel("전체 추천 보기 →", SwingConstants.RIGHT);
 
@@ -543,7 +611,7 @@ public class HomePanel extends JPanel {
         link.setForeground(PRIMARY);
 
         card.add(title, BorderLayout.NORTH);
-        card.add(rankingPanel, BorderLayout.CENTER);
+        card.add(recommendationRankingPanel, BorderLayout.CENTER);
         card.add(link, BorderLayout.SOUTH);
 
         return card;
