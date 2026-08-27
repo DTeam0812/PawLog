@@ -30,6 +30,8 @@ import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.util.JsonUtil;
 import com.pawlog.common.protocol.ServerProtocol;
 import com.pawlog.common.dto.analytics.ProgramAnalyticsDto;
+import com.pawlog.common.dto.board.PostDeleteDto;
+import com.pawlog.common.dto.board.CommentDeleteDto;
 
 public class PawLogClient {
     private static final int CliVersion = 1; //클라이언트 버전관리
@@ -599,6 +601,67 @@ public class PawLogClient {
         return sendJoinPost(requestJson);
     }
 
+    // 1. 게시글 삭제 내부 통신
+    private synchronized PostDeleteDto.Response sendPostDeleteJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = socketResponseReader.waitResponse();
+
+        if (responseJson == null) {
+            disconnect();
+            return new PostDeleteDto.Response(false, 500, "서버 연결이 종료되었습니다.");
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+
+        return new PostDeleteDto.Response(success, code, message);
+    }
+
+    // 게시글 삭제 공개 메서드
+    public synchronized PostDeleteDto.Response deletePost(long postId) throws Exception {
+        PostDeleteDto.Request request = new PostDeleteDto.Request(postId);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.POST_DELETE, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendPostDeleteJson(requestJson);
+    }
+
+    // 2. 댓글 삭제 내부 통신
+    private synchronized CommentDeleteDto.Response sendCommentDeleteJson(String requestJson) throws Exception {
+        connect();
+        output.println(requestJson);
+        String responseJson = socketResponseReader.waitResponse();
+
+        if (responseJson == null) {
+            disconnect();
+            return new CommentDeleteDto.Response(false, 500, "서버 연결이 종료되었습니다.", 0);
+        }
+
+        JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+        boolean success = root.path("success").asBoolean();
+        int code = root.path("code").asInt(success ? 200 : 400);
+        String message = root.path("message").asText("");
+        JsonNode dataNode = root.path("data");
+
+        int remainCommentCount = 0;
+        if (success && dataNode != null && !dataNode.isMissingNode() && !dataNode.isNull()) {
+            remainCommentCount = dataNode.path("totalCommentCount").asInt(0);
+        }
+
+        return new CommentDeleteDto.Response(success, code, message, remainCommentCount);
+    }
+
+    // 댓글 삭제 공개 메서드
+    public synchronized CommentDeleteDto.Response deleteComment(long commentId, long postId) throws Exception {
+        CommentDeleteDto.Request request = new CommentDeleteDto.Request(commentId, postId);
+        JsonNode dataNode = JsonUtil.toJsonNode(request);
+        RequestPacket requestPacket = new RequestPacket(ServerProtocol.COMMENT_DELETE, dataNode);
+        String requestJson = JsonUtil.toJson(requestPacket);
+        return sendCommentDeleteJson(requestJson);
+    }
      private synchronized AuthUpdateDto.Response sendAuthUpdateJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
@@ -716,6 +779,9 @@ public class PawLogClient {
         String message = root.path("message").asText("");
         return new Response(success, message);
     }
+
+
+
 
     public synchronized void disconnect() {
         if (socketResponseReader != null) {

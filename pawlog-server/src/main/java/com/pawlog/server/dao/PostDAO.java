@@ -435,4 +435,56 @@ public class PostDAO {
 
         return null;
     }
+
+    // 게시글 소프트 딜리트 및 하위 댓글 동시 비활성화 (트랜잭션)
+    public boolean deletePostWithComments(long postId, long userId) {
+        Connection con = null;
+        PreparedStatement postPstmt = null;
+        PreparedStatement commentPstmt = null;
+
+        String postSql = "UPDATE posts SET is_active = FALSE WHERE post_id = ? AND user_id = ?";
+        String commentSql = "UPDATE comments SET is_active = FALSE WHERE post_id = ?";
+
+        try {
+            con = pool.getConnection();
+            con.setAutoCommit(false); // 트랜잭션 시작
+
+            // 1. 게시글 비활성화 (작성자 본인 검증)
+            postPstmt = con.prepareStatement(postSql);
+            postPstmt.setLong(1, postId);
+            postPstmt.setLong(2, userId);
+            int postResult = postPstmt.executeUpdate();
+
+            if (postResult <= 0) {
+                con.rollback();
+                return false; // 게시글이 없거나 작성자가 아님
+            }
+
+            // 2. 해당 게시글의 댓글 일괄 비활성화
+            commentPstmt = con.prepareStatement(commentSql);
+            commentPstmt.setLong(1, postId);
+            commentPstmt.executeUpdate();
+
+            con.commit();
+            return true;
+        } catch (Exception e) {
+            if (con != null) {
+                try {
+                    con.rollback();
+                } catch (Exception ignored) {}
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (con != null) {
+                try {
+                    con.setAutoCommit(true);
+                } catch (Exception ignored) {}
+            }
+            if (postPstmt != null) try { postPstmt.close(); } catch (Exception ignored) {}
+            if (commentPstmt != null) try { commentPstmt.close(); } catch (Exception ignored) {}
+            pool.freeConnection(con);
+        }
+    }
+
 }
