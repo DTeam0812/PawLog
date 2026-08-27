@@ -149,9 +149,12 @@ public class UsageLogDAO {
     }
 
     /**
-     * 특정 2개 시간대의 사용 로그를 합산하여 실시간 이용자 수(순위) 기준 Top N 프로그램을 조회
+     * 특정 3개 시간대(예: now-2시간, now-1시간, 현재 시간)의 사용 로그를 합산하여 실시간 이용자 수(순위) 기준 Top N 프로그램을 조회
      */
-    public List<RealtimeRankRawData> getTopRealtimePrograms(java.time.LocalDate date1, int hour1, java.time.LocalDate date2, int hour2, int limit) {
+    public List<RealtimeRankRawData> getTopRealtimePrograms(java.time.LocalDate date1, int hour1,
+                                                            java.time.LocalDate date2, int hour2,
+                                                            java.time.LocalDate date3, int hour3,
+                                                            int limit) {
         List<RealtimeRankRawData> list = new ArrayList<>();
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -167,6 +170,7 @@ public class UsageLogDAO {
                 + "LEFT JOIN categories c ON p.category_id = c.category_id "
                 + "WHERE (u.usage_date = ? AND u.usage_hour = ?) "
                 + "   OR (u.usage_date = ? AND u.usage_hour = ?) "
+                + "   OR (u.usage_date = ? AND u.usage_hour = ?) "
                 + "GROUP BY u.program_id, p.display_name, p.process_name, c.name "
                 + "HAVING SUM(u.duration_sec) > 0 "
                 + "ORDER BY user_count DESC, total_duration_sec DESC "
@@ -179,7 +183,9 @@ public class UsageLogDAO {
             pstmt.setInt(2, hour1);
             pstmt.setDate(3, java.sql.Date.valueOf(date2));
             pstmt.setInt(4, hour2);
-            pstmt.setInt(5, limit > 0 ? limit : 3);
+            pstmt.setDate(5, java.sql.Date.valueOf(date3));
+            pstmt.setInt(6, hour3);
+            pstmt.setInt(7, limit > 0 ? limit : 3);
             rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -201,10 +207,17 @@ public class UsageLogDAO {
     }
 
     /**
+     * 기존 호환용 2개 시간대 조회 오버로딩
+     */
+    public List<RealtimeRankRawData> getTopRealtimePrograms(java.time.LocalDate date1, int hour1, java.time.LocalDate date2, int hour2, int limit) {
+        return getTopRealtimePrograms(date1, hour1, date2, hour2, date2, hour2, limit);
+    }
+
+    /**
      * 기존 호환용 Top 5 조회 메서드
      */
     public List<RealtimeRankRawData> getTop5RealtimePrograms(java.time.LocalDate date1, int hour1, java.time.LocalDate date2, int hour2) {
-        return getTopRealtimePrograms(date1, hour1, date2, hour2, 5);
+        return getTopRealtimePrograms(date1, hour1, date2, hour2, date2, hour2, 5);
     }
 
     // 프로그램 분석에 사용할 기능

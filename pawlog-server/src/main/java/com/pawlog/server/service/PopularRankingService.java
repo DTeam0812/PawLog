@@ -16,7 +16,8 @@ public class PopularRankingService {
     private final UsageLogDAO usageLogDAO = new UsageLogDAO();
 
     /**
-     * 현재 시간 기준 직전 2개 시간대에서 가장 많이 사용된 추천 프로그램 N개 조회
+     * 현재 시간 기준 직전 2개 시간대 및 현재 시간대(총 3개 시간대)에서 가장 많이 사용된 추천 프로그램 N개 조회
+     * (예: 11:41 기준 9시, 10시, 11시 데이터 합산)
      *
      * @param request count 요청 DTO
      * @return RecommendProgramDto.Response
@@ -27,6 +28,7 @@ public class PopularRankingService {
 
         LocalDateTime dt1 = now.minusHours(2);
         LocalDateTime dt2 = now.minusHours(1);
+        LocalDateTime dt3 = now;
 
         LocalDate date1 = dt1.toLocalDate();
         int hour1 = dt1.getHour();
@@ -34,9 +36,12 @@ public class PopularRankingService {
         LocalDate date2 = dt2.toLocalDate();
         int hour2 = dt2.getHour();
 
+        LocalDate date3 = dt3.toLocalDate();
+        int hour3 = dt3.getHour();
+
         try {
             List<UsageLogDAO.RealtimeRankRawData> rawList = usageLogDAO.getTopRealtimePrograms(
-                    date1, hour1, date2, hour2, count
+                    date1, hour1, date2, hour2, date3, hour3, count
             );
 
             List<RecommendProgramDto.Item> items = new ArrayList<>();
@@ -47,7 +52,7 @@ public class PopularRankingService {
             return new RecommendProgramDto.Response(
                     true,
                     200,
-                    "지난 2시간동안 이용자수가 많은 프로그램 반환",
+                    String.format("최근 3시간(%d시, %d시, %d시) 동안 이용자수가 많은 프로그램 반환", hour1, hour2, hour3),
                     items
             );
 
