@@ -149,9 +149,9 @@ public class UsageLogDAO {
     }
 
     /**
-     * 특정 2개 시간대의 사용 로그를 합산하여 총 사용 시간 기준 실시간 인기 Top 5 프로그램을 조회
+     * 특정 2개 시간대의 사용 로그를 합산하여 실시간 이용자 수(순위) 기준 Top N 프로그램을 조회
      */
-    public List<RealtimeRankRawData> getTop5RealtimePrograms(java.time.LocalDate date1, int hour1, java.time.LocalDate date2, int hour2) {
+    public List<RealtimeRankRawData> getTopRealtimePrograms(java.time.LocalDate date1, int hour1, java.time.LocalDate date2, int hour2, int limit) {
         List<RealtimeRankRawData> list = new ArrayList<>();
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -169,8 +169,8 @@ public class UsageLogDAO {
                 + "   OR (u.usage_date = ? AND u.usage_hour = ?) "
                 + "GROUP BY u.program_id, p.display_name, p.process_name, c.name "
                 + "HAVING SUM(u.duration_sec) > 0 "
-                + "ORDER BY total_duration_sec DESC "
-                + "LIMIT 5";
+                + "ORDER BY user_count DESC, total_duration_sec DESC "
+                + "LIMIT ?";
 
         try {
             con = pool.getConnection();
@@ -179,6 +179,7 @@ public class UsageLogDAO {
             pstmt.setInt(2, hour1);
             pstmt.setDate(3, java.sql.Date.valueOf(date2));
             pstmt.setInt(4, hour2);
+            pstmt.setInt(5, limit > 0 ? limit : 3);
             rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -197,6 +198,13 @@ public class UsageLogDAO {
         }
 
         return list;
+    }
+
+    /**
+     * 기존 호환용 Top 5 조회 메서드
+     */
+    public List<RealtimeRankRawData> getTop5RealtimePrograms(java.time.LocalDate date1, int hour1, java.time.LocalDate date2, int hour2) {
+        return getTopRealtimePrograms(date1, hour1, date2, hour2, 5);
     }
 
     // 프로그램 분석에 사용할 기능
