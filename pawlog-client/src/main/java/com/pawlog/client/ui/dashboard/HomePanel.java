@@ -53,6 +53,8 @@ public class HomePanel extends JPanel {
     private JLabel TotalAllowPr;
     private JLabel greetingLabel;
     private JPanel recentProgramsListPanel;
+    private Timer recommendationRefreshTimer;
+    private boolean recommendationLoading;
 
     public HomePanel() {
         setLayout(new BorderLayout());
@@ -94,6 +96,10 @@ public class HomePanel extends JPanel {
         });
         uiTimer.setInitialDelay(0);
         uiTimer.start();
+
+        recommendationRefreshTimer = new Timer(60_000, event -> loadRecommendTop5());
+        recommendationRefreshTimer.setInitialDelay(60_000);
+        recommendationRefreshTimer.start();
     }
 
     private JPanel createGreetingPanel() {
@@ -175,6 +181,10 @@ public class HomePanel extends JPanel {
                             lastSavedLabel.setText("서버 전송 대기");
                         } else {
                             lastSavedLabel.setText("저장할 기록 없음");
+                        }
+
+                        if(!result.serverFailed()) {
+                            loadRecommendTop5();
                         }
                     } catch (Exception exception) {
                         lastSavedLabel.setText("로컬 저장 실패");
@@ -517,6 +527,12 @@ public class HomePanel extends JPanel {
         return row;
     }
     private void loadRecommendTop5() {
+    if(recommendationLoading) {
+        return;
+    }
+
+    recommendationLoading = true;
+
     new SwingWorker<PostRecommendationDto.Response, Void>() {
         @Override
         protected PostRecommendationDto.Response doInBackground() throws Exception {
@@ -573,6 +589,7 @@ public class HomePanel extends JPanel {
 
                 exception.printStackTrace();
             } finally {
+                recommendationLoading = false;
                 recommendationRankingPanel.revalidate();
                 recommendationRankingPanel.repaint();
             }
@@ -585,7 +602,7 @@ public class HomePanel extends JPanel {
         card.setLayout(new BorderLayout());
         card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(18, 18, 18, 18)));
 
-        JLabel title = new JLabel("추천 프로그램 TOP 3");
+        JLabel title = new JLabel("추천 프로그램 TOP 5");
 
         title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
         title.setForeground(TEXT);
