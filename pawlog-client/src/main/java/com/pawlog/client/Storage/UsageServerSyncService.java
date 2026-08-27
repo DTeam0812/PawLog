@@ -24,10 +24,10 @@ public class UsageServerSyncService {
     }
 
     private int syncPendingLocked() throws Exception {
-        String currentEmail =
-            AuthStore.getInstance().getEmail();
+        String currentId =
+            AuthStore.getInstance().getId();
 
-        if (currentEmail == null || currentEmail.isBlank()) {
+        if (currentId == null || currentId.isBlank()) {
             return 0;
         }
 
@@ -37,7 +37,7 @@ public class UsageServerSyncService {
         int syncedCount = 0;
 
         for(Usagebatch batch : batches) {
-            if (!currentEmail.equals(batch.email())) {
+            if (!currentId.equals(batch.id())) {
                 continue;
             }
 

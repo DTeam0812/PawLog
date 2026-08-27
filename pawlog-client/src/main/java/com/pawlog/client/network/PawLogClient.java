@@ -12,6 +12,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+
 import com.pawlog.common.dto.auth.AuthLoginDto;
 import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
@@ -31,6 +33,7 @@ import com.pawlog.common.dto.analytics.ProgramAnalyticsDto;
 
 public class PawLogClient {
     private static final int CliVersion = 1; //클라이언트 버전관리
+   private Consumer<String> forceLogoutListener;
     private static final String DEFAULT_HOST = "127.0.0.1";//서버주소
     private static final int DEFAULT_PORT = 8005;//활성 포트
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
@@ -46,7 +49,7 @@ public class PawLogClient {
     private static final PawLogClient instance = new PawLogClient();
     private final String host;
     private final int port;
-
+    private SocketResponseReader socketResponseReader;
     public PawLogClient() {
         this(System.getProperty("pawlog.server.host", DEFAULT_HOST), Integer.getInteger("pawlog.server.port", DEFAULT_PORT));
     }
@@ -60,6 +63,19 @@ public class PawLogClient {
         return instance;
     }
 
+    public void setForceLogoutListener(
+        Consumer<String> forceLogoutListener
+    ) {
+        this.forceLogoutListener = forceLogoutListener;
+    }
+
+    private void handleForceLogout(String message) {
+        if (forceLogoutListener != null) {
+            forceLogoutListener.accept(message);
+        }
+    }
+
+
     private synchronized void connect() throws Exception {
         if (socket != null && socket.isConnected() && !socket.isClosed()) {
             return;
@@ -67,16 +83,18 @@ public class PawLogClient {
 
         socket = new Socket();
         socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MILLIS);
-        socket.setSoTimeout(READ_TIMEOUT_MILLIS);
+        socket.setSoTimeout(0);
 
         input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         output = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
+         socketResponseReader = new SocketResponseReader(input, this::handleForceLogout);
+         socketResponseReader.start();
     }
     //======================================================================================================================//
     private synchronized ProgramSearchDto.Response sendProgramSearchJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -125,7 +143,7 @@ public class PawLogClient {
         try {
             connect();
             output.println(requestJson);
-            String responseJson = input.readLine();
+            String responseJson = socketResponseReader.waitResponse();
 
             if(responseJson == null) {
                 disconnect();
@@ -160,7 +178,7 @@ public class PawLogClient {
    private synchronized RecentPopularProgramDto.Response sendHotProgram(String requestJson) throws Exception{
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if(responseJson == null){
             disconnect();
@@ -224,7 +242,7 @@ public class PawLogClient {
     private synchronized PostRecommendationDto.Response sendRcommendTopJson(String requestJson) throws Exception{
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if(responseJson == null){
             disconnect();
@@ -263,7 +281,7 @@ public class PawLogClient {
     private synchronized AuthLoginDto.Response sendLoginJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -288,8 +306,8 @@ public class PawLogClient {
         return new AuthLoginDto.Response(true, code, message, user);
     }
 
-    public AuthLoginDto.Response login(String email, String password) throws Exception {
-        AuthLoginDto.Request loginData = new AuthLoginDto.Request(email, password);
+    public AuthLoginDto.Response login(String id, String password) throws Exception {
+        AuthLoginDto.Request loginData = new AuthLoginDto.Request(id, password);
         JsonNode dataNode = JsonUtil.toJsonNode(loginData);
         RequestPacket requestPacket = new RequestPacket(LOGIN, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
@@ -304,7 +322,7 @@ public class PawLogClient {
     private synchronized MyInfoDto.Response sendMyInfoJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -333,8 +351,8 @@ public class PawLogClient {
         return new MyInfoDto.Response(true, code, message, data);
     }
 
-    public MyInfoDto.Response getTodayInfo(String email, LocalDate usageDate) throws Exception {
-        MyInfoDto.Request request = new MyInfoDto.Request(email, usageDate.toString());
+    public MyInfoDto.Response getTodayInfo(String id, LocalDate usageDate) throws Exception {
+        MyInfoDto.Request request = new MyInfoDto.Request(id, usageDate.toString());
         JsonNode dataNode = JsonUtil.toJsonNode(request);
         RequestPacket requestPacket = new RequestPacket(TODAY_STATISTICS_GET, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
@@ -343,7 +361,7 @@ public class PawLogClient {
     private synchronized PopularRankingDto.Response sendPopularRankingJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -389,7 +407,7 @@ public class PawLogClient {
     private synchronized MyStatisticsDto.Response sendMyStatisticsJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
         if (responseJson == null) {
             disconnect();
             return new MyStatisticsDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
@@ -422,13 +440,13 @@ public class PawLogClient {
 
         return sendMyStatisticsJson(requestJson);
     }
-
+    
     // 프로그램 상세 분석 데이터 조회
     private synchronized ProgramAnalyticsDto.Response sendProgramAnalyticsJson(String requestJson) throws Exception {
         try {
             connect();
             output.println(requestJson);
-            String responseJson = input.readLine();
+            String responseJson = socketResponseReader.waitResponse();
 
             if (responseJson == null) {
                 disconnect();
@@ -484,7 +502,7 @@ public class PawLogClient {
     private synchronized PostLikeDto.Response sendPostLikeToggleJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -517,7 +535,7 @@ public class PawLogClient {
     private synchronized CommentDto.Response sendCommentCreateJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -550,7 +568,7 @@ public class PawLogClient {
     public synchronized PostDetailDto.Response sendJoinPost(String requestJson) throws Exception{
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
         if (responseJson == null) {
             disconnect();
             return new PostDetailDto.Response(false, 500, "서버 연결이 종료되었습니다.", null);
@@ -584,7 +602,7 @@ public class PawLogClient {
      private synchronized AuthUpdateDto.Response sendAuthUpdateJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -626,7 +644,7 @@ public class PawLogClient {
             logs.add(logItem);
         }   
 
-        UsageLogSaveDto.Request request = new UsageLogSaveDto.Request(AuthStore.getInstance().getEmail(), LocalDate.now().toString(), logs);
+        UsageLogSaveDto.Request request = new UsageLogSaveDto.Request(AuthStore.getInstance().getId(), LocalDate.now().toString(), logs);
         JsonNode dataNode = JsonUtil.toJsonNode(request);
         RequestPacket packet = new RequestPacket("USAGE_LOG_SAVE", dataNode);
         String requestJson = JsonUtil.toJson(packet);
@@ -644,8 +662,8 @@ public class PawLogClient {
             return new Response(false, "전송할 사용 기록이 없습니다.");
     }
 
-        if (batch.email() == null || batch.email().isBlank()) {
-            return new Response(false, "사용자 이메일이 없습니다.");
+        if (batch.id() == null || batch.id().isBlank()) {
+            return new Response(false, "사용자 아이디가 없습니다.");
     }
      List<UsageLogSaveDto.LogItem> logs = new ArrayList<>();
 
@@ -662,7 +680,7 @@ public class PawLogClient {
     String usageDate = batch.logs().get(0).usageDate().toString();
 
     UsageLogSaveDto.Request request = new UsageLogSaveDto.Request(
-            batch.email(),
+            batch.id(),
             usageDate,
             logs
         );
@@ -674,8 +692,8 @@ public class PawLogClient {
 
         return sendJson(requestJson);
     }
-    public Response register(String email, String password, String nickname, String gender, LocalDate birthDate) throws Exception {
-        AuthRegisterDto.Request registerData = new AuthRegisterDto.Request(nickname, email, password, birthDate.toString(), gender);
+    public Response register(String id, String password, String nickname, String gender, LocalDate birthDate) throws Exception {
+        AuthRegisterDto.Request registerData = new AuthRegisterDto.Request(nickname, id, password, birthDate.toString(), gender);
         JsonNode dataNode = JsonUtil.toJsonNode(registerData);
         RequestPacket requestPacket = new RequestPacket(REGISTER, dataNode);
         String requestJson = JsonUtil.toJson(requestPacket);
@@ -686,7 +704,7 @@ public class PawLogClient {
     private synchronized Response sendJson(String requestJson) throws Exception {
         connect();
         output.println(requestJson);
-        String responseJson = input.readLine();
+        String responseJson = socketResponseReader.waitResponse();
 
         if (responseJson == null) {
             disconnect();
@@ -700,6 +718,11 @@ public class PawLogClient {
     }
 
     public synchronized void disconnect() {
+        if (socketResponseReader != null) {
+            socketResponseReader.stop();
+            socketResponseReader = null;
+        }
+
         try {
             if (socket != null) {
                 socket.close();

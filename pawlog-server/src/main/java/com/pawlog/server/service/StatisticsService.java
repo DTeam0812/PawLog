@@ -152,8 +152,8 @@ public class StatisticsService {
             return new TodayStatisticsDto.Response(false, 400, "요청 데이터가 없습니다.", null);
         }
 
-        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-            return new TodayStatisticsDto.Response(false, 400, "이메일이 필요합니다.", null);
+        if (request.getId() == null || request.getId().trim().isEmpty()) {
+            return new TodayStatisticsDto.Response(false, 400, "아이디가 필요합니다.", null);
         }
 
         if (request.getUsageDate() == null || request.getUsageDate().trim().isEmpty()) {
@@ -168,8 +168,8 @@ public class StatisticsService {
         }
 
         try {
-            // 2. 이메일로 사용자 조회
-            UserEntity user = userDAO.getUserByEmail(request.getEmail().trim());
+            // 2. 로그인 아이디로 사용자 조회
+            UserEntity user = userDAO.getUserByLoginId(request.getId().trim());
             if (user == null) {
                 return new TodayStatisticsDto.Response(false, 400, "존재하지 않는 유저입니다.", null);
             }
@@ -264,7 +264,7 @@ public class StatisticsService {
         StatisticsService service = new StatisticsService();
 
         System.out.println("========== [TODAY_STATISTICS_GET 테스트] ==========");
-        TodayStatisticsDto.Request req = new TodayStatisticsDto.Request("test@example.com", "2026-08-25");
+        TodayStatisticsDto.Request req = new TodayStatisticsDto.Request("testuser", "2026-08-25");
         TodayStatisticsDto.Response res = service.getTodayStatistics(req);
 
         System.out.println("성공 여부: " + res.isSuccess());

@@ -37,13 +37,13 @@ public class UsageOutboxRepository {
     }
     public void InsertBatch(Connection connection, Usagebatch batch)throws SQLException {
         String sql = """
-                INSERT INTO usage_batch (batch_id , device_id , email , status)
+                INSERT INTO usage_batch (batch_id , device_id , id , status)
                 VALUES (? , ? , ? , ? );
                 """;
                 try(PreparedStatement statement = connection.prepareStatement(sql)){
                     statement.setString(1, batch.batchId());
                     statement.setString(2, batch.deviceId());
-                    statement.setString(3, batch.email());
+                    statement.setString(3, batch.id());
                     statement.setString(4, "PENDING");
                     statement.executeUpdate();
                 }
@@ -81,7 +81,7 @@ public class UsageOutboxRepository {
         SELECT
             batch_id,
             device_id,
-            email
+            id
         FROM usage_batch
         WHERE status = ?
         ORDER BY created_at
@@ -97,7 +97,7 @@ public class UsageOutboxRepository {
                 Usagebatch batchHeader = new Usagebatch(
                     result.getString("device_id"),
                     result.getString("batch_id"),
-                    result.getString("email"),
+                    result.getString("id"),
                     List.of()
                 );
 
@@ -113,7 +113,7 @@ public class UsageOutboxRepository {
             Usagebatch batch = new Usagebatch(
                 header.deviceId(),
                 header.batchId(),
-                header.email(),
+                header.id(),
                 items
             );
 

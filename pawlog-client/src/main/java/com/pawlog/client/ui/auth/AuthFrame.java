@@ -29,7 +29,7 @@ public class AuthFrame extends JFrame {
     private final ServerSyncScheduler serverSyncScheduler = new ServerSyncScheduler();
     private final UsageLocalSaveService localSaveService = new UsageLocalSaveService();
     private static AuthStore authStore = AuthStore.getInstance();
-    String email = authStore.getEmail();
+    String id = authStore.getId();
     
     public AuthFrame() {
         this(true);
@@ -47,6 +47,9 @@ public class AuthFrame extends JFrame {
 
     public AuthFrame(boolean showImmediately) {
         dashboardFrame = new DashboardFrame(this::showLoginAfterLogout);
+        PawLogClient.getInstance().setForceLogoutListener(message -> {
+            SwingUtilities.invokeLater(() -> handleForcedLogout(message));
+        });
         setSize(590, 750);
         setUndecorated(true);
         setLocationRelativeTo(null);
@@ -70,6 +73,21 @@ public class AuthFrame extends JFrame {
 
     private void showPage(String pageName) {
         cardLayout.show(cardPanel, pageName);
+    }
+
+    private void handleForcedLogout(String message) {
+        if (!loggedIn) {
+            return;
+        }
+
+        showLoginAfterLogout();
+
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            "로그아웃 안내",
+            JOptionPane.WARNING_MESSAGE
+        );
     }
 
     private void showLoginAfterLogout() {

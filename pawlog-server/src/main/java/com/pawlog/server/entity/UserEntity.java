@@ -16,7 +16,7 @@ import java.sql.Timestamp;
 
 public class UserEntity {
     private long userId;
-    private String email;
+    private String id;
     private String passwordHash;
     private String nickname;
     private String gender;
@@ -28,7 +28,7 @@ public class UserEntity {
     public String toString() {
         return "UserEntity ["
                 + "userId=" + userId
-                + ", email=" + email
+                + ", id=" + id
                 + ", nickname=" + nickname
                 + ", gender=" + gender
                 + ", birthDate=" + birthDate

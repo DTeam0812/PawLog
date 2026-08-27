@@ -11,7 +11,7 @@ public class AuthLoginDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Request {
-        private String email;
+        private String id;
         private String password;
     }
 
@@ -21,12 +21,12 @@ public class AuthLoginDto {
     @AllArgsConstructor
     public static class UserInfo {
         private long userId;
-        private String email;
+        private String id;
         private String nickname;
         private String birthDate;
 
-        public UserInfo(Long userId, String email, String nickname) {
-            this(userId, email, nickname, "");
+        public UserInfo(Long userId, String id, String nickname) {
+            this(userId, id, nickname, "");
         }
     }
 

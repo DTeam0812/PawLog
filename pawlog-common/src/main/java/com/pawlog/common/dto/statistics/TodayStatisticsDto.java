@@ -11,7 +11,7 @@ public class TodayStatisticsDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Request {
-        private String email;
+        private String id;
         private String usageDate;
     }
 

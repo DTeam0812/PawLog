@@ -29,7 +29,7 @@ public class MyPagePanel extends JPanel {
     private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final AuthStore authStore = AuthStore.getInstance();
 
-    private final JTextField emailField = textField("이메일");
+    private final JTextField idField = textField("아이디");
     private final JTextField nicknameField = textField("닉네임");
     private final JLabel profileStatusLabel = label("", Font.PLAIN, 12, SUB_TEXT);
 
@@ -66,7 +66,7 @@ public class MyPagePanel extends JPanel {
 
     // 로그인된 사용자 정보 동기화
     public void refreshUserInfo() {
-        emailField.setText(authStore.getEmail() != null ? authStore.getEmail() : "user@example.com");
+        idField.setText(authStore.getId() != null ? authStore.getId() : "user_id");
         nicknameField.setText(authStore.getNickname() != null ? authStore.getNickname() : "PawUser");
 
         // 생년월일 파싱 및 콤보박스 세팅
@@ -100,8 +100,8 @@ public class MyPagePanel extends JPanel {
         card.add(label("기본 정보", Font.BOLD, 17, TEXT));
         card.add(Box.createVerticalStrut(18));
 
-        emailField.setEditable(false);
-        addField(card, "이메일", emailField);
+        idField.setEditable(false);
+        addField(card, "아이디", idField);
         card.add(Box.createVerticalStrut(14));
         addField(card, "닉네임", nicknameField);
         card.add(Box.createVerticalStrut(14));

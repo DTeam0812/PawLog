@@ -30,7 +30,7 @@ public class UsagebatchFactory {
         return new Usagebatch(
             deviceId,
             batchId,
-            AuthStore.getInstance().getEmail(),
+            AuthStore.getInstance().getId(),
             items
         );
     }

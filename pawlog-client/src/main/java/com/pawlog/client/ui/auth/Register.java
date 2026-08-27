@@ -122,8 +122,8 @@ public class Register extends JPanel{
         JLabel title = new JLabel("회원가입");
         JPanel birthSelectPanel = BirthPanel();
         JPanel genderSelectPanel = GenderPanel();
-        JLabel emailLabel = new JLabel("이메일");
-        JTextField emailField = new JTextField();
+        JLabel idLabel = new JLabel("아이디");
+        JTextField idField = new JTextField();
         JLabel nicknameLabel = new JLabel("닉네임");
         JTextField nicknameField = new JTextField();
         JLabel passwordLabel = new JLabel("비밀번호");
@@ -136,26 +136,26 @@ public class Register extends JPanel{
         );
         JLabel ChpasswordLabel = new JLabel("비밀번호 확인");
         JPasswordField ChpasswordField = new JPasswordField();
-        emailLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        emailField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        idLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        idField.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         passwordLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         ChpasswordLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         ChpasswordField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        emailField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        idField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
         passwordField.setMaximumSize( new Dimension(Integer.MAX_VALUE, 40));
 
         ChpasswordField.setMaximumSize( new Dimension(Integer.MAX_VALUE, 40));
-        emailField.setPreferredSize(new Dimension(500, 40));
+        idField.setPreferredSize(new Dimension(500, 40));
         passwordField.setPreferredSize(new Dimension(500, 40));
         ChpasswordField.setPreferredSize(new Dimension(500, 40));
         Font labelFont = new Font("맑은 고딕", Font.BOLD, 14);
         nicknameLabel.setFont(labelFont);
         nicknameLabel.setForeground(TEXT);
-        emailLabel.setFont(labelFont);
+        idLabel.setFont(labelFont);
         passwordLabel.setFont(labelFont);
         ChpasswordLabel.setFont(labelFont);
         JLabel birthLabel = new JLabel("생년월일");
@@ -178,11 +178,11 @@ public class Register extends JPanel{
             System.out.println("회원가입 버튼 클릭됨");
 
             String nickname = nicknameField.getText().trim();
-            String email = emailField.getText().trim();
+            String id = idField.getText().trim();
             String password = new String(passwordField.getPassword());
             String checkPassword = new String(ChpasswordField.getPassword());
 
-            if (nickname.isEmpty() || email.isEmpty() || password.isEmpty() || checkPassword.isEmpty()) {
+            if (nickname.isEmpty() || id.isEmpty() || password.isEmpty() || checkPassword.isEmpty()) {
                 JOptionPane.showMessageDialog(
                     this,
                     "모든 항목을 입력해 주세요.",
@@ -192,9 +192,9 @@ public class Register extends JPanel{
                 return;
             }
 
-            if (!email.contains("@")) { JOptionPane.showMessageDialog(
+            if (!id.matches("[A-Za-z0-9_]{4,20}")) { JOptionPane.showMessageDialog(
                     this,
-                    "이메일 형식을 확인해 주세요.",
+                    "아이디는 영문, 숫자, 밑줄을 사용하여 4~20자로 입력해 주세요.",
                     "입력 확인",
                     JOptionPane.WARNING_MESSAGE
                 );
@@ -218,7 +218,7 @@ public class Register extends JPanel{
                 String gender = maleButton.isSelected() ? "M" : "F";
 
                 PawLogClient.Response response = pawLogClient.register(
-                    email,
+                    id,
                     password,
                     nickname,
                     gender,
@@ -291,9 +291,9 @@ public class Register extends JPanel{
         registerform.add(nicknameField);
         registerform.add(Box.createVerticalStrut(12));
 
-        registerform.add(emailLabel);
+        registerform.add(idLabel);
         registerform.add(Box.createVerticalStrut(5));
-        registerform.add(emailField);
+        registerform.add(idField);
         registerform.add(Box.createVerticalStrut(12));
 
         registerform.add(passwordLabel);

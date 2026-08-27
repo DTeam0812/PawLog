@@ -53,7 +53,7 @@ public class SQLiteConnectionTest {
             SELECT
                 b.batch_id,
                 b.device_id,
-                b.email,
+                b.id,
                 b.status,
                 i.usage_date,
                 i.hour,
@@ -75,7 +75,7 @@ public class SQLiteConnectionTest {
                 while (result.next()) {
                     System.out.println("--------------------");
                     System.out.println("배치 ID: " + result.getString("batch_id"));
-                    System.out.println("이메일: " + result.getString("email"));
+                    System.out.println("아이디: " + result.getString("id"));
                     System.out.println("상태: " + result.getString("status"));
                     System.out.println("날짜: " + result.getString("usage_date"));
                     System.out.println("시간대: " + result.getInt("hour"));

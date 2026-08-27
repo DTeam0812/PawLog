@@ -15,14 +15,14 @@ public class AuthService {
             return new AuthRegisterDto.Response(false, 400, "유효하지 않은 요청입니다.");
         }
 
-        if (dto.getEmail() == null || dto.getEmail().trim().isEmpty() ||
+        if (dto.getId() == null || dto.getId().trim().isEmpty() ||
             dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
-            return new AuthRegisterDto.Response(false, 400, "이메일과 비밀번호는 필수 입력항목입니다.");
+            return new AuthRegisterDto.Response(false, 400, "아이디와 비밀번호는 필수 입력항목입니다.");
         }
 
-        // 이메일 중복 체크
-        if (userDAO.checkEmailExists(dto.getEmail())) {
-            return new AuthRegisterDto.Response(false, 400, "이미 등록된 이메일 계정입니다.");
+        // 아이디 중복 체크
+        if (userDAO.checkIdExists(dto.getId())) {
+            return new AuthRegisterDto.Response(false, 400, "이미 등록된 아이디입니다.");
         }
 
         java.sql.Date birthDate = null;
@@ -35,9 +35,9 @@ public class AuthService {
         }
 
         UserEntity user = new UserEntity();
-        user.setEmail(dto.getEmail());
+        user.setId(dto.getId());
         user.setPasswordHash(dto.getPassword());
-        user.setNickname(dto.getNickname() != null && !dto.getNickname().trim().isEmpty() ? dto.getNickname() : dto.getEmail().split("@")[0]);
+        user.setNickname(dto.getNickname() != null && !dto.getNickname().trim().isEmpty() ? dto.getNickname() : dto.getId());
         user.setGender(dto.getGender());
         user.setBirthDate(birthDate);
 
@@ -56,19 +56,19 @@ public class AuthService {
 
     // 로그인
     public AuthLoginDto.Response login(AuthLoginDto.Request dto) {
-        if (dto == null || dto.getEmail() == null || dto.getEmail().trim().isEmpty() ||
+        if (dto == null || dto.getId() == null || dto.getId().trim().isEmpty() ||
             dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
-            return new AuthLoginDto.Response(false, 400, "이메일과 비밀번호를 입력해 주세요.");
+            return new AuthLoginDto.Response(false, 400, "아이디와 비밀번호를 입력해 주세요.");
         }
 
         try {
-            UserEntity user = userDAO.getUserByEmailAndPassword(dto.getEmail().trim(), dto.getPassword());
+            UserEntity user = userDAO.getUserByIdAndPassword(dto.getId().trim(), dto.getPassword());
             if (user != null) {
                 String birthStr = user.getBirthDate() != null ? user.getBirthDate().toString() : "";
-                AuthLoginDto.UserInfo userInfo = new AuthLoginDto.UserInfo(user.getUserId(), user.getEmail(), user.getNickname(), birthStr);
+                AuthLoginDto.UserInfo userInfo = new AuthLoginDto.UserInfo(user.getUserId(), user.getId(), user.getNickname(), birthStr);
                 return new AuthLoginDto.Response(true, 200, "로그인에 성공하였습니다.", userInfo);
             } else {
-                return new AuthLoginDto.Response(false, 401, "이메일 또는 비밀번호가 올바르지 않습니다.");
+                return new AuthLoginDto.Response(false, 401, "아이디 또는 비밀번호가 올바르지 않습니다.");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,7 +131,7 @@ public class AuthService {
     }
 
     // 소켓 세션 등록용 사용자 정보 조회
-    public UserEntity getUserByEmailAndPassword(String email, String password) {
-        return userDAO.getUserByEmailAndPassword(email, password);
+    public UserEntity getUserByIdAndPassword(String id, String password) {
+        return userDAO.getUserByIdAndPassword(id, password);
     }
 }

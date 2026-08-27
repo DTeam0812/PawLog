@@ -219,20 +219,20 @@ public class HomePanel extends JPanel {
     }
 
     public void refreshUserInfo() {
-        String email = authStore.getEmail();
+        String id = authStore.getId();
 
-        if (email == null || email.isBlank()) {
+        if (id == null || id.isBlank()) {
             greetingLabel.setText("안녕하세요, 사용자님");
             return;
         }
 
-        greetingLabel.setText("안녕하세요, " + email + "님");
+        greetingLabel.setText("안녕하세요, " + id + "님");
     }
 
     public void loadTodayInfo() {
-        String email = authStore.getEmail();
+        String id = authStore.getId();
 
-        if(email == null || email.isBlank()) {
+        if(id == null || id.isBlank()) {
             resetTodayInfo();
             return;
         }
@@ -246,7 +246,7 @@ public class HomePanel extends JPanel {
         new SwingWorker<MyInfoDto.Response, Void>() {
             @Override
             protected MyInfoDto.Response doInBackground() throws Exception {
-                return PawLogClient.getInstance().getTodayInfo(email, LocalDate.now());
+                return PawLogClient.getInstance().getTodayInfo(id, LocalDate.now());
             }
 
             @Override

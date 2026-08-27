@@ -2,6 +2,7 @@ package com.pawlog.server.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -42,7 +43,7 @@ public class DatabaseConfig {
             """
             CREATE TABLE IF NOT EXISTS users (
                 user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(255) NOT NULL UNIQUE,
+                id VARCHAR(255) NOT NULL UNIQUE,
                 password_hash VARCHAR(255) NOT NULL,
                 nickname VARCHAR(255) NOT NULL,
                 gender ENUM('M', 'F') NOT NULL,
@@ -227,11 +228,48 @@ public class DatabaseConfig {
             for (String sql : ddlStatements) {
                 stmt.execute(sql);
             }
+            migrateEmailColumnToId(conn);
             System.out.println("[DB] 최종 스키마의 " + ddlStatements.length + "개 테이블 생성 성공!");
 
         } catch (SQLException e) {
             System.err.println("[DB 오류] 테이블 생성 실패: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private static void migrateEmailColumnToId(Connection connection) throws SQLException {
+        boolean hasId = false;
+        boolean hasLegacyEmail = false;
+
+        String columnSql = """
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'users'
+            """;
+
+        try (Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery(columnSql)) {
+
+            while(result.next()) {
+                String columnName = result.getString("COLUMN_NAME");
+
+                if("id".equalsIgnoreCase(columnName)) {
+                    hasId = true;
+                }
+
+                if("email".equalsIgnoreCase(columnName)) {
+                    hasLegacyEmail = true;
+                }
+            }
+        }
+
+        if(!hasId && hasLegacyEmail) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute(
+                    "ALTER TABLE users CHANGE COLUMN email id VARCHAR(255) NOT NULL"
+                );
+            }
         }
     }
 

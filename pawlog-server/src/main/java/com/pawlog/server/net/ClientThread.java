@@ -206,7 +206,7 @@ public class ClientThread extends Thread {
 
             if (resDto.isSuccess() && resDto.getUser() != null) {
                 // 소켓 세션에 로그인 유저 정보 저장
-                UserEntity userEntity = authService.getUserByEmailAndPassword(reqDto.getEmail(), reqDto.getPassword());
+                UserEntity userEntity = authService.getUserByIdAndPassword(reqDto.getId(), reqDto.getPassword());
                 this.setCurrentUser(userEntity);
 
                 // 세션 레지스트리에 등록 (동일 userId 기존 세션이 있으면 자동으로 강제 로그아웃 푸시)

@@ -19,12 +19,12 @@ public class UserDAO {
     public boolean insertUser(UserEntity entity) {
         Connection con = null;
         PreparedStatement pstmt = null;
-        String sql = "INSERT INTO users (email, password_hash, nickname, gender, birth_date) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (id, password_hash, nickname, gender, birth_date) VALUES (?, ?, ?, ?, ?)";
 
         try {
             con = pool.getConnection();
             pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, entity.getEmail());
+            pstmt.setString(1, entity.getId());
             pstmt.setString(2, entity.getPasswordHash());
             pstmt.setString(3, entity.getNickname());
             pstmt.setString(4, entity.getGender());
@@ -41,23 +41,23 @@ public class UserDAO {
     }
 
     // 로그인 (유저 엔티티 반환)
-    public UserEntity getUserByEmailAndPassword(String email, String passwordHash) {
+    public UserEntity getUserByIdAndPassword(String id, String passwordHash) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
         try {
             con = pool.getConnection();
-            String sql = "SELECT user_id, email, password_hash, nickname, gender, birth_date, created_at FROM users WHERE email = ? AND password_hash = ?";
+            String sql = "SELECT user_id, id, password_hash, nickname, gender, birth_date, created_at FROM users WHERE id = ? AND password_hash = ?";
             pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, email);
+            pstmt.setString(1, id);
             pstmt.setString(2, passwordHash);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
                 UserEntity entity = new UserEntity();
                 entity.setUserId(rs.getLong("user_id"));
-                entity.setEmail(rs.getString("email"));
+                entity.setId(rs.getString("id"));
                 entity.setPasswordHash(rs.getString("password_hash"));
                 entity.setNickname(rs.getString("nickname"));
                 entity.setGender(rs.getString("gender"));
@@ -74,7 +74,7 @@ public class UserDAO {
     }
 
     // 로그인
-    public boolean loginChk(String email, String passwordHash) {
+    public boolean loginChk(String id, String passwordHash) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -82,9 +82,9 @@ public class UserDAO {
 
         try {
             con = pool.getConnection();
-            String sql = "SELECT COUNT(email) FROM users WHERE email = ? AND password_hash = ?";
+            String sql = "SELECT COUNT(id) FROM users WHERE id = ? AND password_hash = ?";
             pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, email);
+            pstmt.setString(1, id);
             pstmt.setString(2, passwordHash);
             rs = pstmt.executeQuery();
 
@@ -99,8 +99,8 @@ public class UserDAO {
         return flag;
     }
 
-    // 이메일 중복 체크
-    public boolean checkEmailExists(String email) {
+    // 아이디 중복 체크
+    public boolean checkIdExists(String id) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -108,9 +108,9 @@ public class UserDAO {
 
         try {
             con = pool.getConnection();
-            String sql = "SELECT COUNT(email) FROM users WHERE email = ?";
+            String sql = "SELECT COUNT(id) FROM users WHERE id = ?";
             pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, email);
+            pstmt.setString(1, id);
             rs = pstmt.executeQuery();
 
             if (rs.next() && rs.getInt(1) > 0) {
@@ -132,7 +132,7 @@ public class UserDAO {
 
         try {
             con = pool.getConnection();
-            String sql = "SELECT user_id, email, password_hash, nickname, gender, birth_date, created_at FROM users WHERE user_id = ?";
+            String sql = "SELECT user_id, id, password_hash, nickname, gender, birth_date, created_at FROM users WHERE user_id = ?";
             pstmt = con.prepareStatement(sql);
             pstmt.setLong(1, userId);
             rs = pstmt.executeQuery();
@@ -140,7 +140,7 @@ public class UserDAO {
             if (rs.next()) {
                 UserEntity entity = new UserEntity();
                 entity.setUserId(rs.getLong("user_id"));
-                entity.setEmail(rs.getString("email"));
+                entity.setId(rs.getString("id"));
                 entity.setPasswordHash(rs.getString("password_hash"));
                 entity.setNickname(rs.getString("nickname"));
                 entity.setGender(rs.getString("gender"));
@@ -249,23 +249,23 @@ public class UserDAO {
         return "";
     }
 
-    // email로 사용자 엔티티 조회
-    public UserEntity getUserByEmail(String email) {
+    // 로그인 아이디로 사용자 엔티티 조회
+    public UserEntity getUserByLoginId(String id) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
         try {
             con = pool.getConnection();
-            String sql = "SELECT user_id, email, password_hash, nickname, gender, birth_date, created_at FROM users WHERE email = ?";
+            String sql = "SELECT user_id, id, password_hash, nickname, gender, birth_date, created_at FROM users WHERE id = ?";
             pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, email);
+            pstmt.setString(1, id);
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
                 UserEntity entity = new UserEntity();
                 entity.setUserId(rs.getLong("user_id"));
-                entity.setEmail(rs.getString("email"));
+                entity.setId(rs.getString("id"));
                 entity.setPasswordHash(rs.getString("password_hash"));
                 entity.setNickname(rs.getString("nickname"));
                 entity.setGender(rs.getString("gender"));

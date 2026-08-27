@@ -39,15 +39,15 @@ public class Login extends JPanel{
         JLabel nickname = new JLabel("닉네임");
         JTextField nicknamefield = new JTextField();
     
-        JLabel emailLabel = new JLabel("이메일");
-        JTextField emailField = new JTextField();
+        JLabel idLabel = new JLabel("아이디");
+        JTextField idField = new JTextField();
 
         JLabel passwordLabel = new JLabel("비밀번호");
         JPasswordField passwordField = new JPasswordField();
         nickname.setAlignmentX(Component.LEFT_ALIGNMENT);
         nicknamefield.setAlignmentX(Component.LEFT_ALIGNMENT);
-        emailLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        emailField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        idLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        idField.setAlignmentX(Component.LEFT_ALIGNMENT);
         passwordLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
         nicknamefield.setPreferredSize(new Dimension(500, 44));
@@ -56,8 +56,8 @@ public class Login extends JPanel{
         );
         
 
-        emailField.setPreferredSize(new Dimension(500, 44));
-        emailField.setMaximumSize(
+        idField.setPreferredSize(new Dimension(500, 44));
+        idField.setMaximumSize(
             new Dimension(Integer.MAX_VALUE, 44)
         );
 
@@ -69,18 +69,18 @@ public class Login extends JPanel{
         JButton loginButton = new JButton("로그인");
 
         loginButton.addActionListener(event -> {
-            String email = emailField.getText().trim();
+            String id = idField.getText().trim();
             String password = new String(passwordField.getPassword());
 
-            if (email.isEmpty() || password.isEmpty()) {
-                warn.setText("이메일과 비밀번호를 입력해 주세요.");
+            if (id.isEmpty() || password.isEmpty()) {
+                warn.setText("아이디와 비밀번호를 입력해 주세요.");
                 return;
             }
 
             AuthLoginDto.Response response;
 
             try {
-                response = pawLogClient.login(email, password);
+                response = pawLogClient.login(id, password);
             } catch (Exception exception) {
                 warn.setText("서버에 연결할 수 없습니다.");
                 exception.printStackTrace();
@@ -91,7 +91,7 @@ public class Login extends JPanel{
                 warn.setText("");
                 authStore.login(
                     response.getUser().getUserId(),
-                    response.getUser().getEmail(),
+                    response.getUser().getId(),
                     response.getUser().getNickname(),
                     response.getUser().getBirthDate()
                 );
@@ -173,18 +173,18 @@ public class Login extends JPanel{
 
         Font labelFont = new Font("맑은 고딕", Font.BOLD, 14);
 
-        emailLabel.setFont(labelFont);
+        idLabel.setFont(labelFont);
         passwordLabel.setFont(labelFont);
-        emailLabel.setForeground(TEXT);
+        idLabel.setForeground(TEXT);
         passwordLabel.setForeground(TEXT);
       
         
         loginform.add(titlePanel);
         
         loginform.add(Box.createVerticalStrut(28));
-        loginform.add(emailLabel);
+        loginform.add(idLabel);
         loginform.add(Box.createVerticalStrut(7));
-        loginform.add(emailField);
+        loginform.add(idField);
 
         loginform.add(Box.createVerticalStrut(18));
 

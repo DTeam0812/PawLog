@@ -13,7 +13,7 @@ public class UsageLogSaveDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Request {
-        private String email;
+        private String id;
         private String usageDate; // "yyyy-MM-dd"
         private List<LogItem> logs;
     }

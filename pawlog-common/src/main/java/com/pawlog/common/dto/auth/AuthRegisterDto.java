@@ -14,7 +14,7 @@ public class AuthRegisterDto {
     @Setter
     public static class Request {
         private String nickname;
-        private String email;
+        private String id;
         private String password;
         private String birth;
         private String gender;
