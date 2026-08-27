@@ -184,7 +184,7 @@ public class StatisticsService {
                         0,
                         Collections.emptyList()
                 );
-                return new TodayStatisticsDto.Response(true, 200, "오늘 통계 조회 성공", emptyPayload);
+                return new TodayStatisticsDto.Response(true, 200, "오늘 사용 통계 조회에 성공했습니다.", emptyPayload);
             }
 
             // 4. 통계 가공
@@ -221,7 +221,7 @@ public class StatisticsService {
                     programItems
             );
 
-            return new TodayStatisticsDto.Response(true, 200, "오늘 통계 조회 성공", payload);
+            return new TodayStatisticsDto.Response(true, 200, "오늘 사용 통계 조회에 성공했습니다.", payload);
 
         } catch (Exception e) {
             e.printStackTrace();
