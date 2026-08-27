@@ -64,7 +64,8 @@ public class AuthService {
         try {
             UserEntity user = userDAO.getUserByEmailAndPassword(dto.getEmail().trim(), dto.getPassword());
             if (user != null) {
-                AuthLoginDto.UserInfo userInfo = new AuthLoginDto.UserInfo(user.getUserId(), user.getEmail(), user.getNickname());
+                String birthStr = user.getBirthDate() != null ? user.getBirthDate().toString() : "";
+                AuthLoginDto.UserInfo userInfo = new AuthLoginDto.UserInfo(user.getUserId(), user.getEmail(), user.getNickname(), birthStr);
                 return new AuthLoginDto.Response(true, 200, "로그인에 성공하였습니다.", userInfo);
             } else {
                 return new AuthLoginDto.Response(false, 401, "이메일 또는 비밀번호가 올바르지 않습니다.");

@@ -92,7 +92,8 @@ public class Login extends JPanel{
                 authStore.login(
                     response.getUser().getUserId(),
                     response.getUser().getEmail(),
-                    response.getUser().getNickname()
+                    response.getUser().getNickname(),
+                    response.getUser().getBirthDate()
                 );
                 loginsuccess.run();
             } else {

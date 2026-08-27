@@ -33,6 +33,11 @@ public class MyPagePanel extends JPanel {
     private final JTextField nicknameField = textField("닉네임");
     private final JLabel profileStatusLabel = label("", Font.PLAIN, 12, SUB_TEXT);
 
+    // 생년월일 콤보박스 필드 분리
+    private final JComboBox<String> yearCombo = new JComboBox<>();
+    private final JComboBox<String> monthCombo = new JComboBox<>();
+    private final JComboBox<String> dayCombo = new JComboBox<>();
+
     private final JPasswordField currentPasswordField = passwordField();
     private final JPasswordField newPasswordField = passwordField();
     private final JPasswordField confirmPasswordField = passwordField();
@@ -47,6 +52,15 @@ public class MyPagePanel extends JPanel {
         add(titlePanel("마이페이지", "내 정보와 비밀번호를 확인하고 변경할 수 있습니다."), BorderLayout.NORTH);
         add(createContent(), BorderLayout.CENTER);
 
+        // 패널이 화면에 실제로 보여질 때마다 자동으로 정보를 새로고침
+        this.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0) {
+                if (this.isShowing()) {
+                    refreshUserInfo();
+                }
+            }
+        });
+
         refreshUserInfo();
     }
 
@@ -54,6 +68,18 @@ public class MyPagePanel extends JPanel {
     public void refreshUserInfo() {
         emailField.setText(authStore.getEmail() != null ? authStore.getEmail() : "user@example.com");
         nicknameField.setText(authStore.getNickname() != null ? authStore.getNickname() : "PawUser");
+
+        // 생년월일 파싱 및 콤보박스 세팅
+        String birthDate = authStore.getBirthDate();
+        if (birthDate != null && birthDate.contains("-")) {
+            String[] parts = birthDate.split("-");
+            if (parts.length == 3) {
+                yearCombo.setSelectedItem(parts[0] + "년");
+                monthCombo.setSelectedItem(parts[1] + "월");
+                dayCombo.setSelectedItem(parts[2] + "일");
+            }
+        }
+
         clearPasswordFields();
         profileStatusLabel.setText("");
         securityStatusLabel.setText("");
@@ -238,16 +264,20 @@ public class MyPagePanel extends JPanel {
     private JPanel createBirthPanel() {
         JPanel panel = transparentPanel(new GridLayout(1, 3, 9, 0));
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        String[] years = new String[100];
-        String[] months = new String[12];
-        String[] days = new String[31];
+
         int currentYear = Year.now().getValue();
-        for (int i = 0; i < years.length; i++) years[i] = currentYear - i + "년";
-        for (int i = 0; i < months.length; i++) months[i] = String.format("%02d월", i + 1);
-        for (int i = 0; i < days.length; i++) days[i] = String.format("%02d일", i + 1);
-        panel.add(new JComboBox<>(years));
-        panel.add(new JComboBox<>(months));
-        panel.add(new JComboBox<>(days));
+        for (int i = 0; i < 100; i++) yearCombo.addItem((currentYear - i) + "년");
+        for (int i = 1; i <= 12; i++) monthCombo.addItem(String.format("%02d월", i));
+        for (int i = 1; i <= 31; i++) dayCombo.addItem(String.format("%02d일", i));
+
+        // 수정 불가능하도록 비활성화 처리
+        yearCombo.setEnabled(false);
+        monthCombo.setEnabled(false);
+        dayCombo.setEnabled(false);
+
+        panel.add(yearCombo);
+        panel.add(monthCombo);
+        panel.add(dayCombo);
         return panel;
     }
 

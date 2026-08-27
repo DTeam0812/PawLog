@@ -1,6 +1,7 @@
 package com.pawlog.server.service;
 
 import com.pawlog.common.dto.ranking.PopularRankingDto;
+import com.pawlog.common.dto.recommend.RecommendProgramDto;
 import com.pawlog.server.dao.ProgramUsageStatDAO;
 import com.pawlog.server.dao.UsageLogDAO;
 
@@ -13,6 +14,52 @@ public class PopularRankingService {
 
     private final ProgramUsageStatDAO statsDAO = new ProgramUsageStatDAO();
     private final UsageLogDAO usageLogDAO = new UsageLogDAO();
+
+    /**
+     * 현재 시간 기준 직전 2개 시간대에서 가장 많이 사용된 추천 프로그램 N개 조회
+     *
+     * @param request count 요청 DTO
+     * @return RecommendProgramDto.Response
+     */
+    public RecommendProgramDto.Response getRecommendPrograms(RecommendProgramDto.Request request) {
+        int count = (request != null && request.getCount() > 0) ? request.getCount() : 3;
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime dt1 = now.minusHours(2);
+        LocalDateTime dt2 = now.minusHours(1);
+
+        LocalDate date1 = dt1.toLocalDate();
+        int hour1 = dt1.getHour();
+
+        LocalDate date2 = dt2.toLocalDate();
+        int hour2 = dt2.getHour();
+
+        try {
+            List<UsageLogDAO.RealtimeRankRawData> rawList = usageLogDAO.getTopRealtimePrograms(
+                    date1, hour1, date2, hour2, count
+            );
+
+            List<RecommendProgramDto.Item> items = new ArrayList<>();
+            for (UsageLogDAO.RealtimeRankRawData raw : rawList) {
+                items.add(new RecommendProgramDto.Item(raw.programName, raw.userCount));
+            }
+
+            return new RecommendProgramDto.Response(
+                    true,
+                    200,
+                    "지난 2시간동안 이용자수가 많은 프로그램 반환",
+                    items
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new RecommendProgramDto.Response(
+                    false,
+                    500,
+                    "추천 프로그램 조회 중 오류 발생: " + e.getMessage()
+            );
+        }
+    }
 
     /**
      * 현 시점 기준 직전 2개 시간대(예: 13:01 -> 11시, 12시)의 실시간 인기 프로그램 상위 5개 조회

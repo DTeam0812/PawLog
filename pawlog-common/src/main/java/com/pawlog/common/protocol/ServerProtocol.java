@@ -23,10 +23,6 @@ public class ServerProtocol {
     // 서버 푸시 커맨드 (Server → Client)
     public static final String SESSION_FORCE_LOGOUT = "SESSION_FORCE_LOGOUT"; // 중복 로그인 감지 시 기존 세션에 강제 로그아웃 푸시
 
-    // 구분자 (Delimiter)
-    public static final String MODE1 = ":"; // Command와 Data 분리
-    public static final String MODE2 = ";"; // Data 내 필드 분리
-
     // 응답 결과 (Status)
     public static final String SUCCESS = "SUCCESS";
     public static final String FAIL = "FAIL";

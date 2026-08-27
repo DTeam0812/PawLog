@@ -23,6 +23,11 @@ public class AuthLoginDto {
         private long userId;
         private String email;
         private String nickname;
+        private String birthDate;
+
+        public UserInfo(Long userId, String email, String nickname) {
+            this(userId, email, nickname, "");
+        }
     }
 
     // 3. 로그인 응답 DTO
