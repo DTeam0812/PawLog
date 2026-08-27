@@ -19,9 +19,12 @@ public class PostDetailDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class commentitem{
-        String commentAuthor;//댓글 단사람 닉네임
-        String commenttime;//작성 시간
-        String commentcontent;//내용
+        private long commentId;//삭제용 식별자
+        private long userId;//작성자 ID
+        private String commentAuthor;//댓글 단사람 닉네임
+        private String commenttime;//작성 시간
+        private String commentcontent;//내용
+        private boolean mine;//본인 댓글 여부
     }
 
     @Data

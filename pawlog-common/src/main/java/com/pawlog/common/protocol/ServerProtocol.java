@@ -20,6 +20,8 @@ public class ServerProtocol {
     public static final String PROGRAM_ANALYTICS_GET = "PROGRAM_ANALYTICS_GET";
     public static final String RECOMMEND_PROGRAM_GET = "RECOMMEND_PROGRAM_GET";//핫프로그램
     public static final String RECENT_POPULAR_PROGRAM_GET = "RECENT_POPULAR_PROGRAM_GET";//이용자2시간
+    public static final String POST_DELETE = "POST_DELETE";
+    public static final String COMMENT_DELETE = "COMMENT_DELETE";
 
     // 서버 푸시 커맨드 (Server → Client)
     public static final String SESSION_FORCE_LOGOUT = "SESSION_FORCE_LOGOUT"; // 중복 로그인 감지 시 기존 세션에 강제 로그아웃 푸시

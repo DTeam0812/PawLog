@@ -3,6 +3,7 @@ package com.pawlog.server.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import com.pawlog.common.dto.board.CommentDeleteDto;
 import com.pawlog.common.dto.board.CommentDto;
 import com.pawlog.server.dao.CommentDAO;
 import com.pawlog.server.dao.PostDAO;
@@ -83,6 +84,30 @@ public class CommentService {
         } catch (Exception e) {
             e.printStackTrace();
             return new CommentDto.Response(false, 500, "댓글 등록 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    // 댓글 삭제 비즈니스 로직 추가
+    public CommentDeleteDto.Response deleteComment(CommentDeleteDto.Request reqDto, Long currentUserId) {
+        if (currentUserId == null || currentUserId <= 0) {
+            return new CommentDeleteDto.Response(false, 401, "로그인이 필요한 서비스입니다.");
+        }
+        if (reqDto == null || reqDto.getCommentId() <= 0 || reqDto.getPostId() <= 0) {
+            return new CommentDeleteDto.Response(false, 400, "유효하지 않은 요청 데이터입니다.");
+        }
+
+        try {
+            // DAO 쿼리 자체에 user_id 검증 조건 포함 (WHERE comment_id = ? AND user_id = ?)
+            boolean deleted = commentDAO.deleteComment(reqDto.getCommentId(), currentUserId);
+            if (!deleted) {
+                return new CommentDeleteDto.Response(false, 403, "삭제 권한이 없거나 이미 삭제된 댓글입니다.");
+            }
+
+            int remainCommentCount = commentDAO.getCommentCountByPostId(reqDto.getPostId());
+            return new CommentDeleteDto.Response(true, 200, "댓글이 삭제되었습니다.", remainCommentCount);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new CommentDeleteDto.Response(false, 500, "댓글 삭제 중 오류 발생: " + e.getMessage());
         }
     }
 }
