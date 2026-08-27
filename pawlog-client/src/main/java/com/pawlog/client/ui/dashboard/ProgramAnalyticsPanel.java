@@ -313,7 +313,7 @@ public class ProgramAnalyticsPanel extends JPanel {
                         statusWarnLabel.setText(response.getMessage() != null ? response.getMessage() : "데이터 조회 실패");
                         return;
                     }
-
+                    statusWarnLabel.setText("");
                     renderAnalyticsDetail(response.getData());
                     cardLayout.show(ProgramAnalyticsPanel.this, DETAIL);
                 } catch (Exception e) {
