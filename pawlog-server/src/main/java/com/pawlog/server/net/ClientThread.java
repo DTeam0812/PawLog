@@ -17,7 +17,7 @@ import com.pawlog.common.protocol.ServerProtocol;
 import com.pawlog.common.util.JsonUtil;
 import com.pawlog.server.entity.UserEntity;
 import com.pawlog.server.service.*;
-
+import com.pawlog.common.dto.recommend.RecommendProgramDto;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -160,6 +160,9 @@ public class ClientThread extends Thread {
             }
             else if (ServerProtocol.PROGRAM_LIKE_TOGGLE.equals(command)) {
                 handleProgramLikeToggleJson(dataJson);
+            }
+            else if(ServerProtocol.RECOMMEND_PROGRAM_GET.equals(command)){
+                handleRecommendProgramGetJson(dataJson);
             }
             else if (ServerProtocol.POST_DELETE.equals(command)) {
                 handlePostDeleteJson(dataJson);
@@ -739,6 +742,55 @@ public class ClientThread extends Thread {
             sendMessage(JsonUtil.toJson(errorPacket));
         }
     }
+    //핫 프로그램 조회
+    private void handleRecommendProgramGetJson(
+    String dataJson
+) {
+    try {
+        RecommendProgramDto.Request request =
+            JsonUtil.fromJson(
+                dataJson,
+                RecommendProgramDto.Request.class
+            );
+
+        RecommendProgramDto.Response response =
+            programLikeService.getTopRecommendPrograms(
+                request
+            );
+
+        JsonNode dataNode =
+            response.isSuccess()
+                && response.getData() != null
+                    ? JsonUtil.toJsonNode(
+                        response.getData()
+                    )
+                    : null;
+
+        ResponsePacket packet =
+            new ResponsePacket(
+                ServerProtocol.RECOMMEND_PROGRAM_GET,
+                response.isSuccess(),
+                response.getCode(),
+                response.getMessage(),
+                dataNode
+            );
+
+        sendMessage(JsonUtil.toJson(packet));
+    } catch (Exception exception) {
+        exception.printStackTrace();
+
+        ResponsePacket packet =
+            new ResponsePacket(
+                ServerProtocol.RECOMMEND_PROGRAM_GET,
+                false,
+                400,
+                "핫 프로그램 조회 요청 처리 실패",
+                null
+            );
+
+        sendMessage(JsonUtil.toJson(packet));
+    }
+}
 
     // ClientThread.java 핸들러 메서드
     private void handlePostDeleteJson(String dataJson) {

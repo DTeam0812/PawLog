@@ -12,6 +12,7 @@ import com.pawlog.common.dto.board.ProgramSearchDto;
 import com.pawlog.common.dto.board.PostLikeDto;
 import com.pawlog.common.dto.board.PostDetailDto.commentitem;
 import com.pawlog.common.dto.recommend.ProgramLikeDto;
+import com.pawlog.common.dto.board.CommentDeleteDto;
 import com.pawlog.common.dto.board.CommentDto;
 import com.pawlog.common.dto.board.PostDeleteDto;
 
@@ -1078,7 +1079,7 @@ if (result != JOptionPane.YES_OPTION) {
         commentScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         commentScroll.getVerticalScrollBar().setUnitIncrement(14);
         card.add(commentScroll, BorderLayout.CENTER);
-
+        
         JPanel inputRow = transparentPanel(new BorderLayout(8, 0));
         JButton commentButton = primaryButton("댓글 등록");
         commentButton.setPreferredSize(new Dimension(90, 38));
@@ -1092,19 +1093,83 @@ if (result != JOptionPane.YES_OPTION) {
         return card;
     }
 
-    private JPanel createCommentRow(String author, String content, String time) {
-        JPanel row = transparentPanel(new BorderLayout(10, 3));
-        row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, TABLE_DIVIDER), BorderFactory.createEmptyBorder(7, 2, 7, 2)));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
-        row.setAlignmentX(LEFT_ALIGNMENT);
+   private JPanel createCommentRow(
+    long commentId,
+    String author,
+    String content,
+    String time,
+    boolean mine
+) {
+    JPanel row = transparentPanel(
+        new BorderLayout(10, 3)
+    );
 
-        JPanel meta = transparentPanel(new BorderLayout());
-        meta.add(label(author, Font.BOLD, 11, TEXT), BorderLayout.WEST);
-        meta.add(label(time, Font.PLAIN, 10, MUTED_TEXT), BorderLayout.EAST);
-        row.add(meta, BorderLayout.NORTH);
-        row.add(label(content, Font.PLAIN, 12, SUB_TEXT), BorderLayout.CENTER);
-        return row;
+    row.setBorder(
+        BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(
+                0,
+                0,
+                1,
+                0,
+                TABLE_DIVIDER
+            ),
+            BorderFactory.createEmptyBorder(
+                7,
+                2,
+                7,
+                2
+            )
+        )
+    );
+
+    row.setMaximumSize(
+        new Dimension(Integer.MAX_VALUE, 55)
+    );
+
+    row.setAlignmentX(LEFT_ALIGNMENT);
+
+    JPanel meta =
+        transparentPanel(new BorderLayout());
+
+    meta.add(
+        label(author, Font.BOLD, 11, TEXT),
+        BorderLayout.WEST
+    );
+
+    JPanel rightArea =
+        transparentPanel(
+            new FlowLayout(FlowLayout.RIGHT, 6, 0)
+        );
+
+    rightArea.add(
+        label(time, Font.PLAIN, 10, MUTED_TEXT)
+    );
+
+    if (mine) {
+        JButton commentDeleteButton =
+            linkButton("삭제");
+
+        commentDeleteButton.addActionListener(
+            event -> deleteComment(
+                commentId,
+                commentDeleteButton
+            )
+        );
+
+        rightArea.add(commentDeleteButton);
     }
+
+    meta.add(rightArea, BorderLayout.EAST);
+
+    row.add(meta, BorderLayout.NORTH);
+
+    row.add(
+        label(content, Font.PLAIN, 12, SUB_TEXT),
+        BorderLayout.CENTER
+    );
+
+    return row;
+}
 
     // 목록에서 받은 postId로 서버에 상세 내용을 요청한다.
     private void openPostDetail(long postId) {
@@ -1170,10 +1235,12 @@ if (result != JOptionPane.YES_OPTION) {
         if(comments != null && !comments.isEmpty()) {
             for(commentitem comment : comments) {
                 commentRows.add(createCommentRow(
-                    comment.getCommentAuthor(),
-                    comment.getCommentcontent(),
-                    comment.getCommenttime()
-                ));
+    comment.getCommentId(),
+    comment.getCommentAuthor(),
+    comment.getCommentcontent(),
+    comment.getCommenttime(),
+    comment.isMine()
+));
             }
         } else {
             commentRows.add(label("아직 댓글이 없습니다. 첫 댓글을 남겨보세요.", Font.PLAIN, 12, SUB_TEXT));
@@ -1219,7 +1286,13 @@ if (result != JOptionPane.YES_OPTION) {
                         }
 
                         // 작성된 댓글을 맨 아래(또는 맨 위)에 추가
-                        commentRows.add(createCommentRow(data.getAuthorNickname(), data.getContent(), data.getCreatedAt()));
+                       commentRows.add(createCommentRow(
+    data.getCommentId(),
+    data.getAuthorNickname(),
+    data.getContent(),
+    data.getCreatedAt(),
+    true
+));
                         commentField.setText("");
 
                         // 상세 화면 메타 정보(댓글 수) 즉시 갱신
@@ -1256,7 +1329,56 @@ if (result != JOptionPane.YES_OPTION) {
             for (Component child : container.getComponents()) makeClickable(child, action);
         }
     }
+    private void deleteComment(
+    long commentId,
+    JButton commentDeleteButton
+) {
+    if (commentId <= 0 || currentDetailPostId <= 0) {
+        return;
+    }
 
+    long postId = currentDetailPostId;
+
+    commentDeleteButton.setEnabled(false);
+    commentDeleteButton.setText("삭제 중...");
+
+    new SwingWorker<CommentDeleteDto.Response, Void>() {
+        @Override
+        protected CommentDeleteDto.Response doInBackground()
+            throws Exception {
+
+            return pawLogClient.deleteComment(
+                commentId,
+                postId
+            );
+        }
+
+        @Override
+        protected void done() {
+            try {
+                CommentDeleteDto.Response response =
+                    get();
+
+                if (!response.isSuccess()) {
+                    System.out.println(
+                        "댓글 삭제 실패: "
+                            + response.getMessage()
+                    );
+
+                    commentDeleteButton.setText("삭제");
+                    return;
+                }
+
+                openPostDetail(postId);
+            } catch (Exception exception) {
+                commentDeleteButton.setText("삭제");
+                exception.printStackTrace();
+            } finally {
+                commentDeleteButton.setEnabled(true);
+            }
+        }
+    }.execute();
+}
     private JButton linkButton(String text) {
         JButton button = new JButton(text);
         button.setFont(font(Font.BOLD, 12));

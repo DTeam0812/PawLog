@@ -30,8 +30,11 @@ public class PostListDto {
         private String createdAt;
         private int likeCount;//좋아요 갯수
         private int commentCount;//댓글수
+
+       private int likecount;//좋아요 갯수
         private boolean liked;//추천 여부
-        private int likecount;//좋아요 갯수
+
+        
 
         public int getLikeCount() {
             return likeCount;
@@ -58,6 +61,7 @@ public class PostListDto {
         private int currentPage;//현재페이지
         private int totalPages;//총 페이지
         private long totalCount;//조건에맞는 게시글수
+        
     }
 
     @Data
