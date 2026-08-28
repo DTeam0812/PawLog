@@ -9,7 +9,11 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import com.github.lgooddatepicker.components.DatePicker;
+import com.github.lgooddatepicker.components.DatePickerSettings;
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
@@ -26,6 +30,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingWorker;
+import javax.swing.JTextField;
 public class StatisticsPanel extends JPanel {
     private static final String PERSONAL = "PERSONAL";
     private final PopularRankingPanel popularPanel = new PopularRankingPanel(true);
@@ -37,7 +42,7 @@ public class StatisticsPanel extends JPanel {
     private final CardLayout statisticsLayout = new CardLayout();
     private final JPanel statisticsContent = new JPanel(statisticsLayout);
     private final List<JButton> typeButtons = new ArrayList<>();
-    private final JButton joinbutton = new JButton("조회");
+    private final JButton joinbutton = primaryButton("조회하기");
     private final PawLogClient pawLogClient = PawLogClient.getInstance();
     private final AuthStore authStore = AuthStore.getInstance();
     private final JLabel totalTimeValueLabel = label("0초", Font.BOLD, 19, PRIMARY);
@@ -46,6 +51,8 @@ public class StatisticsPanel extends JPanel {
     private final JPanel usageRowsPanel = transparentPanel();
     
     public StatisticsPanel() {
+        configureDatePicker(startDatePicker);
+        configureDatePicker(endDatePicker);
         setLayout(new BorderLayout(0, 16));
         setBackground(BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
@@ -93,10 +100,13 @@ public class StatisticsPanel extends JPanel {
     }
 
     private JPanel createPeriodButtons() {
-        JPanel panel = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-       
-        panel.add(startDatePicker);
-        panel.add(endDatePicker);
+        JPanel panel = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 9, 2));
+
+        panel.add(label("기간", Font.BOLD, 12, SUB_TEXT));
+        panel.add(createDatePickerBox(startDatePicker));
+        panel.add(label("→", Font.BOLD, 14, PRIMARY));
+        panel.add(createDatePickerBox(endDatePicker));
+        joinbutton.setPreferredSize(new Dimension(92, 40));
         panel.add(joinbutton);
         joinbutton.addActionListener(event -> {
             LocalDate startDate = startDatePicker.getDate();
@@ -125,10 +135,19 @@ public class StatisticsPanel extends JPanel {
         return panel;
     }
 
+    private JPanel createDatePickerBox(DatePicker picker) {
+        UiComponents.RoundedPanel box = new UiComponents.RoundedPanel(20, CARD);
+        box.setLayout(new BorderLayout());
+        box.setBorder(BorderFactory.createEmptyBorder(2, 8, 5, 5));
+        box.setPreferredSize(new Dimension(200, 44));
+        box.add(picker, BorderLayout.CENTER);
+        return box;
+    }
+
     private JButton createSwitchButton(String text, boolean selected) {
-        JButton button = new JButton(text);
-        button.setFont(font(Font.BOLD, 12));
-        button.setPreferredSize(new Dimension(105, 31));
+        JButton button = new StatisticsSwitchButton(text);
+        button.setFont(font(Font.BOLD, 13));
+        button.setPreferredSize(new Dimension(116, 38));
         button.setFocusPainted(false);
         applySelectedStyle(button, selected);
         return button;
@@ -141,7 +160,97 @@ public class StatisticsPanel extends JPanel {
     private void applySelectedStyle(JButton button, boolean selected) {
         button.setForeground(selected ? CARD : TEXT);
         button.setBackground(selected ? PRIMARY : CARD);
-        button.setBorder(BorderFactory.createLineBorder(selected ? PRIMARY : BORDER));
+        button.putClientProperty("selected", selected);
+        button.repaint();
+    }
+
+    private void configureDatePicker(DatePicker picker) {
+        DatePickerSettings settings = picker.getSettings();
+        settings.setFormatForDatesCommonEra("yyyy년 M월 d일");
+        settings.setFontValidDate(font(Font.PLAIN, 13));
+        settings.setFontCalendarDateLabels(font(Font.PLAIN, 12));
+        settings.setFontCalendarWeekdayLabels(font(Font.BOLD, 11));
+        settings.setFontMonthAndYearMenuLabels(font(Font.BOLD, 13));
+        settings.setFontMonthAndYearNavigationButtons(font(Font.BOLD, 12));
+        settings.setFontTodayLabel(font(Font.BOLD, 12));
+        settings.setFontClearLabel(font(Font.BOLD, 12));
+        settings.setTranslationToday("오늘");
+        settings.setTranslationClear("지우기");
+        settings.setColor(DatePickerSettings.DateArea.CalendarBackgroundSelectedDate, PRIMARY);
+        settings.setColor(DatePickerSettings.DateArea.CalendarBorderSelectedDate, PRIMARY);
+        settings.setColor(DatePickerSettings.DateArea.CalendarBackgroundNormalDates, CARD);
+        settings.setColor(DatePickerSettings.DateArea.CalendarTextNormalDates, TEXT);
+        settings.setColor(DatePickerSettings.DateArea.CalendarTextWeekdays, SUB_TEXT);
+        settings.setColor(DatePickerSettings.DateArea.BackgroundMonthAndYearMenuLabels, CARD);
+        settings.setColor(DatePickerSettings.DateArea.TextMonthAndYearMenuLabels, TEXT);
+        settings.setColor(DatePickerSettings.DateArea.BackgroundMonthAndYearNavigationButtons, PRIMARY_SOFT);
+        settings.setColor(DatePickerSettings.DateArea.TextMonthAndYearNavigationButtons, PRIMARY);
+        settings.setColor(DatePickerSettings.DateArea.BackgroundCalendarPanelLabelsOnHover, PRIMARY_SOFT);
+        settings.setColor(DatePickerSettings.DateArea.TextCalendarPanelLabelsOnHover, TEXT);
+        settings.setColor(DatePickerSettings.DateArea.BackgroundTodayLabel, PRIMARY_SOFT);
+        settings.setColor(DatePickerSettings.DateArea.TextTodayLabel, PRIMARY);
+        settings.setColor(DatePickerSettings.DateArea.BackgroundClearLabel, CARD);
+        settings.setColor(DatePickerSettings.DateArea.TextClearLabel, SUB_TEXT);
+        settings.setColor(DatePickerSettings.DateArea.BackgroundOverallCalendarPanel, CARD);
+        settings.setColorBackgroundWeekdayLabels(PRIMARY_SOFT, true);
+        settings.setBorderCalendarPopup(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SOFT_BORDER),
+            BorderFactory.createEmptyBorder(7, 7, 7, 7)
+        ));
+
+        picker.addComponentListener(event -> {
+            if (event.getComponent() instanceof JButton button) {
+                button.setFont(font(Font.BOLD, 12));
+                button.setForeground(PRIMARY);
+                button.setBackground(PRIMARY_SOFT);
+                button.setFocusPainted(false);
+                button.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
+            }
+        });
+
+        picker.setOpaque(false);
+        picker.setPreferredSize(new Dimension(190, 40));
+
+        JTextField field = picker.getComponentDateTextField();
+        field.setFont(font(Font.PLAIN, 13));
+        field.setForeground(TEXT);
+        field.setBackground(CARD);
+        field.setOpaque(false);
+        field.setBorder(BorderFactory.createEmptyBorder(0, 9, 0, 7));
+
+        JButton calendarButton = picker.getComponentToggleCalendarButton();
+        calendarButton.setText("v");
+        calendarButton.setFont(font(Font.BOLD, 11));
+        calendarButton.setForeground(PRIMARY);
+        calendarButton.setContentAreaFilled(false);
+        calendarButton.setFocusPainted(false);
+        calendarButton.setBorder(BorderFactory.createEmptyBorder(0, 7, 2, 7));
+        calendarButton.setPreferredSize(new Dimension(28, 36));
+        calendarButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    }
+
+    private static class StatisticsSwitchButton extends JButton {
+        StatisticsSwitchButton(String text) {
+            super(text);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setOpaque(false);
+            setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            boolean selected = Boolean.TRUE.equals(getClientProperty("selected"));
+            Color fill = selected ? PRIMARY : getModel().isRollover() ? PRIMARY_SOFT : CARD;
+            g2.setColor(fill);
+            g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 3, 20, 20);
+            g2.setColor(selected ? PRIMARY : BORDER);
+            g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 4, 20, 20);
+            g2.dispose();
+            super.paintComponent(graphics);
+        }
     }
 
     private JPanel createStatisticsContent() {
@@ -183,6 +292,7 @@ public class StatisticsPanel extends JPanel {
         usageRowsPanel.add(label("조회할 기간을 선택해주세요.", Font.PLAIN, 11, SUB_TEXT));
 
         JScrollPane scrollPane = new JScrollPane(usageRowsPanel);
+        styleScrollPane(scrollPane);
         scrollPane.setBorder(null);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
@@ -230,7 +340,11 @@ public class StatisticsPanel extends JPanel {
                     }
 
                     updatePersonalStatistics(response.getData());
-                    warnlabel.setText("");
+                    if (!endDate.isBefore(LocalDate.now())) {
+                        warnlabel.setText("오늘 저장한 기록은 통계에 최대 5분 후 반영됩니다.");
+                    } else {
+                        warnlabel.setText("");
+                    }
                 } catch (Exception exception) {
                     warnlabel.setText("서버 연결에 실패했습니다.");
                     exception.printStackTrace();

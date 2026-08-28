@@ -161,6 +161,12 @@ public class ClientThread extends Thread {
             else if (ServerProtocol.PROGRAM_LIKE_TOGGLE.equals(command)) {
                 handleProgramLikeToggleJson(dataJson);
             }
+            else if (ServerProtocol.POST_DELETE.equals(command)) {
+                handlePostDeleteJson(dataJson);
+            }
+            else if (ServerProtocol.COMMENT_DELETE.equals(command)) {
+                handleCommentDeleteJson(dataJson);
+            }
             else {
                 ResponsePacket errorRes = new ResponsePacket(command, false, 400, "지원하지 않는 커맨드입니다: " + command, null);
                 sendMessage(JsonUtil.toJson(errorRes));
@@ -731,6 +737,49 @@ public class ClientThread extends Thread {
                     null
             );
             sendMessage(JsonUtil.toJson(errorPacket));
+        }
+    }
+
+    // ClientThread.java 핸들러 메서드
+    private void handlePostDeleteJson(String dataJson) {
+        try {
+            if (!isLoggedIn()) {
+                ResponsePacket errorPacket = new ResponsePacket(ServerProtocol.POST_DELETE, false, 401, "로그인이 필요한 서비스입니다.", null);
+                sendMessage(JsonUtil.toJson(errorPacket));
+                return;
+            }
+            PostDeleteDto.Request reqDto = JsonUtil.fromJson(dataJson, PostDeleteDto.Request.class);
+            PostDeleteDto.Response resDto = postService.deletePost(reqDto, getLoggedInUserId());
+
+            ResponsePacket responsePacket = new ResponsePacket(ServerProtocol.POST_DELETE, resDto.isSuccess(), resDto.getCode(), resDto.getMessage(), null);
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(JsonUtil.toJson(new ResponsePacket(ServerProtocol.POST_DELETE, false, 400, "게시글 삭제 요청 실패", null)));
+        }
+    }
+
+    private void handleCommentDeleteJson(String dataJson) {
+        try {
+            if (!isLoggedIn()) {
+                ResponsePacket errorPacket = new ResponsePacket(ServerProtocol.COMMENT_DELETE, false, 401, "로그인이 필요한 서비스입니다.", null);
+                sendMessage(JsonUtil.toJson(errorPacket));
+                return;
+            }
+            CommentDeleteDto.Request reqDto = JsonUtil.fromJson(dataJson, CommentDeleteDto.Request.class);
+            CommentDeleteDto.Response resDto = commentService.deleteComment(reqDto, getLoggedInUserId());
+
+            ResponsePacket responsePacket = new ResponsePacket(
+                    ServerProtocol.COMMENT_DELETE,
+                    resDto.isSuccess(),
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    resDto.isSuccess() ? JsonUtil.toJsonNode(resDto) : null
+            );
+            sendMessage(JsonUtil.toJson(responsePacket));
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(JsonUtil.toJson(new ResponsePacket(ServerProtocol.COMMENT_DELETE, false, 400, "댓글 삭제 요청 실패", null)));
         }
     }
 

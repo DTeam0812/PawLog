@@ -85,6 +85,7 @@ public class HomePanel extends JPanel {
         bodyPanel.add(createBottomRowPanel());
 
         JScrollPane scrollPane = new JScrollPane(bodyPanel);
+        styleScrollPane(scrollPane);
 
         scrollPane.setBorder(null);
         scrollPane.setBackground(BACKGROUND);
@@ -327,7 +328,7 @@ public class HomePanel extends JPanel {
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
         card.setPreferredSize(new Dimension(900, 160));
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
+        card.setBorder(BorderFactory.createEmptyBorder(19, 21, 19, 21));
 
         JLabel cardTitle = new JLabel("현재 활성 프로그램");
 
@@ -506,7 +507,7 @@ public class HomePanel extends JPanel {
         JPanel card = createCardPanel();
 
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(15, 17, 15, 17)));
+        card.setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
 
         JLabel titleLabel = new JLabel(title);
 
@@ -560,7 +561,7 @@ public class HomePanel extends JPanel {
     JPanel card = createCardPanel();
 
     card.setLayout(new BorderLayout());
-    card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(18, 20, 18, 20)));
+    card.setBorder(BorderFactory.createEmptyBorder(19, 21, 19, 21));
 
     JLabel title = new JLabel("최근 활성 프로그램");
     title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
@@ -717,7 +718,7 @@ public class HomePanel extends JPanel {
         JPanel card = createCardPanel();
 
         card.setLayout(new BorderLayout());
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(SOFT_BORDER), BorderFactory.createEmptyBorder(18, 18, 18, 18)));
+        card.setBorder(BorderFactory.createEmptyBorder(19, 19, 19, 19));
 
         JLabel title = new JLabel("추천 프로그램 TOP 5");
 
@@ -789,9 +790,7 @@ public class HomePanel extends JPanel {
     }
 
     private JPanel createCardPanel() {
-        JPanel card = new JPanel();
-        card.setBackground(CARD);
-        return card;
+        return card();
     }
 
     private static class ViewportWidthPanel extends JPanel implements Scrollable {

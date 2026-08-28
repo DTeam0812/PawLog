@@ -98,14 +98,14 @@ public class CommentDAO {
         }
     }
 
-    // 4. 특정 게시글의 댓글 목록 조회 (게시글과 동일한 시간 포맷 적용)
-    public List<com.pawlog.common.dto.board.PostDetailDto.commentitem> getCommentItemsByPostId(long postId) {
+    // 4. 특정 게시글의 댓글 목록 조회 (currentUserId로 isMine 판별)
+    public List<com.pawlog.common.dto.board.PostDetailDto.commentitem> getCommentItemsByPostId(long postId, Long currentUserId) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         List<com.pawlog.common.dto.board.PostDetailDto.commentitem> list = new ArrayList<>();
 
-        String sql = "SELECT u.nickname AS comment_author, c.content, c.created_at "
+        String sql = "SELECT c.comment_id, c.user_id, u.nickname AS comment_author, c.content, c.created_at "
                 + "FROM comments c "
                 + "LEFT JOIN users u ON c.user_id = u.user_id "
                 + "WHERE c.post_id = ? AND (c.is_active = TRUE OR c.is_active IS NULL) "
@@ -119,10 +119,15 @@ public class CommentDAO {
 
             while (rs.next()) {
                 com.pawlog.common.dto.board.PostDetailDto.commentitem item = new com.pawlog.common.dto.board.PostDetailDto.commentitem();
+                long commentId = rs.getLong("comment_id");
+                long userId = rs.getLong("user_id");
+
+                item.setCommentId(commentId);
+                item.setUserId(userId);
                 item.setCommentAuthor(rs.getString("comment_author") != null ? rs.getString("comment_author") : "알 수 없음");
                 item.setCommentcontent(rs.getString("content") != null ? rs.getString("content") : "");
+                item.setMine(currentUserId != null && currentUserId.equals(userId));
 
-                // 게시글(PostDAO)과 동일한 포맷으로 변환
                 java.sql.Timestamp ts = rs.getTimestamp("created_at");
                 if (ts != null) {
                     item.setCommenttime(ts.toLocalDateTime().format(FORMATTER));
@@ -137,7 +142,6 @@ public class CommentDAO {
         } finally {
             pool.freeConnection(con, pstmt, rs);
         }
-
         return list;
     }
 }

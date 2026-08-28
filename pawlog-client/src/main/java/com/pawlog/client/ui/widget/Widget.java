@@ -10,9 +10,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.prefs.Preferences; // windows 레지스트리에 사용자설정을 저장
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.JPanel;
+import javax.swing.Timer;
 import javax.swing.JWindow;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -76,25 +79,44 @@ public class Widget {
     private static final int DRAG_THRESHOLD = 5;
 
     private final JWindow window;
+    private final JWindow speechBubble;
+    private final WidgetView widgetView;
+    private final JLabel programLabel;
+    private final JLabel sessionLabel;
+    private TrayIcon trayIcon;
+    private JCheckBoxMenuItem widgetPauseItem;
+    private CheckboxMenuItem trayPauseItem;
     private Point dragOffset;
     private Point pressScreenPoint;
     private boolean dragged;
+    private boolean paused;
 
     public Widget() {
     ProgramTracker.startTracking();
     window = new JWindow();
+    speechBubble = new JWindow(window);
     AUTH = new AuthFrame(false);
-    
-    JLabel dogLabel = createDogLabel();
+    AUTH.setWidgetVisibilityHandler(visible -> {
+        window.setVisible(visible);
+        if (!visible) speechBubble.setVisible(false);
+    });
 
-    addMouseEvents(dogLabel);
-    addPopupMenu(dogLabel);
+    widgetView = new WidgetView();
+    programLabel = label("활성 프로그램 확인 중", Font.BOLD, 13, TEXT);
+    sessionLabel = label("현재 세션 0초", Font.PLAIN, 11, SUB_TEXT);
 
-    window.add(dogLabel);
+    addMouseEvents(widgetView);
+    addPopupMenu(widgetView);
+    addHoverBubble(widgetView);
+
+    window.add(widgetView);
     window.setSize(120, 120);
     window.setBackground(TRANSPARENT);
     window.setAlwaysOnTop(true);
-    
+
+    createSpeechBubble();
+    createTrayIcon();
+    startWidgetRefresh();
     loadWindowLocation();
 }
 
@@ -149,7 +171,7 @@ public class Widget {
     }
 //------------------------------------------
 
-    private void addMouseEvents(JLabel dogLabel) {
+    private void addMouseEvents(JComponent dogLabel) {
         MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent event) {
@@ -183,9 +205,9 @@ public class Widget {
             }
 
           
-           @Override
+            @Override
             public void mouseReleased(MouseEvent event) {
-                if (SwingUtilities.isLeftMouseButton(event) && !dragged) {  openDetails();  }
+                if (SwingUtilities.isLeftMouseButton(event) && !dragged) {  bounceAndOpen();  }
                 if (dragged) {  saveWindowLocation(); }  
                 dragOffset = null;
                 pressScreenPoint = null;
@@ -195,39 +217,174 @@ public class Widget {
         dogLabel.addMouseMotionListener(mouseAdapter);
     }
 
-    private void addPopupMenu(JLabel dogLabel) {
+    private void addPopupMenu(JComponent dogLabel) {
         JPopupMenu popupMenu = new JPopupMenu();
         popupMenu.setLightWeightPopupEnabled(false);//창이 안잘리게해줌
 
         JMenuItem detailsItem = new JMenuItem("상세 정보");
-        JCheckBoxMenuItem pauseItem = new JCheckBoxMenuItem("추적 일시정지");
+        widgetPauseItem = new JCheckBoxMenuItem("추적 일시정지");
         JMenuItem exitItem = new JMenuItem("종료");
 
         detailsItem.addActionListener(event -> openDetails());
 
-        pauseItem.addActionListener(event -> {
-            boolean paused =
-            pauseItem.isSelected();
-
-            if (pauseItem.isSelected()) {
-                System.out.println("추적을 일시정지합니다.");
-            } else {
-                System.out.println("추적을 다시 시작합니다.");
-            }
-        });
-
-        exitItem.addActionListener(event -> {
-            ProgramTracker.stopTracking();
-            window.dispose();
-            System.exit(0);
-        });
+        widgetPauseItem.addActionListener(event -> setTrackingPaused(widgetPauseItem.isSelected()));
+        exitItem.addActionListener(event -> exitApplication());
 
         popupMenu.add(detailsItem);
-        popupMenu.add(pauseItem);
+        popupMenu.add(widgetPauseItem);
         popupMenu.addSeparator();
         popupMenu.add(exitItem);
 
         dogLabel.setComponentPopupMenu(popupMenu);
+    }
+
+    private void createTrayIcon() {
+        if (!SystemTray.isSupported()) return;
+
+        URL imageUrl = getClass().getResource("/images/trayIcon.png");
+        if (imageUrl == null) return;
+
+        PopupMenu trayMenu = new PopupMenu();
+        MenuItem openItem = new MenuItem("PawLog 열기");
+        trayPauseItem = new CheckboxMenuItem("추적 일시정지");
+        MenuItem showWidgetItem = new MenuItem("위젯 보이기");
+        MenuItem exitItem = new MenuItem("종료");
+
+        openItem.addActionListener(event -> SwingUtilities.invokeLater(this::openDetails));
+        trayPauseItem.addItemListener(event -> setTrackingPaused(trayPauseItem.getState()));
+        showWidgetItem.addActionListener(event -> SwingUtilities.invokeLater(this::show));
+        exitItem.addActionListener(event -> exitApplication());
+
+        trayMenu.add(openItem);
+        trayMenu.add(showWidgetItem);
+        trayMenu.add(trayPauseItem);
+        trayMenu.addSeparator();
+        trayMenu.add(exitItem);
+
+        Image image = Toolkit.getDefaultToolkit().getImage(imageUrl);
+        trayIcon = new TrayIcon(image, "PawLog", trayMenu);
+        trayIcon.setImageAutoSize(true);
+        trayIcon.addActionListener(event -> SwingUtilities.invokeLater(this::openDetails));
+
+        try {
+            SystemTray.getSystemTray().add(trayIcon);
+        } catch (AWTException exception) {
+            trayIcon = null;
+            exception.printStackTrace();
+        }
+    }
+
+    private void setTrackingPaused(boolean paused) {
+        this.paused = paused;
+
+        if (paused) ProgramTracker.stopTracking();
+        else ProgramTracker.startTracking();
+
+        if (widgetPauseItem != null) widgetPauseItem.setSelected(paused);
+        if (trayPauseItem != null) trayPauseItem.setState(paused);
+        widgetView.updateStatus(ProgramTracker.getUsageSeconds(), paused);
+    }
+
+    private void exitApplication() {
+        ProgramTracker.stopTracking();
+        speechBubble.dispose();
+        window.dispose();
+
+        if (trayIcon != null && SystemTray.isSupported()) {
+            SystemTray.getSystemTray().remove(trayIcon);
+        }
+        System.exit(0);
+    }
+
+    private void createSpeechBubble() {
+        JPanel bubble = card();
+        bubble.setLayout(new BorderLayout(0, 4));
+        bubble.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 16, 12, 16));
+        bubble.add(programLabel, BorderLayout.NORTH);
+        bubble.add(sessionLabel, BorderLayout.CENTER);
+
+        speechBubble.add(bubble);
+        speechBubble.setBackground(TRANSPARENT);
+        speechBubble.setAlwaysOnTop(true);
+        speechBubble.setFocusableWindowState(false);
+        speechBubble.pack();
+    }
+
+    private void addHoverBubble(JComponent component) {
+        component.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent event) {
+                widgetView.setHovered(true);
+                updateSpeechBubble();
+                showSpeechBubble();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent event) {
+                widgetView.setHovered(false);
+                speechBubble.setVisible(false);
+            }
+        });
+    }
+
+    private void startWidgetRefresh() {
+        Timer refreshTimer = new Timer(1000, event -> {
+            widgetView.setAlwaysAnimated(WidgetSettings.isAlwaysAnimated());
+            widgetView.updateStatus(ProgramTracker.getUsageSeconds(), paused);
+            if (speechBubble.isVisible()) {
+                updateSpeechBubble();
+                showSpeechBubble();
+            }
+        });
+        refreshTimer.start();
+    }
+
+    private void bounceAndOpen() {
+        int startX = window.getX();
+        int startY = window.getY();
+        int[] offsets = {0, -3, -7, -11, -8, -4, 0};
+        int[] index = {0};
+        Timer bounceTimer = new Timer(28, null);
+
+        bounceTimer.addActionListener(event -> {
+            window.setLocation(startX, startY + offsets[index[0]++]);
+            if (index[0] == offsets.length) {
+                bounceTimer.stop();
+                window.setLocation(startX, startY);
+                openDetails();
+            }
+        });
+        bounceTimer.start();
+    }
+
+    private void updateSpeechBubble() {
+        String program = ProgramTracker.getCurrentProgram();
+        programLabel.setText(program == null || program.isBlank() ? "활성 프로그램 확인 중" : program);
+        sessionLabel.setText((paused ? "추적 일시정지 · " : "현재 세션 · ") + formatDuration(ProgramTracker.getUsageSeconds()));
+        speechBubble.pack();
+    }
+
+    private void showSpeechBubble() {
+        Rectangle screen = window.getGraphicsConfiguration().getBounds();
+        int x = window.getX() + window.getWidth() - speechBubble.getWidth();
+        int y = window.getY() - speechBubble.getHeight() - 8;
+
+        if (y < screen.y + 8) {
+            y = window.getY() + window.getHeight() + 8;
+        }
+        x = Math.max(screen.x + 8, Math.min(x, screen.x + screen.width - speechBubble.getWidth() - 8));
+        speechBubble.setLocation(x, y);
+        speechBubble.setVisible(true);
+    }
+
+    private String formatDuration(long seconds) {
+        long hours = seconds / 3600;
+        long minutes = seconds % 3600 / 60;
+        long remainSeconds = seconds % 60;
+
+        if (hours > 0) return hours + "시간 " + minutes + "분";
+        if (minutes > 0) return minutes + "분 " + remainSeconds + "초";
+        return remainSeconds + "초";
     }
 
     private void openDetails() {

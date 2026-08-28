@@ -3,10 +3,7 @@ package com.pawlog.server.service;
 import java.util.Collections;
 import java.util.List;
 
-import com.pawlog.common.dto.board.PostDetailDto;
-import com.pawlog.common.dto.board.PostEnrollDto;
-import com.pawlog.common.dto.board.PostLikeDto;
-import com.pawlog.common.dto.board.PostListDto;
+import com.pawlog.common.dto.board.*;
 import com.pawlog.server.dao.CommentDAO;
 import com.pawlog.server.dao.PostDAO;
 import com.pawlog.server.dao.PostLikeDAO;
@@ -90,7 +87,7 @@ public class PostService {
             }
 
             // 댓글 목록 조회 및 세팅 (댓글이 없는 경우 빈 리스트 [] 반환)
-            List<PostDetailDto.commentitem> comments = commentDAO.getCommentItemsByPostId(request.getPostId());
+            List<PostDetailDto.commentitem> comments = commentDAO.getCommentItemsByPostId(request.getPostId(), currentUserId);
             if (comments == null) {
                 comments = Collections.emptyList();
             }
@@ -102,6 +99,28 @@ public class PostService {
         } catch (Exception e) {
             e.printStackTrace();
             return new PostDetailDto.Response(false, 500, "게시글 상세 조회 중 오류 발생: " + e.getMessage(), null);
+        }
+    }
+
+    // 게시글 삭제 비즈니스 로직
+    public PostDeleteDto.Response deletePost(PostDeleteDto.Request request, Long currentUserId) {
+        if (currentUserId == null || currentUserId <= 0) {
+            return new PostDeleteDto.Response(false, 401, "로그인이 필요한 서비스입니다.");
+        }
+        if (request == null || request.getPostId() <= 0) {
+            return new PostDeleteDto.Response(false, 400, "유효하지 않은 게시글 번호입니다.");
+        }
+
+        try {
+            boolean deleted = postDAO.deletePostWithComments(request.getPostId(), currentUserId);
+            if (deleted) {
+                return new PostDeleteDto.Response(true, 200, "게시글이 삭제되었습니다.");
+            } else {
+                return new PostDeleteDto.Response(false, 403, "삭제 권한이 없거나 이미 삭제된 게시글입니다.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new PostDeleteDto.Response(false, 500, "게시글 삭제 중 오류 발생: " + e.getMessage());
         }
     }
 

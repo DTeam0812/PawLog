@@ -34,13 +34,13 @@ public class MyPagePanel extends JPanel {
     private final JLabel profileStatusLabel = label("", Font.PLAIN, 12, SUB_TEXT);
 
     // 생년월일 콤보박스 필드 분리
-    private final JComboBox<String> yearCombo = new JComboBox<>();
-    private final JComboBox<String> monthCombo = new JComboBox<>();
-    private final JComboBox<String> dayCombo = new JComboBox<>();
+    private final JComboBox<String> yearCombo = combo();
+    private final JComboBox<String> monthCombo = combo();
+    private final JComboBox<String> dayCombo = combo();
 
-    private final JPasswordField currentPasswordField = passwordField();
-    private final JPasswordField newPasswordField = passwordField();
-    private final JPasswordField confirmPasswordField = passwordField();
+    private final JPasswordField currentPasswordField = passwordField("현재 비밀번호");
+    private final JPasswordField newPasswordField = passwordField("새 비밀번호");
+    private final JPasswordField confirmPasswordField = passwordField("새 비밀번호 확인");
     private final JLabel securityStatusLabel = label("", Font.PLAIN, 12, SUB_TEXT);
 
     private final JLabel UUID = label(DeviceIdManager.getDeviceId(), Font.BOLD, 12, SUB_TEXT);
@@ -281,11 +281,4 @@ public class MyPagePanel extends JPanel {
         return panel;
     }
 
-    private JPasswordField passwordField() {
-        JPasswordField field = new JPasswordField();
-        field.setFont(font(Font.PLAIN, 13));
-        field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(0, 11, 0, 11)));
-        field.setPreferredSize(new Dimension(180, 40));
-        return field;
-    }
 }

@@ -260,7 +260,7 @@ public class StatisticsService {
         }
     }
 
-    public static void main(String[] args) {
+   /*  public static void main(String[] args) {
         StatisticsService service = new StatisticsService();
 
         System.out.println("========== [TODAY_STATISTICS_GET 테스트] ==========");
@@ -282,5 +282,5 @@ public class StatisticsService {
             }
             System.out.println("----------------------------------------------------------------------");
         }
-    }
+    }*/
 }
