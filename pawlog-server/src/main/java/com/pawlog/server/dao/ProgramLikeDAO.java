@@ -1,11 +1,14 @@
 package com.pawlog.server.dao;
 
+import com.pawlog.common.dto.recommend.RecommendProgramDto;
 import com.pawlog.server.db.DBConnectionMgr;
 import com.pawlog.server.entity.ProgramLikeEntity;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProgramLikeDAO {
     private DBConnectionMgr pool;
@@ -112,6 +115,43 @@ public class ProgramLikeDAO {
             pool.freeConnection(con, pstmt, rs);
         }
         return count;
+    }
+
+    // 5. 추천수가 많은 상위 프로그램 목록 조회
+    public List<RecommendProgramDto.Item> getTopLikedPrograms(int limit) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<RecommendProgramDto.Item> list = new ArrayList<>();
+
+        String sql = "SELECT p.program_id, "
+                   + "COALESCE(NULLIF(p.display_name, ''), p.process_name) AS program_name, "
+                   + "COUNT(pl.user_id) AS like_count "
+                   + "FROM programs p "
+                   + "LEFT JOIN program_likes pl ON p.program_id = pl.program_id "
+                   + "GROUP BY p.program_id, p.display_name, p.process_name "
+                   + "ORDER BY like_count DESC, p.program_id ASC "
+                   + "LIMIT ?";
+
+        try {
+            con = pool.getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setInt(1, limit > 0 ? limit : 3);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String programId = String.valueOf(rs.getLong("program_id"));
+                String programName = rs.getString("program_name");
+                int likeCount = rs.getInt("like_count");
+
+                list.add(new RecommendProgramDto.Item(programId, programName, likeCount));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return list;
     }
 
 }

@@ -34,7 +34,7 @@ import com.pawlog.common.dto.analytics.ProgramAnalyticsDto;
 public class PawLogClient {
     private static final int CliVersion = 1; //클라이언트 버전관리
    private Consumer<String> forceLogoutListener;
-    private static final String DEFAULT_HOST = "127.0.0.1";//서버주소
+    private static final String DEFAULT_HOST = "192.168.0.13";//서버주소
     private static final int DEFAULT_PORT = 8005;//활성 포트
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
     private static final int READ_TIMEOUT_MILLIS = 5000;

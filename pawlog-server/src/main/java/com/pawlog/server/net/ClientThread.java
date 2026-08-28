@@ -7,7 +7,7 @@ import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
 import com.pawlog.common.dto.board.*;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
-import com.pawlog.common.dto.recommend.RecommendProgramDto;
+import com.pawlog.common.dto.recommend.ProgramLikeDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.statistics.TodayStatisticsDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
@@ -36,6 +36,7 @@ public class ClientThread extends Thread {
     private PostService postService;
     private CommentService commentService;
     private ProgramAnalyticsService programAnalyticsService;
+    private ProgramLikeService programLikeService;
     // 로그인된 유저 세션 정보
     private Long loggedInUserId;
     private UserEntity currentUser;
@@ -53,6 +54,7 @@ public class ClientThread extends Thread {
             this.postService = new PostService();
             this.commentService = new CommentService();
             this.programAnalyticsService = new ProgramAnalyticsService();
+            this.programLikeService = new ProgramLikeService();
             System.out.println(socket + " 접속 성공.......");
         } catch (Exception e) {
             e.printStackTrace();
@@ -156,8 +158,8 @@ public class ClientThread extends Thread {
             else if (ServerProtocol.PROGRAM_ANALYTICS_GET.equals(command)) {
                 handleProgramAnalyticsJson(dataJson);
             }
-            else if (ServerProtocol.RECENT_POPULAR_PROGRAM_GET.equals(command)) {
-                handleRecommendProgramJson(dataJson);
+            else if (ServerProtocol.PROGRAM_LIKE_TOGGLE.equals(command)) {
+                handleProgramLikeToggleJson(dataJson);
             }
             else {
                 ResponsePacket errorRes = new ResponsePacket(command, false, 400, "지원하지 않는 커맨드입니다: " + command, null);
@@ -672,30 +674,63 @@ public class ClientThread extends Thread {
         }
     }
 
-    // 추천 프로그램 조회 (JSON 처리)
-    private void handleRecommendProgramJson(String dataJson) {
+
+    // 프로그램 추천/좋아요 토글 (JSON 처리)
+    private void handleProgramLikeToggleJson(String dataJson) {
         try {
-            RecommendProgramDto.Request reqDto = JsonUtil.fromJson(dataJson, RecommendProgramDto.Request.class);
-            RecommendProgramDto.Response resDto = popularRankingService.getRecommendPrograms(reqDto);
+            // 1. 비로그인 세션 차단 (401 방어)
+            if (!isLoggedIn()) {
+                ResponsePacket errorPacket = new ResponsePacket(
+                        ServerProtocol.PROGRAM_LIKE_TOGGLE,
+                        false,
+                        401,
+                        "로그인이 필요한 서비스입니다.",
+                        null
+                );
+                sendMessage(JsonUtil.toJson(errorPacket));
+                return;
+            }
+
+            // 2. DTO 파싱 및 Service 호출
+            ProgramLikeDto.Request reqDto = JsonUtil.fromJson(dataJson, ProgramLikeDto.Request.class);
+            if (reqDto == null) {
+                ResponsePacket errorPacket = new ResponsePacket(
+                        ServerProtocol.PROGRAM_LIKE_TOGGLE,
+                        false,
+                        400,
+                        "유효하지 않은 프로그램ID입니다.",
+                        null
+                );
+                sendMessage(JsonUtil.toJson(errorPacket));
+                return;
+            }
+
+            ProgramLikeDto.Response resDto = programLikeService.toggleProgramLike(reqDto.getProgramId(), getLoggedInUserId());
+
+            // 3. 응답 패킷 전송
+            JsonNode dataNode = (resDto.isSuccess() && resDto.getData() != null)
+                    ? JsonUtil.toJsonNode(resDto.getData())
+                    : null;
 
             ResponsePacket responsePacket = new ResponsePacket(
-                ServerProtocol.RECOMMEND_PROGRAM_GET,
-                resDto.isSuccess(),
-                resDto.getCode(),
-                resDto.getMessage(),
-                resDto.isSuccess() && resDto.getData() != null ? JsonUtil.toJsonNode(resDto.getData()) : null
+                    ServerProtocol.PROGRAM_LIKE_TOGGLE,
+                    resDto.isSuccess(),
+                    resDto.getCode(),
+                    resDto.getMessage(),
+                    dataNode
             );
             sendMessage(JsonUtil.toJson(responsePacket));
+
         } catch (Exception e) {
             e.printStackTrace();
-            ResponsePacket responsePacket = new ResponsePacket(
-                ServerProtocol.RECOMMEND_PROGRAM_GET,
-                false,
-                400,
-                "추천 프로그램 요청 데이터 파싱 실패: " + e.getMessage(),
-                null
+            ResponsePacket errorPacket = new ResponsePacket(
+                    ServerProtocol.PROGRAM_LIKE_TOGGLE,
+                    false,
+                    400,
+                    "유효하지 않은 프로그램ID입니다.",
+                    null
             );
-            sendMessage(JsonUtil.toJson(responsePacket));
+            sendMessage(JsonUtil.toJson(errorPacket));
         }
     }
 

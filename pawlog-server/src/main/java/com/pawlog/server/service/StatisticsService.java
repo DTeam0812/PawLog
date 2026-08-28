@@ -264,7 +264,7 @@ public class StatisticsService {
         StatisticsService service = new StatisticsService();
 
         System.out.println("========== [TODAY_STATISTICS_GET 테스트] ==========");
-        TodayStatisticsDto.Request req = new TodayStatisticsDto.Request("testuser", "2026-08-25");
+        TodayStatisticsDto.Request req = new TodayStatisticsDto.Request("testuser", "testuser@example.com", "2026-08-25");
         TodayStatisticsDto.Response res = service.getTodayStatistics(req);
 
         System.out.println("성공 여부: " + res.isSuccess());

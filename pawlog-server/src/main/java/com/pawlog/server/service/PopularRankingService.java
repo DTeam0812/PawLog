@@ -1,7 +1,7 @@
 package com.pawlog.server.service;
 
+import com.pawlog.common.dto.board.PostRecommendationDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
-import com.pawlog.common.dto.recommend.RecommendProgramDto;
 import com.pawlog.server.dao.ProgramUsageStatDAO;
 import com.pawlog.server.dao.UsageLogDAO;
 
@@ -20,9 +20,9 @@ public class PopularRankingService {
      * (예: 11:41 기준 9시, 10시, 11시 데이터 합산)
      *
      * @param request count 요청 DTO
-     * @return RecommendProgramDto.Response
+     * @return PostRecommendationDto.Response
      */
-    public RecommendProgramDto.Response getRecommendPrograms(RecommendProgramDto.Request request) {
+    public PostRecommendationDto.Response getRecentPopularPrograms(PostRecommendationDto.Request request) {
         int count = (request != null && request.getCount() > 0) ? request.getCount() : 3;
         LocalDateTime now = LocalDateTime.now();
 
@@ -44,12 +44,12 @@ public class PopularRankingService {
                     date1, hour1, date2, hour2, date3, hour3, count
             );
 
-            List<RecommendProgramDto.Item> items = new ArrayList<>();
+            List<PostRecommendationDto.RecommendProgram> items = new ArrayList<>();
             for (UsageLogDAO.RealtimeRankRawData raw : rawList) {
-                items.add(new RecommendProgramDto.Item(raw.programName, raw.userCount));
+                items.add(new PostRecommendationDto.RecommendProgram(raw.programName, raw.userCount));
             }
 
-            return new RecommendProgramDto.Response(
+            return new PostRecommendationDto.Response(
                     true,
                     200,
                     String.format("최근 3시간(%d시, %d시, %d시) 동안 이용자수가 많은 프로그램 반환", hour1, hour2, hour3),
@@ -58,10 +58,11 @@ public class PopularRankingService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return new RecommendProgramDto.Response(
+            return new PostRecommendationDto.Response(
                     false,
                     500,
-                    "추천 프로그램 조회 중 오류 발생: " + e.getMessage()
+                    "최근 인기 프로그램 조회 실패: " + e.getMessage(),
+                    null
             );
         }
     }
