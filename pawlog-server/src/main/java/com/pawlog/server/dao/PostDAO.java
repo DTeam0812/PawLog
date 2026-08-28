@@ -352,6 +352,7 @@ public class PostDAO {
                 }
 
                 item.setLikeCount(rs.getInt("like_count"));
+                item.setLikecount(rs.getInt("like_count"));
                 item.setCommentCount(rs.getInt("comment_count"));
                 item.setLiked(rs.getInt("user_liked") > 0);
 
