@@ -695,7 +695,7 @@ public class HomePanel extends JPanel {
                 
                 List<PostRecommendationDto.RecommendProgram> programs =
                     response.getData();
-
+                    
                 if(programs == null || programs.isEmpty()) {
                     recommendationRankingPanel.add(
                         new JLabel("추천 프로그램이 없습니다.")
