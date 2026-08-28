@@ -142,7 +142,7 @@ public class Login extends JPanel{
         titlePanel.add(title);
 //---------------------------------------
 
-        JLabel subtitle = new JLabel("프로그램 사용 시간을 기록하고 더 나은 습관을 만들어보세요");
+        JLabel subtitle = new JLabel("");
         subtitle.setFont(font(Font.PLAIN, 13));
         subtitle.setForeground(SUB_TEXT);
         JPanel subtitlePanel = new JPanel(new GridBagLayout());

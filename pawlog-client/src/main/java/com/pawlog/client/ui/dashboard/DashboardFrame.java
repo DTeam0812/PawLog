@@ -23,6 +23,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.pawlog.client.ui.widget.WidgetSettings;
 
@@ -39,12 +40,13 @@ import javax.swing.JToggleButton;
 
 public class DashboardFrame extends JFrame {
     private final Runnable showLogin;
+    private final Consumer<Color> themeChangeHandler;
     private static final String HOME = "HOME";
     private static final String STATISTICS = "STATISTICS";
     private static final String PROGRAMS = "PROGRAMS";
     private static final String BOARD = "BOARD";
     private static final String SETTINGS = "SETTINGS";
-    private static final String PREDICTION = "PREDICTION";
+    private static final String FOCUS = "FOCUS";
     private static final String MY_PAGE = "MY_PAGE";
     private static final String LOGOUT = "LOGOUT";
     private final CardLayout cardLayout = new CardLayout();
@@ -58,8 +60,9 @@ public class DashboardFrame extends JFrame {
 
     private Point headerDragOffset;
 
-    public DashboardFrame(Runnable showLogin) {
+    public DashboardFrame(Runnable showLogin, Consumer<Color> themeChangeHandler) {
         this.showLogin = showLogin;
+        this.themeChangeHandler = themeChangeHandler == null ? color -> {} : themeChangeHandler;
         setUndecorated(true);
         setTitle("Pawlog");
         setSize(1200, 800);
@@ -86,7 +89,7 @@ public class DashboardFrame extends JFrame {
         headerPanel.setBackground(PRIMARY);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(7, 22, 7, 10));
 
-        JLabel titleLabel = new JLabel("Pawlog  ·  나의 디지털 사용 기록");
+        JLabel titleLabel = new JLabel("Pawlog ");
         titleLabel.setFont(font(Font.BOLD, 20));
         titleLabel.setForeground(CARD);
         titleLabel.setVerticalAlignment(SwingConstants.CENTER);
@@ -159,7 +162,7 @@ public class DashboardFrame extends JFrame {
         JButton statisticsButton = createMenuButton("통계", STATISTICS);
         JButton programsButton = createMenuButton("프로그램 분석", PROGRAMS);
         JButton boardButton = createMenuButton("게시판", BOARD);
-        JButton predictionButton = createMenuButton("예측 이벤트", PREDICTION);
+        JButton focusButton = createMenuButton("집중 모드", FOCUS);
         JButton myPageButton = createMenuButton("마이페이지", MY_PAGE);
         JButton settingsButton = createMenuButton("설정", SETTINGS);
         JButton logout = createMenuButton("로그아웃", LOGOUT);
@@ -176,7 +179,7 @@ public class DashboardFrame extends JFrame {
         sidebarPanel.add(Box.createVerticalStrut(6));
         sidebarPanel.add(boardButton);
         sidebarPanel.add(Box.createVerticalStrut(6));
-        sidebarPanel.add(predictionButton);
+        sidebarPanel.add(focusButton);
         sidebarPanel.add(Box.createVerticalGlue());
         sidebarPanel.add(myPageButton);
         sidebarPanel.add(Box.createVerticalStrut(6));
@@ -291,7 +294,7 @@ public class DashboardFrame extends JFrame {
         contentPanel.add(statisticsPanel, STATISTICS);
         contentPanel.add(new ProgramAnalyticsPanel(), PROGRAMS);
         contentPanel.add(new ProgramBoardPanel(), BOARD);
-        contentPanel.add(new PredictionPanel(), PREDICTION);
+        contentPanel.add(new FocusModePanel(), FOCUS);
         contentPanel.add(new MyPagePanel(), MY_PAGE);
         contentPanel.add(createSettingsPage(), SETTINGS);
 
@@ -392,6 +395,7 @@ public class DashboardFrame extends JFrame {
         UiComponents.applyAccent(accent);
         replaceThemeColors(this, previousPrimary, previousHover, previousSoft);
         headerPanel.setBackground(PRIMARY);
+        themeChangeHandler.accept(previousPrimary);
         selectMenu(selectedCardName);
         revalidate();
         repaint();

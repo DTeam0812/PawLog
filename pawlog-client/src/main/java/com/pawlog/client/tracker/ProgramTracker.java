@@ -30,6 +30,7 @@ public class ProgramTracker {
     private static String previousProcessName;
 
     private static volatile String currentProgram = "확인 중...";
+    private static volatile String currentProcessName = "";
     private static volatile String currentWindowTitle = "활성 창을 확인하고 있습니다.";
     private static volatile long usageSeconds;//현재세션 사용시간
     private static volatile long totalSeconds;//총 활성 시간
@@ -65,6 +66,7 @@ public class ProgramTracker {
         trackingDate = LocalDate.now();
         previousProcessName = null;
         currentProgram = "확인 중...";
+        currentProcessName = "";
         currentWindowTitle = "활성 창을 확인하고 있습니다.";
         usageSeconds = 0;
         totalSeconds = 0;
@@ -131,6 +133,7 @@ public class ProgramTracker {
 
             addUsage(processName, usageKey);
 
+            currentProcessName = processName;
             currentProgram = displayName;
             currentWindowTitle = windowTitle;
         } catch (Exception exception) {
@@ -145,6 +148,10 @@ public class ProgramTracker {
     }
     public static String getCurrentProgram() {
         return currentProgram;
+    }
+
+    public static String getCurrentProcessName() {
+        return currentProcessName;
     }
 
     public static String getCurrentWindowTitle() {

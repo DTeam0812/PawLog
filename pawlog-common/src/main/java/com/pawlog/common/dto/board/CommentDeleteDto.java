@@ -12,7 +12,7 @@ public class CommentDeleteDto {
         private long commentId;
         private long postId; // 삭제 후 게시글의 총 댓글 수 갱신을 위해 전달
     }
-
+    
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

@@ -29,6 +29,7 @@ public class AuthFrame extends JFrame {
     private final JPanel cardPanel = new JPanel(cardLayout);
     private Point headerDragOffset;
     private final DashboardFrame dashboardFrame;
+    private JPanel headerPanel;
     private boolean loggedIn;
     private final UsageAutoSaveScheduler autoSaveScheduler = new UsageAutoSaveScheduler();
     private final ServerSyncScheduler serverSyncScheduler = new ServerSyncScheduler();
@@ -53,7 +54,7 @@ public class AuthFrame extends JFrame {
     }
 
     public AuthFrame(boolean showImmediately) {
-        dashboardFrame = new DashboardFrame(this::showLoginAfterLogout);
+        dashboardFrame = new DashboardFrame(this::showLoginAfterLogout, this::refreshTheme);
         PawLogClient.getInstance().setForceLogoutListener(message -> {
             SwingUtilities.invokeLater(() -> handleForcedLogout(message));
         });
@@ -134,7 +135,7 @@ public class AuthFrame extends JFrame {
     }
 
     private JPanel topPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel = new JPanel(new BorderLayout());
         headerPanel.setPreferredSize(new Dimension(0, 55));
         headerPanel.setBackground(PRIMARY);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 5));
@@ -175,8 +176,35 @@ public class AuthFrame extends JFrame {
         
         addHeaderDrag(headerPanel);
         addHeaderDrag(titleLabel);
-
+        repaint();
         return headerPanel;
+    }
+
+    private void refreshTheme(Color previousPrimary) {
+        replaceAccentColor(this, previousPrimary);
+
+        if (headerPanel != null) {
+            headerPanel.setBackground(PRIMARY);
+        }
+
+        revalidate();
+        repaint();
+    }
+
+    private void replaceAccentColor(Component component, Color previousPrimary) {
+        if (previousPrimary.equals(component.getForeground())) {
+            component.setForeground(PRIMARY);
+        }
+
+        if (previousPrimary.equals(component.getBackground())) {
+            component.setBackground(PRIMARY);
+        }
+
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                replaceAccentColor(child, previousPrimary);
+            }
+        }
     }
 
     private void updateWindowShape() {
