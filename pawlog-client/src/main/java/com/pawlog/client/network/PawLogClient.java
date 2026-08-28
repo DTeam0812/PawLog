@@ -19,6 +19,7 @@ import com.pawlog.common.dto.auth.AuthRegisterDto;
 import com.pawlog.common.dto.auth.AuthUpdateDto;
 import com.pawlog.common.dto.statistics.MyStatisticsDto;
 import com.pawlog.common.dto.ranking.PopularRankingDto;
+import com.pawlog.common.dto.recommend.ProgramLikeDto;
 import com.pawlog.common.dto.usage.MyInfoDto;
 import com.pawlog.common.dto.usage.UsageLogSaveDto;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,8 +31,6 @@ import com.pawlog.common.protocol.ResponsePacket;
 import com.pawlog.common.util.JsonUtil;
 import com.pawlog.common.protocol.ServerProtocol;
 import com.pawlog.common.dto.analytics.ProgramAnalyticsDto;
-import com.pawlog.common.dto.board.PostDeleteDto;
-import com.pawlog.common.dto.board.CommentDeleteDto;
 
 public class PawLogClient {
     private static final int CliVersion = 1; //클라이언트 버전관리
@@ -501,7 +500,7 @@ public class PawLogClient {
         return sendJson(requestJson);
 
     }//게시글 만들기
-
+    
 
     private synchronized PostLikeDto.Response sendPostLikeToggleJson(String requestJson) throws Exception {
         connect();
@@ -695,7 +694,116 @@ public class PawLogClient {
         String requestJson = JsonUtil.toJson(requestPacket);
         return sendAuthUpdateJson(requestJson);
     }
-   /*  public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
+   
+   
+public synchronized ProgramLikeDto.Response getProgramLike(long programId) throws Exception {
+    ProgramLikeDto.Request request = new ProgramLikeDto.Request(programId);
+    JsonNode dataNode = JsonUtil.toJsonNode(request);
+    RequestPacket requestPacket = new RequestPacket(ServerProtocol.PROGRAM_LIKE_GET, dataNode);
+    String requestJson = JsonUtil.toJson(requestPacket);
+
+    return sendProgramLike(requestJson);
+}
+
+public synchronized ProgramLikeDto.Response toggleProgramLike(long programId) throws Exception {
+    ProgramLikeDto.Request request = new ProgramLikeDto.Request(programId);
+    JsonNode dataNode = JsonUtil.toJsonNode(request);
+    RequestPacket requestPacket = new RequestPacket(ServerProtocol.PROGRAM_LIKE_TOGGLE, dataNode);
+    String requestJson = JsonUtil.toJson(requestPacket);
+
+    return sendProgramLike(requestJson);
+}
+
+private synchronized ProgramLikeDto.Response sendProgramLike(String requestJson) throws Exception {
+    connect();
+    output.println(requestJson);
+
+    String responseJson = socketResponseReader.waitResponse();
+
+    if (responseJson == null) {
+        disconnect();
+        return new ProgramLikeDto.Response(
+            false,
+            500,
+            "서버 연결이 종료되었습니다.",
+            null
+        );
+    }
+
+    JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+
+    boolean success = root.path("success").asBoolean();
+    int code = root.path("code").asInt(success ? 200 : 400);
+    String message = root.path("message").asText("");
+    JsonNode dataNode = root.path("data");
+
+    if (!success || dataNode.isMissingNode() || dataNode.isNull()) {
+        return new ProgramLikeDto.Response(
+            false,
+            code,
+            message,
+            null
+        );
+    }
+
+    ProgramLikeDto.LikeData likeData = JsonUtil.fromJson(
+        dataNode.toString(),
+        ProgramLikeDto.LikeData.class
+    );
+
+    return new ProgramLikeDto.Response(
+        true,
+        code,
+        message,
+        likeData
+    );
+}
+   
+
+private synchronized PostDeleteDto.Response sendDeletepost(String requestJson) throws Exception{
+    connect();
+    output.println(requestJson);
+
+    String responseJson = socketResponseReader.waitResponse();
+
+    if (responseJson == null) {
+        disconnect();
+        return new PostDeleteDto.Response( false,  500,   "서버 연결이 종료되었습니다." );
+    }
+
+    JsonNode root = JsonUtil.fromJson(responseJson, JsonNode.class);
+
+    boolean success = root.path("success").asBoolean();
+    int code = root.path("code").asInt(success ? 200 : 400);
+    String message = root.path("message").asText("");
+
+
+    return new PostDeleteDto.Response(
+        true,
+        code,
+        message
+    );
+
+}
+   
+public synchronized PostDeleteDto.Response deletePost(Long Postid) throws Exception{
+    PostDeleteDto.Request request = new PostDeleteDto.Request(Postid);
+    JsonNode dataNode = JsonUtil.toJsonNode(request);
+    RequestPacket requestPacket = new RequestPacket(ServerProtocol.PROGRAM_LIKE_TOGGLE, dataNode);
+    String requestJson = JsonUtil.toJson(requestPacket);
+
+    return sendDeletepost(requestJson);
+}
+   
+   
+   
+   
+   
+   
+   
+   
+   
+    /*  public Response saveUsage(Map<UsageKey, Long> data) throws Exception {
         if (data == null || data.isEmpty()) {
             return new Response(false, "저장할 사용 기록이 없습니다.");
         }

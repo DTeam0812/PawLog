@@ -11,7 +11,9 @@ import com.pawlog.common.dto.board.RecentPopularProgramDto;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 import com.pawlog.common.dto.board.PostLikeDto;
 import com.pawlog.common.dto.board.PostDetailDto.commentitem;
+import com.pawlog.common.dto.recommend.ProgramLikeDto;
 import com.pawlog.common.dto.board.CommentDto;
+import com.pawlog.common.dto.board.PostDeleteDto;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -37,6 +39,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -85,9 +88,11 @@ public class ProgramBoardPanel extends JPanel {
 
     private int currentPage;
     private int detailLikeCount;
+    private int ProgramLikeCount;
     private long selectedProgramId = -1;
     private long currentDetailPostId = -1; // 상세 조회 중인 게시글 ID
     private boolean isCurrentPostLiked = false; // 좋아요 상태
+    private boolean isCurrentProgramLiked = false;
     public ProgramBoardPanel() {
         configureContentLimit();
         configureProgramSearch();
@@ -440,6 +445,8 @@ public class ProgramBoardPanel extends JPanel {
         recentPrograms.removeIf(program -> program.programId() == programId);
         recentPrograms.add(0, new ProgramRef(programId, programName));
 
+
+
         while(recentPrograms.size() > 8) {
             recentPrograms.remove(recentPrograms.size() - 1);
         }
@@ -447,9 +454,50 @@ public class ProgramBoardPanel extends JPanel {
         updateRecentProgramButtons();
         programSearchField.setText("");
         boardTitle.setText(programName + " 게시판");
+        Likebutton.setText("♡ 확인 중...");
+        Likebutton.setEnabled(false);
 
-        // 프로그램 버튼을 누르는 순간 첫 페이지 게시글을 서버에 요청한다.
+        loadProgramLike(programId);
         loadPostList(programId, 0);
+    }
+
+    private void loadProgramLike(long programId) {
+        new SwingWorker<ProgramLikeDto.Response, Void>() {
+            @Override
+            protected ProgramLikeDto.Response doInBackground() throws Exception {
+                return pawLogClient.getProgramLike(programId);
+            }
+
+            @Override
+            protected void done() {
+                if (selectedProgramId != programId) {
+                    return;
+                }
+
+                try {
+                    ProgramLikeDto.Response response = get();
+
+                    if (!response.isSuccess() || response.getData() == null) {
+                        Likebutton.setText("♡ 추천하기");
+                        System.out.println("프로그램 추천 조회 실패: " + response.getMessage());
+                        return;
+                    }
+
+                    isCurrentProgramLiked = response.getData().isLiked();
+                    ProgramLikeCount = response.getData().getLikeCount();
+                    updateProgramLikeButton();
+                } catch (Exception exception) {
+                    Likebutton.setText("♡ 추천하기");
+                    exception.printStackTrace();
+                } finally {
+                    Likebutton.setEnabled(true);
+                }
+            }
+        }.execute();
+    }
+
+    private void updateProgramLikeButton() {
+        Likebutton.setText((isCurrentProgramLiked ? "♥ " : "♡ ") + ProgramLikeCount);
     }
 
     // 서버 통신은 EDT 밖에서 실행해 조회 중에도 Swing 화면이 멈추지 않게 한다.
@@ -541,12 +589,50 @@ public class ProgramBoardPanel extends JPanel {
         backButton.addActionListener(event -> cardLayout.show(this, SELECT));
         header.add(backButton);
         header.add(Box.createVerticalStrut(10));
-
+        
         JPanel titleRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titleRow.add(boardTitle);
         Likebutton.setFont(font(Font.BOLD, 12));
         Likebutton.setPreferredSize(new Dimension(104, 34));
         Likebutton.setToolTipText("이 프로그램을 다른 사용자에게 추천해요");
+        Likebutton.addActionListener(event -> {
+            if (selectedProgramId <= 0) {
+                return;
+            }
+
+            long programId = selectedProgramId;
+            Likebutton.setEnabled(false);
+
+            new SwingWorker<ProgramLikeDto.Response, Void>() {
+                @Override
+                protected ProgramLikeDto.Response doInBackground() throws Exception {
+                    return pawLogClient.toggleProgramLike(programId);
+                }
+
+                @Override
+                protected void done() {
+                    if (selectedProgramId != programId) {
+                        return;
+                    }
+
+                    try {
+                        ProgramLikeDto.Response res = get();
+                        if (res.isSuccess() && res.getData() != null) {
+                            isCurrentProgramLiked = res.getData().isLiked();
+                            ProgramLikeCount = res.getData().getLikeCount();
+                            updateProgramLikeButton();
+                        } else {
+                            System.out.println("프로그램 추천 처리 실패: " + res.getMessage());
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    } finally {
+                        Likebutton.setEnabled(true);
+                    }
+                }
+            }.execute();
+        });
+
         titleRow.add(Likebutton);
         titleRow.setAlignmentX(LEFT_ALIGNMENT);
         header.add(titleRow);
@@ -883,7 +969,7 @@ public class ProgramBoardPanel extends JPanel {
         detailLikeButton.setPreferredSize(new Dimension(85, 34));
         detailLikeButton.addActionListener(event -> {
             if (currentDetailPostId <= 0) return;
-
+            
             detailLikeButton.setEnabled(false);
 
             new SwingWorker<PostLikeDto.Response, Void>() {
@@ -912,7 +998,55 @@ public class ProgramBoardPanel extends JPanel {
         deleteButton.setPreferredSize(
             new Dimension(70, 34)
         );
+        deleteButton.addActionListener(event -> {
+            int result = JOptionPane.showConfirmDialog(
+    ProgramBoardPanel.this,
+    "이 게시글을 삭제할까요?",
+    "게시글 삭제",
+    JOptionPane.YES_NO_OPTION,
+    JOptionPane.WARNING_MESSAGE
+);
 
+if (result != JOptionPane.YES_OPTION) {
+    return;
+}
+            long postId = currentDetailPostId;
+            deleteButton.setEnabled(false);
+
+            new SwingWorker<PostDeleteDto.Response, Void>() {
+                @Override
+                protected PostDeleteDto.Response doInBackground() throws Exception {
+                    return pawLogClient.deletePost(currentDetailPostId);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        PostDeleteDto.Response res = get();
+                        if (!res.isSuccess()) {
+                           System.out.println("Fail delete");
+                           return;
+                        }
+                        currentDetailPostId = -1;
+
+                cardLayout.show(
+                    ProgramBoardPanel.this,
+                    BOARD
+                );
+                loadPostList(
+                    selectedProgramId,
+                    currentPage
+                );
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    } finally {
+                        deleteButton.setEnabled(true);
+                    }
+                }
+            }.execute();
+
+
+        });
         deleteButton.setVisible(false);
 
         action.add(deleteButton);

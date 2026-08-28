@@ -20,6 +20,7 @@ public class ServerProtocol {
     public static final String PROGRAM_ANALYTICS_GET = "PROGRAM_ANALYTICS_GET";
     public static final String RECOMMEND_PROGRAM_GET = "RECOMMEND_PROGRAM_GET";//핫프로그램
     public static final String RECENT_POPULAR_PROGRAM_GET = "RECENT_POPULAR_PROGRAM_GET";//이용자2시간
+    public static final String PROGRAM_LIKE_GET = "PROGRAM_LIKE_GET"; // 프로그램 좋아요 상태 조회
     public static final String PROGRAM_LIKE_TOGGLE = "PROGRAM_LIKE_TOGGLE"; // 프로그램 좋아요 토글
     public static final String POST_DELETE = "POST_DELETE";
     public static final String COMMENT_DELETE = "COMMENT_DELETE";
