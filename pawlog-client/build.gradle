@@ -16,3 +16,22 @@ application {
     mainClass = 'com.pawlog.client.main.App'
     applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
 }
+
+tasks.register('packageJar', Jar) {
+    dependsOn compileJava
+    archiveFileName = 'pawlog-client-package.jar'
+    destinationDirectory = layout.buildDirectory.dir('jpackage-libs')
+    from sourceSets.main.output.classesDirs
+    from 'src/main/resources'
+
+    manifest {
+        attributes 'Main-Class': application.mainClass.get()
+    }
+}
+
+tasks.register('prepareJpackageInput', Copy) {
+    dependsOn packageJar
+    into layout.buildDirectory.dir('jpackage-input')
+    from tasks.named('packageJar')
+    from configurations.runtimeClasspath
+}

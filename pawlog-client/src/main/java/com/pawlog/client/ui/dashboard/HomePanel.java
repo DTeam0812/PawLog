@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -43,6 +44,7 @@ import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
 public class HomePanel extends JPanel {
+    private final Consumer<String> openProgramAnalytics;
     private final AuthStore authStore = AuthStore.getInstance();
     private final UsageLocalSaveService localSaveService = new UsageLocalSaveService();
     private final UsageServerSyncService serverSyncService = new UsageServerSyncService();
@@ -64,7 +66,8 @@ public class HomePanel extends JPanel {
     private boolean todayInfoLoading;
     private boolean todayInfoLoaded;
 
-    public HomePanel() {
+    public HomePanel(Consumer<String> openProgramAnalytics) {
+        this.openProgramAnalytics = openProgramAnalytics;
         setLayout(new BorderLayout());
         setBackground(BACKGROUND);
 
@@ -320,7 +323,18 @@ public class HomePanel extends JPanel {
 
         return combinedUsageMap;
     }
-
+    private JButton linkButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(font(Font.BOLD, 12));
+        button.setForeground(PRIMARY);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setAlignmentX(LEFT_ALIGNMENT);
+        button.setMaximumSize(new Dimension(110, 24));
+        return button;
+    }
     private JPanel createActiveProgramPanel() {
         JPanel card = createCardPanel();
 
@@ -377,17 +391,25 @@ public class HomePanel extends JPanel {
         activeSessionTimeLabel.setForeground(PRIMARY);
         activeSessionTimeLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
-        JLabel analysisLink = new JLabel("프로그램 분석 보기 →");
+        JButton analysisLinkbutton = linkButton("프로그램 분석보기");
+        analysisLinkbutton.setFont(new Font("맑은 고딕", Font.BOLD, 10));
+        analysisLinkbutton.setForeground(PRIMARY);
+        analysisLinkbutton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        analysisLinkbutton.addActionListener(event -> {
+           //TEMP1
+           String processName = ProgramTracker.getCurrentProcessName();
+           if(processName == null || processName.isBlank()) {
+        return;
+            }
 
-        analysisLink.setFont(new Font("맑은 고딕", Font.BOLD, 12));
-        analysisLink.setForeground(PRIMARY);
-        analysisLink.setAlignmentX(Component.RIGHT_ALIGNMENT);
-
+            openProgramAnalytics.accept(processName);
+            
+        });
         sessionPanel.add(sessionTitle);
         sessionPanel.add(Box.createVerticalStrut(4));
         sessionPanel.add(activeSessionTimeLabel);
         sessionPanel.add(Box.createVerticalStrut(12));
-        sessionPanel.add(analysisLink);
+        sessionPanel.add(analysisLinkbutton);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);

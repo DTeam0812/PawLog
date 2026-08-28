@@ -37,6 +37,7 @@ import com.pawlog.client.network.PawLogClient;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.ui.common.PawLogDialog;
 import com.pawlog.client.ui.dashboard.UiComponents.RoundedPanel;
+import com.pawlog.client.ui.widget.WidgetAlertService;
 import com.pawlog.common.dto.board.ProgramSearchDto;
 
 public class FocusModePanel extends JPanel {
@@ -69,6 +70,13 @@ public class FocusModePanel extends JPanel {
     public FocusModePanel() {
         configureDurationInput();
         configureProgramSearch();
+        alertCheck.addActionListener(event -> {
+            if(alertCheck.isSelected() && outsideTargetProgram && deviationCounted && timerRunning && !timerPaused) {
+                WidgetAlertService.startBarking();
+            } else {
+                WidgetAlertService.stopBarking();
+            }
+        });
 
         setLayout(new BorderLayout());
         setBackground(BACKGROUND);
@@ -315,6 +323,7 @@ public class FocusModePanel extends JPanel {
     durationField.setEnabled(true);
     programSearchField.setEnabled(true);
     updateTimerLabel();
+    WidgetAlertService.stopBarking();
 
     JOptionPane.showMessageDialog(
     this,
@@ -392,6 +401,7 @@ public class FocusModePanel extends JPanel {
         durationField.setEnabled(true);
         programSearchField.setEnabled(true);
         updateTimerPreview();
+        WidgetAlertService.stopBarking();
     }
 
     private void toggleFocusTimerPause() {
@@ -404,11 +414,15 @@ public class FocusModePanel extends JPanel {
             timerPaused = false;
             focusProgressBar.setRunning(true);
             pauseButton.setText("일시정지");
+            if(alertCheck.isSelected() && outsideTargetProgram && deviationCounted) {
+                WidgetAlertService.startBarking();
+            }
         } else {
             focusTimer.stop();
             timerPaused = true;
             focusProgressBar.setRunning(false);
             pauseButton.setText("계속하기");
+            WidgetAlertService.stopBarking();
         }
     }
     private void configureProgramSearch() {
@@ -517,6 +531,7 @@ public class FocusModePanel extends JPanel {
         normalizeProcessName(selectedProcessName).equals(normalizeProcessName(currentProcessName));
 
     if(sameProgram) {
+        WidgetAlertService.stopBarking();
         outsideTargetProgram = false;
         deviationCounted = false;
         deviationStartedAt = 0;
@@ -591,6 +606,7 @@ public class FocusModePanel extends JPanel {
     );
 
     selectedProgramLabel.setForeground(RED);
+    WidgetAlertService.startBarking();
 }
 private final JCheckBox alertCheck =
     new JCheckBox("다른 프로그램으로 이탈하면 알려주기", true);

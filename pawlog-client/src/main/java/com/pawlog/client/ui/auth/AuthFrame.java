@@ -55,6 +55,10 @@ public class AuthFrame extends JFrame {
 
     public AuthFrame(boolean showImmediately) {
         dashboardFrame = new DashboardFrame(this::showLoginAfterLogout, this::refreshTheme);
+        URL appIconUrl = getClass().getResource("/images/trayIcon.png");
+        if(appIconUrl != null) {
+            setIconImage(Toolkit.getDefaultToolkit().getImage(appIconUrl));
+        }
         PawLogClient.getInstance().setForceLogoutListener(message -> {
             SwingUtilities.invokeLater(() -> handleForcedLogout(message));
         });

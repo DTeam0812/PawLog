@@ -29,7 +29,7 @@ import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-public class ProgramAnalyticsPanel extends JPanel {
+public  class ProgramAnalyticsPanel extends JPanel {
     private static final String SELECT = "SELECT";
     private static final String DETAIL = "DETAIL";
     private final CardLayout cardLayout = new CardLayout();
@@ -64,7 +64,49 @@ public class ProgramAnalyticsPanel extends JPanel {
         add(createDetailPage(), DETAIL);
         cardLayout.show(this, SELECT);
     }
+    public void openByProcessName(String processName) {
+    new SwingWorker<ProgramSearchDto.Response, Void>() {
+        @Override
+        protected ProgramSearchDto.Response doInBackground() throws Exception {
+            return pawLogClient.searchPrograms(processName, 10);
+        }
 
+        @Override
+        protected void done() {
+            try {
+                ProgramSearchDto.Response response = get();
+
+                if(!response.isSuccess()
+                    || response.getPrograms() == null
+                    || response.getPrograms().isEmpty()) {
+
+                    statusWarnLabel.setText("현재 프로그램을 찾을 수 없습니다.");
+                    cardLayout.show(ProgramAnalyticsPanel.this, SELECT);
+                    return;
+                }
+
+                ProgramSearchDto.ProgramItem program =
+                    response.getPrograms().stream()
+                        .filter(item ->
+                            processName.equalsIgnoreCase(item.getProcessName())
+                        )
+                        .findFirst()
+                        .orElse(response.getPrograms().get(0));
+
+                selectProgram(
+                    program.getProgramId(),
+                    program.getDisplayName(),
+                    program.getProcessName()
+                );
+
+                loadAnalyticsData(program.getProgramId());
+            } catch(Exception exception) {
+                statusWarnLabel.setText("프로그램 분석을 불러오지 못했습니다.");
+                exception.printStackTrace();
+            }
+        }
+    }.execute();
+}
     private JPanel createSelectPage() {
         JPanel page = new JPanel(new BorderLayout());
         page.setBackground(BACKGROUND);
@@ -295,7 +337,7 @@ public class ProgramAnalyticsPanel extends JPanel {
     }
 
     // 서버에 실제 분석 데이터를 요청하고 UI를 갱신
-    private void loadAnalyticsData(long programId) {
+    public void loadAnalyticsData(long programId) {
         statusWarnLabel.setText("분석 데이터를 불러오는 중...");
 
         new SwingWorker<ProgramAnalyticsDto.Response, Void>() {

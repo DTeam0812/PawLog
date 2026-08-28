@@ -14,13 +14,18 @@ import java.net.URL;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
+import javax.swing.Timer;
 
 class WidgetView extends JPanel {
     private final ImageIcon animatedDog;
     private final BufferedImage idleDog;
+    private final BufferedImage[] barkingFrames = new BufferedImage[8];
+    private final Timer barkAnimationTimer;
+    private int barkingFrameIndex;
     private boolean paused;
     private boolean hovered;
     private boolean alwaysAnimated;
+    private boolean barking;
 
     WidgetView() {
         URL imageUrl = getClass().getResource("/images/dogIcon_move.gif");
@@ -30,6 +35,18 @@ class WidgetView extends JPanel {
 
         animatedDog = imageUrl == null ? null : new ImageIcon(imageUrl);
         idleDog = readFirstFrame(imageUrl);
+
+        for (int index = 0; index < barkingFrames.length; index++) {
+            barkingFrames[index] = readImage(
+                getClass().getResource("/images/dogIcon_bark_" + (index + 1) + ".png")
+            );
+        }
+
+        barkAnimationTimer = new Timer(90, event -> {
+            barkingFrameIndex = (barkingFrameIndex + 1) % barkingFrames.length;
+            repaint();
+        });
+        barkAnimationTimer.setRepeats(true);
         alwaysAnimated = WidgetSettings.isAlwaysAnimated();
         setOpaque(false);
         setPreferredSize(new Dimension(120, 120));
@@ -51,7 +68,27 @@ class WidgetView extends JPanel {
         repaint();
     }
 
+    void startBarking() {
+        if (barking) return;
+
+        barking = true;
+        barkingFrameIndex = 0;
+        barkAnimationTimer.start();
+        repaint();
+    }
+
+    void stopBarking() {
+        barking = false;
+        barkingFrameIndex = 0;
+        barkAnimationTimer.stop();
+        repaint();
+    }
+
     private BufferedImage readFirstFrame(URL imageUrl) {
+        return readImage(imageUrl);
+    }
+
+    private BufferedImage readImage(URL imageUrl) {
         if (imageUrl == null) return null;
         try {
             return ImageIO.read(imageUrl);
@@ -69,7 +106,13 @@ class WidgetView extends JPanel {
         int imageX = (getWidth() - 120) / 2;
         int imageY = (getHeight() - 120) / 2;
 
-        if ((alwaysAnimated || hovered) && animatedDog != null) {
+        BufferedImage barkingFrame = barkingFrames[barkingFrameIndex];
+
+        if (barking && barkingFrame != null) {
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.drawImage(barkingFrame, imageX, imageY, 120, 120, this);
+        } else if ((alwaysAnimated || hovered) && animatedDog != null) {
             animatedDog.paintIcon(this, g2, imageX, imageY);
         } else if (idleDog != null) {
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);

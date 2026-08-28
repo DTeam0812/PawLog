@@ -16,15 +16,18 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
+import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.pawlog.client.ui.dashboard.UiComponents.RoundedPanel;
 import com.pawlog.client.ui.widget.WidgetSettings;
 
 import javax.swing.BorderFactory;
@@ -39,6 +42,12 @@ import javax.swing.SwingConstants;
 import javax.swing.JToggleButton;
 
 public class DashboardFrame extends JFrame {
+    private final ProgramAnalyticsPanel programAnalyticsPanel =
+    new ProgramAnalyticsPanel();
+
+    private final HomePanel homePanel = new HomePanel(this::openCurrentProgramAnalytics);
+
+
     private final Runnable showLogin;
     private final Consumer<Color> themeChangeHandler;
     private static final String HOME = "HOME";
@@ -51,7 +60,7 @@ public class DashboardFrame extends JFrame {
     private static final String LOGOUT = "LOGOUT";
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(cardLayout);
-    private final HomePanel homePanel = new HomePanel();
+  
     private final StatisticsPanel statisticsPanel = new StatisticsPanel();
     private final Map<String, JButton> menuButtons = new LinkedHashMap<>();
     private String selectedCardName = HOME;
@@ -63,6 +72,10 @@ public class DashboardFrame extends JFrame {
     public DashboardFrame(Runnable showLogin, Consumer<Color> themeChangeHandler) {
         this.showLogin = showLogin;
         this.themeChangeHandler = themeChangeHandler == null ? color -> {} : themeChangeHandler;
+        URL appIconUrl = getClass().getResource("/images/trayIcon.png");
+        if(appIconUrl != null) {
+            setIconImage(Toolkit.getDefaultToolkit().getImage(appIconUrl));
+        }
         setUndecorated(true);
         setTitle("Pawlog");
         setSize(1200, 800);
@@ -292,7 +305,7 @@ public class DashboardFrame extends JFrame {
         contentPanel.setBackground(BACKGROUND);
         contentPanel.add(homePanel, HOME);
         contentPanel.add(statisticsPanel, STATISTICS);
-        contentPanel.add(new ProgramAnalyticsPanel(), PROGRAMS);
+        contentPanel.add(programAnalyticsPanel, PROGRAMS);
         contentPanel.add(new ProgramBoardPanel(), BOARD);
         contentPanel.add(new FocusModePanel(), FOCUS);
         contentPanel.add(new MyPagePanel(), MY_PAGE);
@@ -302,7 +315,11 @@ public class DashboardFrame extends JFrame {
 
         return contentPanel;
     }
-
+    private void openCurrentProgramAnalytics(String processName) {
+    cardLayout.show(contentPanel, PROGRAMS);
+    selectMenu(PROGRAMS);
+    programAnalyticsPanel.openByProcessName(processName);
+    }
     private JPanel createPage(String title) {
         JPanel pagePanel = new JPanel(new BorderLayout());
         pagePanel.setBackground(BACKGROUND);

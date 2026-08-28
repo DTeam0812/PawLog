@@ -102,6 +102,7 @@ public class Widget {
     });
 
     widgetView = new WidgetView();
+    WidgetAlertService.setBarkHandlers(widgetView::startBarking, widgetView::stopBarking);
     programLabel = label("활성 프로그램 확인 중", Font.BOLD, 13, TEXT);
     sessionLabel = label("현재 세션 0초", Font.PLAIN, 11, SUB_TEXT);
 
@@ -287,6 +288,7 @@ public class Widget {
 
     private void exitApplication() {
         ProgramTracker.stopTracking();
+        WidgetAlertService.setBarkHandlers(null, null);
         speechBubble.dispose();
         window.dispose();
 
