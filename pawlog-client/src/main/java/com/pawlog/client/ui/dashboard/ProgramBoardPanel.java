@@ -205,16 +205,12 @@ public class ProgramBoardPanel extends JPanel {
         JPanel footer = transparentPanel(new BorderLayout());
         footer.add(label("추천 " + count, Font.BOLD, 11, PRIMARY), BorderLayout.WEST);
         JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        JButton recommendButton = outlineButton("추천하기");
-        recommendButton.setPreferredSize(new Dimension(80, 28));
-        recommendButton.addActionListener(event -> {
-            recommendButton.setText("추천 완료");
-            recommendButton.setEnabled(false);
-        });
+        
+        
         JButton boardButton = primaryButton("게시판 보기");
         boardButton.setPreferredSize(new Dimension(100, 28));
         boardButton.addActionListener(event -> findProgramAndOpenBoard(name));
-        buttons.add(recommendButton);
+        
         buttons.add(boardButton);
         footer.add(buttons, BorderLayout.EAST);
 
@@ -457,7 +453,7 @@ public class ProgramBoardPanel extends JPanel {
         boardTitle.setText(programName + " 게시판");
         Likebutton.setText("♡ 확인 중...");
         Likebutton.setEnabled(false);
-
+        loadHotPrograms();
         loadProgramLike(programId);
         loadPostList(programId, 0);
     }
@@ -479,14 +475,16 @@ public class ProgramBoardPanel extends JPanel {
                     ProgramLikeDto.Response response = get();
 
                     if (!response.isSuccess() || response.getData() == null) {
-                        Likebutton.setText("♡ 추천하기");
+                        Likebutton.setText("♡ ");
                         System.out.println("프로그램 추천 조회 실패: " + response.getMessage());
                         return;
                     }
-
+                    
                     isCurrentProgramLiked = response.getData().isLiked();
                     ProgramLikeCount = response.getData().getLikeCount();
+                    
                     updateProgramLikeButton();
+                    loadHotPrograms();
                 } catch (Exception exception) {
                     Likebutton.setText("♡ 추천하기");
                     exception.printStackTrace();
@@ -500,7 +498,7 @@ public class ProgramBoardPanel extends JPanel {
     private void updateProgramLikeButton() {
         Likebutton.setText((isCurrentProgramLiked ? "♥ " : "♡ ") + ProgramLikeCount);
     }
-
+    
     // 서버 통신은 EDT 밖에서 실행해 조회 중에도 Swing 화면이 멈추지 않게 한다.
     private void loadPostList(long programId, int page) {
         postRows.removeAll();
@@ -587,7 +585,10 @@ public class ProgramBoardPanel extends JPanel {
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
 
         JButton backButton = linkButton("← 돌아가기");
-        backButton.addActionListener(event -> cardLayout.show(this, SELECT));
+        backButton.addActionListener(event -> {
+        loadHotPrograms();
+        cardLayout.show(this, SELECT);
+        });
         header.add(backButton);
         header.add(Box.createVerticalStrut(10));
         
