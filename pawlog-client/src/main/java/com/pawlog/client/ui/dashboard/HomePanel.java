@@ -712,7 +712,7 @@ public class HomePanel extends JPanel {
                     recommendationRankingPanel.add(createRankingRow(
                         i + 1,
                         program.getProgram(),
-                        "최근 두시간 이용자수 " + program.getUsercount()
+                        "최근 이용자수 " + program.getUsercount()
                     ));
 
                     if(i < count - 1) {
@@ -742,7 +742,7 @@ public class HomePanel extends JPanel {
         card.setLayout(new BorderLayout());
         card.setBorder(BorderFactory.createEmptyBorder(19, 19, 19, 19));
 
-        JLabel title = new JLabel("추천 프로그램 TOP 5");
+        JLabel title = new JLabel("실시간 인기 프로그램");
 
         title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
         title.setForeground(TEXT);
