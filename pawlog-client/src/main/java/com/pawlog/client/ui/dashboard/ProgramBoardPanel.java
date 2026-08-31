@@ -4,6 +4,7 @@ import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
 import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.network.PawLogClient;
+import com.pawlog.client.ui.common.PawLogDialog;
 import com.pawlog.common.dto.board.PostDetailDto;
 import com.pawlog.common.dto.board.PostListDto;
 import com.pawlog.common.dto.board.PostRecommendationDto;
@@ -40,7 +41,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -995,17 +995,17 @@ public class ProgramBoardPanel extends JPanel {
             new Dimension(70, 34)
         );
         deleteButton.addActionListener(event -> {
-            int result = JOptionPane.showConfirmDialog(
-    ProgramBoardPanel.this,
-    "이 게시글을 삭제할까요?",
-    "게시글 삭제",
-    JOptionPane.YES_NO_OPTION,
-    JOptionPane.WARNING_MESSAGE
-);
+            boolean confirmed = PawLogDialog.confirm(
+                ProgramBoardPanel.this,
+                "게시글 삭제",
+                "이 게시글을 삭제하시겠습니까?\n삭제한 게시글은 다시 복구할 수 없어요.",
+                "삭제할게요"
+            );
 
-if (result != JOptionPane.YES_OPTION) {
-    return;
-}
+            if(!confirmed) {
+                return;
+            }
+
             long postId = currentDetailPostId;
             deleteButton.setEnabled(false);
 
@@ -1329,6 +1329,17 @@ if (result != JOptionPane.YES_OPTION) {
     JButton commentDeleteButton
 ) {
     if (commentId <= 0 || currentDetailPostId <= 0) {
+        return;
+    }
+
+    boolean confirmed = PawLogDialog.confirm(
+        ProgramBoardPanel.this,
+        "댓글 삭제",
+        "이 댓글을 삭제하시겠습니까?\n삭제한 댓글은 다시 복구할 수 없어요.",
+        "삭제할게요"
+    );
+
+    if(!confirmed) {
         return;
     }
 

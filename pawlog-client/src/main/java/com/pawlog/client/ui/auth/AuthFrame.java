@@ -23,6 +23,7 @@ import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.tracker.UsageKey;
 import com.pawlog.client.ui.common.PawLogDialog;
 import com.pawlog.client.ui.dashboard.DashboardFrame;
+import com.pawlog.client.ui.widget.WidgetSettings;
 
 public class AuthFrame extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
@@ -54,7 +55,11 @@ public class AuthFrame extends JFrame {
     }
 
     public AuthFrame(boolean showImmediately) {
-        dashboardFrame = new DashboardFrame(this::showLoginAfterLogout, this::refreshTheme);
+        dashboardFrame = new DashboardFrame(
+            this::showLoginAfterLogout,
+            this::refreshTheme,
+            this::applyWindowOpacity
+        );
         URL appIconUrl = getClass().getResource("/images/trayIcon.png");
         if(appIconUrl != null) {
             setIconImage(Toolkit.getDefaultToolkit().getImage(appIconUrl));
@@ -67,6 +72,7 @@ public class AuthFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        applyWindowOpacity(WidgetSettings.getAppOpacityPercent());
         updateWindowShape();
         addComponentListener(new ComponentAdapter() {
             @Override
@@ -193,6 +199,14 @@ public class AuthFrame extends JFrame {
 
         revalidate();
         repaint();
+    }
+
+    private void applyWindowOpacity(int opacityPercent) {
+        try {
+            setOpacity(opacityPercent / 100.0f);
+        } catch(UnsupportedOperationException | IllegalComponentStateException exception) {
+            System.out.println("현재 환경에서는 로그인 화면 투명도를 변경할 수 없습니다.");
+        }
     }
 
     private void replaceAccentColor(Component component, Color previousPrimary) {

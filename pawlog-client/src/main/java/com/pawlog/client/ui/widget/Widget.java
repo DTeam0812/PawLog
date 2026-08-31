@@ -117,12 +117,23 @@ public class Widget {
     window.setSize(120, 120);
     window.setBackground(TRANSPARENT);
     window.setAlwaysOnTop(true);
+    WidgetSettings.setOpacityChangeListener(this::applyWidgetOpacity);
 
     createSpeechBubble();
     createTrayIcon();
     startWidgetRefresh();
     loadWindowLocation();
 }
+
+    private void applyWidgetOpacity(int opacityPercent) {
+        float opacity = opacityPercent / 100.0f;
+
+        try {
+            window.setOpacity(opacity);
+        } catch(UnsupportedOperationException | IllegalComponentStateException exception) {
+            System.out.println("현재 환경에서는 위젯 투명도를 변경할 수 없습니다.");
+        }
+    }
 
 //----------------원본-----------------------
 //    private JLabel createDogLabel() {

@@ -14,6 +14,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.IllegalComponentStateException;
 import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
@@ -26,6 +27,7 @@ import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 import com.pawlog.client.ui.dashboard.UiComponents.RoundedPanel;
 import com.pawlog.client.ui.widget.WidgetSettings;
@@ -38,8 +40,10 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.SwingConstants;
 import javax.swing.JToggleButton;
+import javax.swing.plaf.basic.BasicSliderUI;
 
 public class DashboardFrame extends JFrame {
     private final ProgramAnalyticsPanel programAnalyticsPanel =
@@ -50,6 +54,7 @@ public class DashboardFrame extends JFrame {
 
     private final Runnable showLogin;
     private final Consumer<Color> themeChangeHandler;
+    private final IntConsumer windowOpacityChangeHandler;
     private static final String HOME = "HOME";
     private static final String STATISTICS = "STATISTICS";
     private static final String PROGRAMS = "PROGRAMS";
@@ -69,9 +74,14 @@ public class DashboardFrame extends JFrame {
 
     private Point headerDragOffset;
 
-    public DashboardFrame(Runnable showLogin, Consumer<Color> themeChangeHandler) {
+    public DashboardFrame(
+        Runnable showLogin,
+        Consumer<Color> themeChangeHandler,
+        IntConsumer windowOpacityChangeHandler
+    ) {
         this.showLogin = showLogin;
         this.themeChangeHandler = themeChangeHandler == null ? color -> {} : themeChangeHandler;
+        this.windowOpacityChangeHandler = windowOpacityChangeHandler == null ? opacity -> {} : windowOpacityChangeHandler;
         URL appIconUrl = getClass().getResource("/images/trayIcon.png");
         if(appIconUrl != null) {
             setIconImage(Toolkit.getDefaultToolkit().getImage(appIconUrl));
@@ -83,6 +93,7 @@ public class DashboardFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setLayout(new BorderLayout());
+        applyWindowOpacity(WidgetSettings.getAppOpacityPercent());
         updateWindowShape();
         addComponentListener(new ComponentAdapter() {
             @Override
@@ -395,13 +406,134 @@ public class DashboardFrame extends JFrame {
         motionCard.add(motionTitle, BorderLayout.NORTH);
         motionCard.add(motionChoices, BorderLayout.CENTER);
 
+        RoundedPanel opacityCard = card();
+        opacityCard.setLayout(new BorderLayout(0, 14));
+        opacityCard.setBorder(BorderFactory.createEmptyBorder(22, 26, 22, 26));
+        opacityCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        opacityCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 210));
+
+        JPanel opacityTitle = transparentPanel();
+        opacityTitle.setLayout(new BoxLayout(opacityTitle, BoxLayout.Y_AXIS));
+        opacityTitle.add(label("투명도", Font.BOLD, 18, TEXT));
+        opacityTitle.add(Box.createVerticalStrut(5));
+        opacityTitle.add(label("발바닥 손잡이를 드래그해서 위젯과 PawLog 화면을 각각 조절해요.", Font.PLAIN, 13, SUB_TEXT));
+
+        JPanel opacityControls = transparentPanel();
+        opacityControls.setLayout(new BoxLayout(opacityControls, BoxLayout.Y_AXIS));
+        opacityControls.add(createOpacityControl(
+            "강아지 위젯",
+            30,
+            WidgetSettings.getOpacityPercent(),
+            WidgetSettings::setOpacityPercent
+        ));
+        opacityControls.add(Box.createVerticalStrut(8));
+        opacityControls.add(createOpacityControl(
+            "PawLog 화면",
+            50,
+            WidgetSettings.getAppOpacityPercent(),
+            opacity -> {
+                WidgetSettings.setAppOpacityPercent(opacity);
+                applyWindowOpacity(opacity);
+                windowOpacityChangeHandler.accept(opacity);
+            }
+        ));
+
+        opacityCard.add(opacityTitle, BorderLayout.NORTH);
+        opacityCard.add(opacityControls, BorderLayout.CENTER);
+
         page.add(heading);
         page.add(Box.createVerticalStrut(24));
         page.add(themeCard);
         page.add(Box.createVerticalStrut(16));
         page.add(motionCard);
+        page.add(Box.createVerticalStrut(16));
+        page.add(opacityCard);
         page.add(Box.createVerticalGlue());
         return page;
+    }
+
+    private JPanel createOpacityControl(
+        String title,
+        int minimum,
+        int savedOpacity,
+        IntConsumer opacityHandler
+    ) {
+        JPanel row = transparentPanel(new BorderLayout(14, 0));
+
+        JLabel rowTitle = label(title, Font.BOLD, 13, TEXT);
+        rowTitle.setPreferredSize(new Dimension(105, 42));
+
+        JSlider slider = new JSlider(minimum, 100, savedOpacity);
+        slider.setOpaque(false);
+        slider.setFocusable(false);
+        slider.setPreferredSize(new Dimension(430, 42));
+        slider.setUI(new PawSliderUI(slider));
+
+        JLabel valueLabel = label(savedOpacity + "%", Font.BOLD, 14, PRIMARY);
+        valueLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        valueLabel.setPreferredSize(new Dimension(58, 42));
+
+        slider.addChangeListener(event -> {
+            int opacity = slider.getValue();
+            valueLabel.setText(opacity + "%");
+            opacityHandler.accept(opacity);
+        });
+
+        row.add(rowTitle, BorderLayout.WEST);
+        row.add(slider, BorderLayout.CENTER);
+        row.add(valueLabel, BorderLayout.EAST);
+        return row;
+    }
+
+    private void applyWindowOpacity(int opacityPercent) {
+        try {
+            setOpacity(opacityPercent / 100.0f);
+        } catch(UnsupportedOperationException | IllegalComponentStateException exception) {
+            System.out.println("현재 환경에서는 PawLog 화면 투명도를 변경할 수 없습니다.");
+        }
+    }
+
+    private static class PawSliderUI extends BasicSliderUI {
+        PawSliderUI(JSlider slider) {
+            super(slider);
+        }
+
+        @Override
+        protected Dimension getThumbSize() {
+            return new Dimension(30, 28);
+        }
+
+        @Override
+        public void paintTrack(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int trackHeight = 8;
+            int trackY = trackRect.y + (trackRect.height - trackHeight) / 2;
+            int filledWidth = Math.max(0, thumbRect.x + thumbRect.width / 2 - trackRect.x);
+
+            g2.setColor(PRIMARY_SOFT);
+            g2.fillRoundRect(trackRect.x, trackY, trackRect.width, trackHeight, trackHeight, trackHeight);
+            g2.setColor(PRIMARY);
+            g2.fillRoundRect(trackRect.x, trackY, filledWidth, trackHeight, trackHeight, trackHeight);
+            g2.dispose();
+        }
+
+        @Override
+        public void paintThumb(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D)graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int x = thumbRect.x;
+            int y = thumbRect.y;
+            g2.setColor(PRIMARY);
+            g2.fillOval(x + 7, y + 9, 16, 16);
+            g2.fillOval(x + 2, y + 4, 7, 8);
+            g2.fillOval(x + 9, y, 7, 8);
+            g2.fillOval(x + 17, y, 7, 8);
+            g2.fillOval(x + 23, y + 4, 7, 8);
+            g2.dispose();
+        }
     }
 
     private void applyTheme(Color accent) {
