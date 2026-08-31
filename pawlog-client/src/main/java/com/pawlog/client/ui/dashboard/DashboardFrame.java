@@ -46,7 +46,7 @@ public class DashboardFrame extends JFrame {
     new ProgramAnalyticsPanel();
 
     private final HomePanel homePanel = new HomePanel(this::openCurrentProgramAnalytics);
-
+    
 
     private final Runnable showLogin;
     private final Consumer<Color> themeChangeHandler;

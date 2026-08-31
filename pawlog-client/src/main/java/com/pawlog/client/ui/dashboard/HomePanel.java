@@ -392,9 +392,13 @@ public class HomePanel extends JPanel {
         activeSessionTimeLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
         JButton analysisLinkbutton = linkButton("프로그램 분석보기");
-        analysisLinkbutton.setFont(new Font("맑은 고딕", Font.BOLD, 10));
+        analysisLinkbutton.setFont(new Font("맑은 고딕", Font.BOLD, 12));
         analysisLinkbutton.setForeground(PRIMARY);
         analysisLinkbutton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        analysisLinkbutton.setHorizontalAlignment(SwingConstants.RIGHT);
+        analysisLinkbutton.setPreferredSize(new Dimension(145, 28));
+        analysisLinkbutton.setMinimumSize(new Dimension(145, 28));
+        analysisLinkbutton.setMaximumSize(new Dimension(145, 28));
         analysisLinkbutton.addActionListener(event -> {
            //TEMP1
            String processName = ProgramTracker.getCurrentProcessName();
@@ -695,7 +699,7 @@ public class HomePanel extends JPanel {
                 
                 List<PostRecommendationDto.RecommendProgram> programs =
                     response.getData();
-                    
+
                 if(programs == null || programs.isEmpty()) {
                     recommendationRankingPanel.add(
                         new JLabel("추천 프로그램이 없습니다.")
@@ -717,7 +721,7 @@ public class HomePanel extends JPanel {
 
                     if(i < count - 1) {
                         recommendationRankingPanel.add(
-                            Box.createVerticalStrut(12)
+                            Box.createVerticalStrut(16)
                         );
                     }
                 }
@@ -743,7 +747,7 @@ public class HomePanel extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(19, 19, 19, 19));
 
         JLabel title = new JLabel("실시간 인기 프로그램");
-
+        title.add(Box.createVerticalStrut(10));
         title.setFont(new Font("맑은 고딕", Font.BOLD, 15));
         title.setForeground(TEXT);
 
@@ -762,14 +766,8 @@ public class HomePanel extends JPanel {
         
        
 
-        JLabel link = new JLabel("전체 추천 보기 →", SwingConstants.RIGHT);
-
-        link.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        link.setForeground(PRIMARY);
-
         card.add(title, BorderLayout.NORTH);
         card.add(recommendationRankingPanel, BorderLayout.CENTER);
-        card.add(link, BorderLayout.SOUTH);
 
         return card;
     }
@@ -782,7 +780,8 @@ public class HomePanel extends JPanel {
         JPanel row = new JPanel(new BorderLayout());
 
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        row.setPreferredSize(new Dimension(0, 28));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
 
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         leftPanel.setOpaque(false);
