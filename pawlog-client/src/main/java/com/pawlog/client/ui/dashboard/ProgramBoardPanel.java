@@ -208,7 +208,9 @@ public class ProgramBoardPanel extends JPanel {
         
         
         JButton boardButton = primaryButton("게시판 보기");
-        boardButton.setPreferredSize(new Dimension(100, 28));
+        boardButton.setFont(font(Font.BOLD, 12));
+        boardButton.setPreferredSize(new Dimension(122, 32));
+        boardButton.setMinimumSize(new Dimension(122, 32));
         boardButton.addActionListener(event -> findProgramAndOpenBoard(name));
         
         buttons.add(boardButton);
@@ -592,8 +594,9 @@ public class ProgramBoardPanel extends JPanel {
         header.add(backButton);
         header.add(Box.createVerticalStrut(10));
         
-        JPanel titleRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        titleRow.add(boardTitle);
+        JPanel titleRow = transparentPanel(new BorderLayout(12, 0));
+        JPanel titleActions = transparentPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        titleActions.add(boardTitle);
         Likebutton.setFont(font(Font.BOLD, 12));
         Likebutton.setPreferredSize(new Dimension(104, 34));
         Likebutton.setToolTipText("이 프로그램을 다른 사용자에게 추천해요");
@@ -635,26 +638,17 @@ public class ProgramBoardPanel extends JPanel {
             }.execute();
         });
 
-        titleRow.add(Likebutton);
+        titleActions.add(Likebutton);
+
+        JButton writeButton = primaryButton("+ 글쓰기");
+        writeButton.setPreferredSize(new Dimension(112, 38));
+        writeButton.addActionListener(event -> cardLayout.show(this, WRITE));
+
+        titleRow.add(titleActions, BorderLayout.WEST);
+        titleRow.add(writeButton, BorderLayout.EAST);
         titleRow.setAlignmentX(LEFT_ALIGNMENT);
         header.add(titleRow);
-        header.add(Box.createVerticalStrut(15));
-
-        JPanel toolbar = transparentPanel(new BorderLayout(10, 0));
-        JTextField searchField = textField("게시판 내에서 검색");
-        searchField.setPreferredSize(new Dimension(230, 36));
-        JPanel rightActions = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        JComboBox<String> sortBox = combo("최신순", "추천순", "댓글순");
-        sortBox.setPreferredSize(new Dimension(112, 36));
-        JButton writeButton = primaryButton("+ 글쓰기");
-        writeButton.setPreferredSize(new Dimension(104, 36));
-        writeButton.addActionListener(event -> cardLayout.show(this, WRITE));
-        rightActions.add(sortBox);
-        rightActions.add(writeButton);
-        toolbar.add(searchField, BorderLayout.WEST);
-        toolbar.add(rightActions, BorderLayout.EAST);
-        toolbar.setAlignmentX(LEFT_ALIGNMENT);
-        header.add(toolbar);
+        header.add(Box.createVerticalStrut(8));
         return header;
     }
 
