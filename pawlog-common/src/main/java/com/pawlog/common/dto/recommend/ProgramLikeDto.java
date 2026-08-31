@@ -22,7 +22,7 @@ public class ProgramLikeDto {
         private boolean liked;
         private int likeCount;
     }
-
+    
     // 3. 통신 응답 DTO
     @Data
     @NoArgsConstructor

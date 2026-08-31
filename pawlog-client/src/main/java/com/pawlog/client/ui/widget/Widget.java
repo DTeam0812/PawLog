@@ -2,6 +2,7 @@ package com.pawlog.client.ui.widget;
 
 import static com.pawlog.client.ui.dashboard.UiComponents.*;
 
+import com.pawlog.client.AuthStore.AuthStore;
 import com.pawlog.client.tracker.ProgramTracker;
 import com.pawlog.client.ui.auth.AuthFrame;
 
@@ -92,12 +93,14 @@ public class Widget {
     private boolean paused;
 
     public Widget() {
-    ProgramTracker.startTracking();
     window = new JWindow();
     speechBubble = new JWindow(window);
     AUTH = new AuthFrame(false);
     AUTH.setWidgetVisibilityHandler(visible -> {
         window.setVisible(visible);
+        if(visible && AuthStore.getInstance().isLoggedIn()) {
+            setTrackingPaused(false);
+        }
         if (!visible) speechBubble.setVisible(false);
     });
 
@@ -276,6 +279,16 @@ public class Widget {
     }
 
     private void setTrackingPaused(boolean paused) {
+        if(!paused && !AuthStore.getInstance().isLoggedIn()) {
+            ProgramTracker.stopTracking();
+            this.paused = true;
+
+            if(widgetPauseItem != null) widgetPauseItem.setSelected(true);
+            if(trayPauseItem != null) trayPauseItem.setState(true);
+            widgetView.updateStatus(ProgramTracker.getUsageSeconds(), true);
+            return;
+        }
+
         this.paused = paused;
 
         if (paused) ProgramTracker.stopTracking();

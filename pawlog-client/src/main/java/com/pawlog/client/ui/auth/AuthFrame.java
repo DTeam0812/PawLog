@@ -94,7 +94,7 @@ public class AuthFrame extends JFrame {
         cardLayout.show(cardPanel, pageName);
     }
 
-    private void handleForcedLogout(String message) {
+    private synchronized void handleForcedLogout(String message) {
         if (!loggedIn) {
             return;
         }
@@ -105,7 +105,7 @@ public class AuthFrame extends JFrame {
         PawLogDialog.warning(this, "로그아웃 안내", message);
     }
 
-    private void showLoginAfterLogout() {
+    private synchronized void showLoginAfterLogout() {
         dashboardFrame.setVisible(false);
         ProgramTracker.stopTracking();
         autoSaveScheduler.stop();

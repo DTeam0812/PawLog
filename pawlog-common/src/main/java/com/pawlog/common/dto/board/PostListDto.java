@@ -31,7 +31,7 @@ public class PostListDto {
         private int likeCount;//좋아요 갯수
         private int commentCount;//댓글수
 
-       private int likecount;//좋아요 갯수
+        private int likecount;//좋아요 갯수
         private boolean liked;//추천 여부
 
         

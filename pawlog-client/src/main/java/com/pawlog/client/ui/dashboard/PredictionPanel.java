@@ -67,7 +67,7 @@ public class PredictionPanel extends JPanel {
         card.add(Box.createVerticalStrut(5));
         card.add(description);
         card.add(Box.createVerticalStrut(22));
-
+        
         ButtonGroup group = new ButtonGroup();
         JPanel options = transparentPanel(new GridLayout(2, 2, 12, 12));
         String[] names = {"VS Code", "IntelliJ IDEA", "Eclipse", "Visual Studio"};
