@@ -127,42 +127,57 @@ public  class ProgramAnalyticsPanel extends JPanel {
     private JPanel createSelectionCard() {
         UiComponents.RoundedPanel card = card();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createEmptyBorder(25, 28, 25, 28));
+        card.setBorder(BorderFactory.createEmptyBorder(22, 28, 22, 28));
         card.setAlignmentX(CENTER_ALIGNMENT);
-        card.setMaximumSize(new Dimension(560, 390));
-        card.setPreferredSize(new Dimension(560, 390));
 
+        // 88px 추천 영역에 맞춘 전체 카드 크기 고정 (560 x 445)
+        card.setMaximumSize(new Dimension(560, 445));
+        card.setPreferredSize(new Dimension(560, 445));
+        card.setMinimumSize(new Dimension(560, 445));
+
+        // 1. 타이틀 영역
         JLabel searchTitle = label("프로그램 찾기", Font.BOLD, 15, TEXT);
-        searchTitle.setAlignmentX(LEFT_ALIGNMENT);
+        searchTitle.setAlignmentX(CENTER_ALIGNMENT);
+        searchTitle.setMaximumSize(new Dimension(500, 20));
+        searchTitle.setPreferredSize(new Dimension(500, 20));
+
         JLabel searchSubTitle = label("분석할 프로그램 이름을 검색하고 추천 목록에서 선택하세요.", Font.PLAIN, 11, SUB_TEXT);
-        searchSubTitle.setAlignmentX(LEFT_ALIGNMENT);
+        searchSubTitle.setAlignmentX(CENTER_ALIGNMENT);
+        searchSubTitle.setMaximumSize(new Dimension(500, 16));
+        searchSubTitle.setPreferredSize(new Dimension(500, 16));
 
         card.add(searchTitle);
         card.add(Box.createVerticalStrut(3));
         card.add(searchSubTitle);
-        card.add(Box.createVerticalStrut(14));
+        card.add(Box.createVerticalStrut(12));
 
-        programSearchField.setAlignmentX(LEFT_ALIGNMENT);
-        programSearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        // 2. 검색창
+        programSearchField.setAlignmentX(CENTER_ALIGNMENT);
+        programSearchField.setMaximumSize(new Dimension(500, 38));
         programSearchField.setPreferredSize(new Dimension(500, 38));
-
-        searchResultsPanel.setAlignmentX(LEFT_ALIGNMENT);
-        searchResultsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-
         card.add(programSearchField);
         card.add(Box.createVerticalStrut(8));
-        card.add(searchResultsPanel);
-        card.add(Box.createVerticalStrut(14));
 
+        // 3. 추천 검색 결과 패널 (요청하신 높이 88px 고정)
+        searchResultsPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 3));
+        searchResultsPanel.setAlignmentX(CENTER_ALIGNMENT);
+        searchResultsPanel.setMaximumSize(new Dimension(500, 88));
+        searchResultsPanel.setPreferredSize(new Dimension(500, 88));
+        searchResultsPanel.setMinimumSize(new Dimension(500, 88));
+        card.add(searchResultsPanel);
+        card.add(Box.createVerticalStrut(10));
+
+        // 4. 선택 프로그램 정보 박스
         JPanel info = transparentPanel();
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
         info.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)
+                BorderFactory.createEmptyBorder(10, 14, 10, 14)
         ));
-        info.setAlignmentX(LEFT_ALIGNMENT);
-        info.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
-        info.setPreferredSize(new Dimension(500, 70));
+        info.setAlignmentX(CENTER_ALIGNMENT);
+        info.setMaximumSize(new Dimension(500, 68));
+        info.setPreferredSize(new Dimension(500, 68));
+        info.setMinimumSize(new Dimension(500, 68));
 
         selectedNameLabel.setAlignmentX(LEFT_ALIGNMENT);
         selectedDescLabel.setAlignmentX(LEFT_ALIGNMENT);
@@ -171,14 +186,18 @@ public  class ProgramAnalyticsPanel extends JPanel {
         info.add(selectedDescLabel);
         card.add(info);
 
-        card.add(Box.createVerticalStrut(8));
+        // 5. 경고 문구 및 분석 버튼
+        card.add(Box.createVerticalStrut(6));
         statusWarnLabel.setAlignmentX(CENTER_ALIGNMENT);
         card.add(statusWarnLabel);
-        card.add(Box.createVerticalStrut(8));
+        card.add(Box.createVerticalStrut(6));
 
         JPanel action = transparentPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        action.setAlignmentX(CENTER_ALIGNMENT);
+        action.setMaximumSize(new Dimension(500, 38));
+
         JButton viewButton = primaryButton("분석 보기");
-        viewButton.setPreferredSize(new Dimension(140, 40));
+        viewButton.setPreferredSize(new Dimension(140, 38));
         viewButton.addActionListener(event -> {
             if (selectedProgramId <= 0 || selectedProgramName.isBlank()) {
                 statusWarnLabel.setText("분석을 진행할 프로그램을 먼저 선택해주세요.");
