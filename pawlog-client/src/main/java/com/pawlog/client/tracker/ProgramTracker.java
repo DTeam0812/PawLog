@@ -40,6 +40,7 @@ public class ProgramTracker {
         EXCLUDED.add("ShellExperienceHost.exe");
         EXCLUDED.add("SearchHost.exe");
         EXCLUDED.add("java.exe");
+        EXCLUDED.add(" javaw.exe");
     }
 
     public static synchronized void startTracking() {//트래킹 시작
